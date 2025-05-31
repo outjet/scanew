@@ -6,9 +6,10 @@ import threading
 import tempfile
 import shutil
 import pathlib
-from datetime import datetime
+from datetime import datetime, timezone
 from queue import Queue
-
+import sqlite3
+from config import SQLITE_DB_PATH
 from config import (
     LOGGING_FORMAT,
     SAMPLE_RATE,
@@ -24,6 +25,7 @@ from transcribe import transcribe_full_segment
 from filters import filter_transcript
 from db import initialize_database, insert_transcription
 from notifier import send_pushover, matches_alert_pattern
+from utils import post_transcription_with_retry
 
 # ---------------------------
 # Basic Logging Configuration
@@ -40,6 +42,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 #hide httpx INFO 
 logging.getLogger("httpx").setLevel(logging.WARNING)
+
+timestamp_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 def main():
     # 1) Initialize SQLite
@@ -115,13 +119,20 @@ def main():
 
             # 10) Insert into SQLite
             timestamp_iso = datetime.now().isoformat()
-            insert_transcription(
+            conn = sqlite3.connect(str(SQLITE_DB_PATH))
+            row_id = insert_transcription(
                 timestamp_iso=timestamp_iso,
                 wav_filename=final_wav_filename,
                 transcript=filtered,
                 notified=False,
-                pushover_code=None
+                pushover_code=None,
+                response_code=None
             )
+
+            # Construct URL if needed
+            file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
+            post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
+            conn.close()
 
             # 11) **Notification (only if matches an alert pattern)**
             #     We pass filtered transcript (or transcript) to check patterns

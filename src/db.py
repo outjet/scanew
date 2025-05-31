@@ -36,7 +36,8 @@ def insert_transcription(
     wav_filename: str,
     transcript: str,
     notified: bool = False,
-    pushover_code: int = None
+    pushover_code: int = None,
+    response_code: int = None
 ):
     """
     Inserts one row into the transcriptions table.
@@ -47,15 +48,17 @@ def insert_transcription(
         cur.execute(
             """
             INSERT INTO transcriptions
-            (timestamp, wav_filename, transcript, notified, pushover_code)
-            VALUES (?, ?, ?, ?, ?)
+            (timestamp, wav_filename, transcript, notified, pushover_code, response_code)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (timestamp_iso, wav_filename, transcript, int(notified), pushover_code)
+            (timestamp_iso, wav_filename, transcript, int(notified), pushover_code, response_code)
         )
         conn.commit()
+        row_id = cur.lastrowid
         logger.debug(f"Inserted transcription row: {timestamp_iso}, {wav_filename}")
     except Exception as e:
         logger.error(f"Error inserting into DB: {e}")
         raise
     finally:
         conn.close()
+    return row_id

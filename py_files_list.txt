@@ -47,7 +47,8 @@ def insert_transcription(
     wav_filename: str,
     transcript: str,
     notified: bool = False,
-    pushover_code: int = None
+    pushover_code: int = None,
+    response_code: int = None
 ):
     """
     Inserts one row into the transcriptions table.
@@ -58,18 +59,20 @@ def insert_transcription(
         cur.execute(
             """
             INSERT INTO transcriptions
-            (timestamp, wav_filename, transcript, notified, pushover_code)
-            VALUES (?, ?, ?, ?, ?)
+            (timestamp, wav_filename, transcript, notified, pushover_code, response_code)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (timestamp_iso, wav_filename, transcript, int(notified), pushover_code)
+            (timestamp_iso, wav_filename, transcript, int(notified), pushover_code, response_code)
         )
         conn.commit()
+        row_id = cur.lastrowid
         logger.debug(f"Inserted transcription row: {timestamp_iso}, {wav_filename}")
     except Exception as e:
         logger.error(f"Error inserting into DB: {e}")
         raise
     finally:
         conn.close()
+    return row_id
 
 ----------------------------------------
 File: src/config.py
@@ -453,6 +456,7 @@ File: src/utils.py
 # src/utils.py
 import time
 import functools
+import requests
 import logging
 from colorama import Fore, Style, init as colorama_init
 import datetime
@@ -520,6 +524,42 @@ def log_transcription_to_console(text: str, source: str = "Dispatch"):
         )
 
     print(output)
+
+def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: int, conn):
+    post_url = "https://lkwd.agency/transcription"
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "ScannerStream0.6"
+    }
+    data = {
+        "timestamp": timestamp,
+        "url": url,
+        "text": text
+    }
+
+    max_retries = 5
+    delay = 1
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(post_url, headers=headers, json=data, timeout=10)
+            response.raise_for_status()
+            conn.execute("UPDATE transcriptions SET response_code = ? WHERE id = ?", (response.status_code, row_id))
+            conn.commit()
+            logger.info(f"Posted transcript ({row_id}) OK: {response.status_code}")
+            return response.status_code
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Post failed (attempt {attempt + 1}): {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.content}")
+                if e.response.status_code:
+                    conn.execute("UPDATE transcriptions SET response_code = ? WHERE id = ?", (e.response.status_code, row_id))
+                    conn.commit()
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+                delay *= 2
+    logger.error("Final failure after retries.")
+    return 0
 ----------------------------------------
 File: src/transcribe.py
 # src/transcribe.py
@@ -736,7 +776,8 @@ import shutil
 import pathlib
 from datetime import datetime
 from queue import Queue
-
+import sqlite3
+from config import SQLITE_DB_PATH
 from config import (
     LOGGING_FORMAT,
     SAMPLE_RATE,
@@ -752,6 +793,7 @@ from transcribe import transcribe_full_segment
 from filters import filter_transcript
 from db import initialize_database, insert_transcription
 from notifier import send_pushover, matches_alert_pattern
+from utils import post_transcription_with_retry
 
 # ---------------------------
 # Basic Logging Configuration
@@ -843,13 +885,20 @@ def main():
 
             # 10) Insert into SQLite
             timestamp_iso = datetime.now().isoformat()
-            insert_transcription(
+            conn = sqlite3.connect(str(SQLITE_DB_PATH))
+            row_id = insert_transcription(
                 timestamp_iso=timestamp_iso,
                 wav_filename=final_wav_filename,
                 transcript=filtered,
                 notified=False,
-                pushover_code=None
+                pushover_code=None,
+                response_code=None
             )
+
+            # Construct URL if needed
+            file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
+            post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
+            conn.close()
 
             # 11) **Notification (only if matches an alert pattern)**
             #     We pass filtered transcript (or transcript) to check patterns
