@@ -197,7 +197,7 @@ def matches_alert_pattern(text: str) -> bool:
     """
     for pat in ALERT_PATTERNS:
         if pat.search(text):
-            logger.info(f"ALERT: transcript matched pattern {pat.pattern!r}")
+            logger.debug(f"ALERT: transcript matched pattern {pat.pattern!r}")
             return True
     return False
 
@@ -590,7 +590,7 @@ def transcribe_full_segment(
             pass
 
     final_transcript = " ".join(transcripts).strip()
-    logger.info(f"Full transcript for {segment_wav_path.name!r}: {final_transcript!r}")
+    logger.debug(f"Full transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
     return final_transcript
 
@@ -653,7 +653,7 @@ class AudioRecorder(threading.Thread):
                     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                     temp_wav_path = RECORDINGS_DIR / f"temp_{timestamp}.wav"
                     self._write_wav(frames, temp_wav_path)
-                    logger.info(f"Wrote temp WAV: {temp_wav_path}")
+                    logger.debug(f"Wrote temp WAV: {temp_wav_path}")
                     self.segment_queue.put(temp_wav_path)
         except Exception as e:
             logger.exception(f"AudioRecorder encountered an error: {e}")
@@ -766,7 +766,8 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
+#hide httpx INFO 
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 def main():
     # 1) Initialize SQLite
@@ -793,7 +794,7 @@ def main():
         lookback_ms=LOOKBACK_MS
     )
     audio_recorder.start()
-    logger.info("Started AudioRecorder thread.")
+    logger.debug("Started AudioRecorder thread.")
 
     # 5) Main loop: whenever there's a new segment path, process it
     while True:
@@ -802,7 +803,7 @@ def main():
             if not segment_path or not segment_path.exists():
                 continue
 
-            logger.info(f"Processing new audio segment: {segment_path.name}")
+            logger.debug(f"Processing new audio segment: {segment_path.name}")
 
             # 6) Transcribe → uses a temporary directory for chunk WAVs
             with tempfile.TemporaryDirectory() as tmpdirname:
@@ -838,7 +839,7 @@ def main():
             final_wav_filename = f"{final_stamp}.wav"
             final_wav_path = RECORDINGS_DIR / final_wav_filename
             shutil.move(str(segment_path), str(final_wav_path))
-            logger.info(f"Saved validated segment WAV as: {final_wav_filename}")
+            logger.debug(f"Saved validated segment WAV as: {final_wav_filename}")
 
             # 10) Insert into SQLite
             timestamp_iso = datetime.now().isoformat()
@@ -932,10 +933,10 @@ def filter_transcript(text: str) -> Optional[str]:
     """
     if contains_filtered_word(text):
         return None
-    if is_purely_numeric(text):
-        return None
-    if is_gibberish(text):
-        return None
+    #if is_purely_numeric(text):
+    #    return None
+    #if is_gibberish(text):
+    #    return None
     return text.strip()
 
 ----------------------------------------

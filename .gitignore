@@ -33,4 +33,5 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+py_files_list.txt
 *~ 
