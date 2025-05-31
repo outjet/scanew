@@ -1,0 +1,36 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+myenv/
+env/
+venv/
+
+# Environment and config files
+.env
+config.ini
+
+# Log files
+*.log
+
+# Audio and data output
+recordings/
+*.wav
+
+# SQLite database
+transcriptions.db
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+
+# VSCode or JetBrains settings (optional)
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+*~ 

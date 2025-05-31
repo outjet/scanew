@@ -1,0 +1,15 @@
+# Core functionality
+pyaudio
+pydub
+openai
+selenium
+python-dotenv
+
+# SQLite is built‐in, no extra package.
+# If you want Pushover notifications:
+requests
+
+# (Optional) If you’re on macOS and need audio‐splitting support, you may need ffmpeg installed:
+# On macOS: brew install ffmpeg
+# On Linux: sudo apt install ffmpeg
+

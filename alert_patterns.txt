@@ -1,0 +1,34 @@
+# Priority Police Responses
+\bcode\s3\b
+\bcars\srespond\b
+\bpursuit\b
+\bperimeter\b
+\bstep\sit\sup\b
+\bany\savailable\scars\b
+
+# Priority Fire Department Response
+\bengine\s1\sengine\s2\b
+\bengine\s2\sengine\s3\b
+\bmedic\s123\b
+\bmedic\s1[\s-]?2[\s-]?3\b
+\bmedic\s1\s?2\s?3\b
+\bentrapment\b
+\brollover\b
+\bsmoke\b
+\binjury\smva\b
+\bflames\sshowing\b
+\bsmoke\sshowing\b
+\bworking\sfire\b
+
+# Specific Addresses
+\b1602\slewis\b
+\b2138\s(dowd|dow)\b
+\b2119\s(bell|belle)\b
+\b1593\swagar\b
+
+# Streets
+\bwagar\b
+
+# Addresses or License Plates
+\b1597\b
+\b3276\b

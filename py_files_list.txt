@@ -1,0 +1,941 @@
+File: src/testaudio.py
+import pyaudio
+
+pa = pyaudio.PyAudio()
+for i in range(pa.get_device_count()):
+    info = pa.get_device_info_by_index(i)
+    if info["maxInputChannels"] > 0:
+        print(f"[{i}] {info['name']} ({info['maxInputChannels']} ch)")
+
+----------------------------------------
+File: src/db.py
+# src/db.py
+import sqlite3
+import logging
+from pathlib import Path
+
+from config import SQLITE_DB_PATH
+
+logger = logging.getLogger(__name__)
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS transcriptions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp     TEXT NOT NULL,
+    wav_filename  TEXT,
+    transcript    TEXT NOT NULL,
+    notified      INTEGER DEFAULT 0,
+    pushover_code INTEGER
+);
+"""
+
+def initialize_database():
+    conn = sqlite3.connect(str(SQLITE_DB_PATH))
+    try:
+        cur = conn.cursor()
+        cur.execute(SCHEMA)
+        conn.commit()
+        logger.info(f"Initialized or verified DB at {SQLITE_DB_PATH}")
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+        raise
+    finally:
+        conn.close()
+
+def insert_transcription(
+    timestamp_iso: str,
+    wav_filename: str,
+    transcript: str,
+    notified: bool = False,
+    pushover_code: int = None
+):
+    """
+    Inserts one row into the transcriptions table.
+    """
+    conn = sqlite3.connect(str(SQLITE_DB_PATH))  # ← this must return a connection object only
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO transcriptions
+            (timestamp, wav_filename, transcript, notified, pushover_code)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (timestamp_iso, wav_filename, transcript, int(notified), pushover_code)
+        )
+        conn.commit()
+        logger.debug(f"Inserted transcription row: {timestamp_iso}, {wav_filename}")
+    except Exception as e:
+        logger.error(f"Error inserting into DB: {e}")
+        raise
+    finally:
+        conn.close()
+
+----------------------------------------
+File: src/config.py
+# src/config.py
+
+import os
+import re
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Attempt to load .env from the project root
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+
+# -------------------------------------------
+# Required / Recommended environment variables
+# -------------------------------------------
+BASE_DIR = Path(__file__).parent.parent  # This is dispatch_transcriber/
+DB_PATH: str = os.getenv("DB_PATH", "transcriptions.db")
+SQLITE_DB_PATH = BASE_DIR / DB_PATH
+ALERT_PATTERNS_FILE = BASE_DIR / "alert_patterns.txt"
+PROMPT_FILE         = BASE_DIR / "prompt.txt"
+
+INPUT_DEVICE_INDEX = int(os.getenv("INPUT_DEVICE_INDEX", "-1"))
+
+# Filtered words are words that indicate Broadcastify is currently playing a 30-second advertisement on the stream
+FILTERED_WORDS_FILE = BASE_DIR / "filtered_words.txt"
+
+BROADCASTIFY_URL=str = os.getenv("BROADCASTIFY_URL", "").strip()
+
+OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "").strip()
+if not OPENAI_API_KEY:
+    raise RuntimeError("Missing required environment variable: OPENAI_API_KEY")
+
+BROADCASTIFY_URL: str = os.getenv("BROADCASTIFY_URL", "").strip()
+if not BROADCASTIFY_URL:
+    raise RuntimeError("Missing required environment variable: BROADCASTIFY_URL")
+
+PUSHOVER_TOKEN: str = os.getenv("PUSHOVER_TOKEN", "").strip()
+PUSHOVER_USER: str = os.getenv("PUSHOVER_USER", "").strip()
+USE_PUSHOVER: bool = bool(PUSHOVER_TOKEN and PUSHOVER_USER)
+
+THRESHOLD_DB: float = float(os.getenv("THRESHOLD_DB", "-50"))
+LOOKBACK_MS: int = int(os.getenv("LOOKBACK_MS", "1000"))
+MIN_SILENCE_LEN: int = int(os.getenv("MIN_SILENCE_LEN", "500"))
+
+RECORDINGS_DIR = Path(os.getenv("RECORDINGS_DIR", "recordings"))
+RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
+
+CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver")
+
+# -------------------------------------------
+# Derived / Default values
+# -------------------------------------------
+
+if PROMPT_FILE.exists():
+    with open(PROMPT_FILE, "r", encoding="utf-8") as f:
+        DISPATCH_PROMPT = f.read().strip()
+else:
+    DISPATCH_PROMPT = None
+
+if FILTERED_WORDS_FILE.exists():
+    with open(FILTERED_WORDS_FILE, "r", encoding="utf-8") as f:
+        FILTERED_WORDS = [line.strip().lower() for line in f if line.strip() and not line.strip().startswith("#")]
+else:
+    FILTERED_WORDS = []
+
+SAMPLE_RATE = 16000
+CHANNELS = 1
+
+LOGGING_FORMAT = "%(asctime)s — %(threadName)s — %(name)s — %(levelname)s — %(message)s"
+
+# ==============================================
+# NEW: Alert Patterns
+# ==============================================
+
+def load_alert_patterns() -> list[re.Pattern]:
+    """
+    Reads alert_patterns.txt (ignores blank lines and lines starting with '#'),
+    compiles each non‐comment line into a re.Pattern (case‐insensitive).
+    Returns a list of compiled regex patterns.
+    """
+    patterns: list[re.Pattern] = []
+    if not ALERT_PATTERNS_FILE.exists():
+        return patterns
+
+    with open(ALERT_PATTERNS_FILE, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                # compile using IGNORECASE so we catch “Wagar” as well as “wagar”
+                pat = re.compile(line, flags=re.IGNORECASE)
+                patterns.append(pat)
+            except re.error as e:
+                # If a line is not a valid regex, log and skip it
+                print(f"Warning: invalid regex in alert_patterns.txt: {line!r} ({e})")
+                continue
+    return patterns
+
+# Load once at import‐time
+ALERT_PATTERNS: list[re.Pattern] = load_alert_patterns()
+
+PLAY_BUTTON_SELECTOR = os.getenv("PLAY_BUTTON_SELECTOR", "button.playpause")
+
+----------------------------------------
+File: src/notifier.py
+# src/notifier.py
+
+import requests
+import logging
+from datetime import datetime, timezone
+import re
+
+from config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS
+
+logger = logging.getLogger(__name__)
+_last_notification_time: datetime = None
+
+def matches_alert_pattern(text: str) -> bool:
+    """
+    Returns True if `text` matches any of the compiled regexes in ALERT_PATTERNS.
+    """
+    for pat in ALERT_PATTERNS:
+        if pat.search(text):
+            logger.info(f"ALERT: transcript matched pattern {pat.pattern!r}")
+            return True
+    return False
+
+def send_pushover(title: str, message: str, force: bool = False) -> int:
+    """
+    Sends a Pushover notification only if:
+      - force=True, or
+      - message/text matches an alert pattern (via `matches_alert_pattern`),
+      - and USE_PUSHOVER is True.
+    Respects a 10-minute cooldown between notifications (unless force=True).
+    Returns the HTTP status code (200 if successful), or 0 if skipped.
+    """
+    global _last_notification_time
+
+    if not USE_PUSHOVER:
+        logger.debug("Pushover is disabled (USE_PUSHOVER=False).")
+        return 0
+
+    now = datetime.now(timezone.utc)
+    if not force:
+        # Only notify if the full `message` text matches at least one pattern
+        if not matches_alert_pattern(message):
+            logger.debug("Transcript did not match any alert pattern; skipping Pushover.")
+            return 0
+
+    # 10‐minute cooldown
+    if _last_notification_time is not None and not force:
+        diff = (now - _last_notification_time).total_seconds()
+        if diff < 600:
+            logger.debug(f"Last Pushover was {diff:.1f}s ago; skipping to avoid spam.")
+            return 0
+
+    payload = {
+        "token": PUSHOVER_TOKEN,
+        "user": PUSHOVER_USER,
+        "title": title,
+        "message": message
+    }
+    try:
+        r = requests.post("https://api.pushover.net/1/messages.json", data=payload, timeout=10)
+        if r.status_code == 200:
+            _last_notification_time = now
+            logger.info("Pushover notification sent successfully.")
+        else:
+            logger.error(f"Pushover returned status {r.status_code}: {r.text}")
+        return r.status_code
+    except Exception as e:
+        logger.error(f"Error sending Pushover: {e}")
+        return 0
+
+----------------------------------------
+File: src/splitter.py
+# src/splitter.py
+import logging
+from pathlib import Path
+from pydub import AudioSegment
+from pydub.silence import detect_nonsilent
+
+logger = logging.getLogger(__name__)
+
+def split_on_silence(
+    wav_path: Path,
+    output_dir: Path,
+    min_silence_len: int = 500,
+    silence_thresh: int = -50
+) -> list[Path]:
+    """
+    Given a WAV file at wav_path, split it into multiple sub‐WAVs at nonsilent regions.
+    Saves each chunk into `output_dir/chunk_##.wav`.
+    Returns a list of the new chunk file paths (in time order).
+    """
+    audio = AudioSegment.from_file(str(wav_path))
+    nonsilent_ranges = detect_nonsilent(audio, min_silence_len=min_silence_len, silence_thresh=silence_thresh)
+
+    chunk_files: list[Path] = []
+    for idx, (start_ms, end_ms) in enumerate(nonsilent_ranges):
+        chunk = audio[start_ms:end_ms]
+        chunk_path = output_dir / f"chunk_{idx:05d}.wav"
+        chunk.export(str(chunk_path), format="wav")
+        chunk_files.append(chunk_path)
+        logger.debug(f"Exported chunk: {chunk_path} (ms {start_ms}-{end_ms})")
+
+    return chunk_files
+
+----------------------------------------
+File: src/__init__.py
+
+----------------------------------------
+File: src/broadcaster.py
+# src/broadcaster.py
+import time
+import logging
+from selenium import webdriver
+from selenium.common.exceptions import (
+    TimeoutException,
+    WebDriverException,
+    NoSuchElementException,
+    StaleElementReferenceException
+)
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from config import BROADCASTIFY_URL
+logger = logging.getLogger(__name__)
+
+def initialize_driver(headless: bool = False) -> webdriver.Chrome:
+    """
+    Create a new Chrome WebDriver instance using webdriver-manager.
+    Automatically downloads the correct version of ChromeDriver.
+    """
+    options = Options()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    if headless:
+        options.add_argument("--headless=new")
+
+    # This line uses the correct driver version automatically
+    chrome_service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=chrome_service, options=options)
+    driver.set_page_load_timeout(30)
+    return driver
+
+def safe_find_element(driver: webdriver.Chrome, by: By, value: str, timeout: int = 10):
+    """
+    Wait up to `timeout` seconds for an element to appear; if not found, raise.
+    """
+    try:
+        wait = WebDriverWait(driver, timeout)
+        element = wait.until(EC.presence_of_element_located((by, value)))
+        return element
+    except TimeoutException as e:
+        logger.error(f"Timeout waiting for element {value!r}: {e}")
+        raise
+
+def click_play_button(driver: webdriver.Chrome, retries: int = 3) -> bool:
+    """
+    Attempts to find and click the "Play" button on the Broadcastify page.
+    Returns True if after clicking, we detect that playback started (e.g. text changed).
+    Returns False otherwise.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            # You must inspect the actual Broadcastify page to get a stable CSS selector
+            # Commonly the "Play" button is a <button> with some class like "playpause" or similar.
+            # Here is an example selector—adjust to match your specific station page.
+            from config import PLAY_BUTTON_SELECTOR
+            play_button = safe_find_element(driver, By.CSS_SELECTOR, PLAY_BUTTON_SELECTOR, timeout=10)
+            btn_text = play_button.text.strip().lower()
+            if "play" in btn_text:
+                try:
+                    play_button.click()
+                except WebDriverException:
+                    # fallback to JS click if normal click is intercepted
+                    driver.execute_script("arguments[0].click();", play_button)
+                time.sleep(2)  # give it a moment to switch to "Pause"
+                updated_text = play_button.text.strip().lower()
+                if "pause" in updated_text:
+                    logger.info("Broadcastify is now playing.")
+                    return True
+                else:
+                    logger.warning(f"Click did not start playback (button text is still {updated_text!r}); attempt {attempt}/{retries}")
+            else:
+                # Maybe it’s already playing?
+                logger.info(f"Play button text is {btn_text!r}, assuming playback already active.")
+                return True
+        except Exception as e:
+            logger.warning(f"Attempt {attempt}/{retries} to click play button raised {e.__class__.__name__}: {e}")
+            time.sleep(2)
+    return False
+
+def get_backoff_time(downtime_seconds: int) -> int:
+    """
+    Returns a backoff interval (in seconds) based on how long the feed has been down.
+    """
+    if downtime_seconds < 300:
+        return 10  # retry after 10s if < 5 minutes down
+    elif downtime_seconds < 3600:
+        return 30  # retry after 30s if < 1 hour down
+    elif downtime_seconds < 86400:
+        return 180  # retry after 3 minutes if < 24 hours down
+    else:
+        return 900  # retry after 15 minutes if > 24 hours down
+
+def start_and_monitor_broadcastify(headless: bool = False):
+    """
+    Main loop: open Chrome, navigate to BROADCASTIFY_URL, click Play, then
+    poll the button to ensure it’s still "playing." If it ever reverts to "Play"
+    or we get an exception, we force a restart with a backoff.
+    This function never returns—it logs and sleeps, then retries forever.
+    """
+    while True:
+        driver = None
+        try:
+            driver = initialize_driver(headless=headless)
+            logger.info(f"Selenium: Navigating to {BROADCASTIFY_URL}")
+            driver.get(BROADCASTIFY_URL)
+
+            # Attempt to click “Play” up to a few times or refresh
+            if not click_play_button(driver, retries=3):
+                logger.error("Initial click_play_button attempts failed—trying a refresh.")
+                driver.refresh()
+                time.sleep(5)
+                if not click_play_button(driver, retries=3):
+                    raise RuntimeError("Could not start playback after refresh.")
+
+            last_success_time = time.time()
+            logger.info("Broadcastify playback confirmed. Entering monitoring loop.")
+
+            # Poll loop
+            while True:
+                time.sleep(10)  # poll every 10s
+                try:
+                    from config import PLAY_BUTTON_SELECTOR
+                    play_button = safe_find_element(driver, By.CSS_SELECTOR, PLAY_BUTTON_SELECTOR, timeout=5)
+                    btn_text = play_button.text.strip().lower()
+                    if "play" in btn_text:
+                        # The button changed to “Play” → feed stopped
+                        raise RuntimeError("Playback stopped (button reverted to Play).")
+                    else:
+                        # Still “Pause” → playing
+                        last_success_time = time.time()
+                        continue
+                except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+                    downtime = int(time.time() - last_success_time)
+                    backoff = get_backoff_time(downtime)
+                    if downtime < 3600:
+                        logger.info(f"Playback lost ~{downtime}s ago; retrying in {backoff}s.")
+                    elif downtime < 86400:
+                        logger.warning(f"Playback lost ~{downtime/3600:.1f}h ago; retrying in {backoff}s.")
+                    else:
+                        logger.error(f"Playback lost ~{downtime/3600/24:.1f}d ago; retrying in {backoff}s.")
+                    driver.quit()
+                    time.sleep(backoff)
+                    break  # outer while restarts
+
+        except Exception as ex:
+            logger.critical(f"Unexpected error in Broadcastify monitor: {ex}", exc_info=True)
+            if driver:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+            logger.critical("Re‐attempting Broadcastify monitor in 60 seconds...")
+            time.sleep(60)
+            continue  # retry from top
+
+
+----------------------------------------
+File: src/utils.py
+# src/utils.py
+import time
+import functools
+import logging
+from colorama import Fore, Style, init as colorama_init
+import datetime
+import re
+import sys
+from config import ALERT_PATTERNS
+
+logger = logging.getLogger(__name__)
+
+def retry_on_exception(
+    *,
+    exceptions: tuple = (Exception,),
+    max_attempts: int = 3,
+    initial_delay: float = 1.0,
+    backoff_factor: float = 2.0
+):
+    """
+    Decorator to retry a function if it raises one of the specified exceptions.
+    Waits initial_delay seconds before first retry, then multiplies by backoff_factor each time.
+    """
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            delay = initial_delay
+            attempt = 1
+            while True:
+                try:
+                    return fn(*args, **kwargs)
+                except exceptions as e:
+                    if attempt >= max_attempts:
+                        logger.error(f"Function {fn.__name__} failed after {attempt} attempts: {e}")
+                        raise
+                    else:
+                        logger.warning(
+                            f"Function {fn.__name__} raised {e.__class__.__name__} on attempt {attempt}, "
+                            f"retrying in {delay} seconds..."
+                        )
+                        time.sleep(delay)
+                        delay *= backoff_factor
+                        attempt += 1
+        return wrapper
+    return decorator
+
+colorama_init()
+
+def log_transcription_to_console(text: str, source: str = "Dispatch"):
+    timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+
+    # Check for alert match
+    matched = any(p.search(text) for p in ALERT_PATTERNS)
+
+    if matched:
+        # RED + BOLD
+        output = (
+            f"{Fore.RED}{Style.BRIGHT}[{timestamp}] {source:<10}:{Style.RESET_ALL} {text}"
+        )
+        # Optional terminal beep:
+        sys.stdout.write("\a")  # <- system bell
+        sys.stdout.flush()
+    else:
+        # Normal green
+        output = (
+            f"{Fore.GREEN}[{timestamp}] {source:<10}:{Style.RESET_ALL} {text}"
+        )
+
+    print(output)
+----------------------------------------
+File: src/transcribe.py
+# src/transcribe.py
+
+import logging
+from pathlib import Path
+from typing import Optional
+from utils import log_transcription_to_console
+
+import openai
+from openai._exceptions import OpenAIError
+
+from config import OPENAI_API_KEY, DISPATCH_PROMPT
+from utils import retry_on_exception
+from splitter import split_on_silence
+
+logger = logging.getLogger(__name__)
+
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
+@retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
+def transcribe_chunk(chunk_path: Path) -> str:
+    logger.debug(f"Transcribing chunk via Whisper: {chunk_path}")
+    with open(chunk_path, "rb") as f:
+        resp = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=f,
+            temperature=0.1,
+            prompt=DISPATCH_PROMPT
+        )
+    text = resp.text.strip()
+    logger.debug(f"Whisper returned: {text!r} for {chunk_path.name}")
+    return text
+
+def transcribe_full_segment(
+    segment_wav_path: Path,
+    temp_chunks_dir: Path,
+    min_silence_len: int,
+    silence_thresh: int
+) -> Optional[str]:
+    temp_chunks_dir.mkdir(parents=True, exist_ok=True)
+
+    chunk_files = split_on_silence(
+        wav_path=segment_wav_path,
+        output_dir=temp_chunks_dir,
+        min_silence_len=min_silence_len,
+        silence_thresh=silence_thresh
+    )
+
+    if not chunk_files:
+        logger.info(f"No nonsilent chunks detected in {segment_wav_path}. Skipping transcription.")
+        return None
+
+    transcripts = []
+    for chunk_path in chunk_files:
+        try:
+            text = transcribe_chunk(chunk_path)
+            if text:
+                transcripts.append(text)
+        except Exception as e:
+            logger.error(f"Failed to transcribe chunk {chunk_path}: {e}")
+            continue
+
+    for c in chunk_files:
+        try:
+            c.unlink()
+        except Exception:
+            pass
+
+    final_transcript = " ".join(transcripts).strip()
+    logger.info(f"Full transcript for {segment_wav_path.name!r}: {final_transcript!r}")
+    log_transcription_to_console(final_transcript)
+    return final_transcript
+
+----------------------------------------
+File: src/audio.py
+# src/audio.py
+import audioop
+import math
+import threading
+import logging
+from queue import Queue
+from datetime import datetime
+import wave
+from config import INPUT_DEVICE_INDEX
+import pyaudio
+
+from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
+
+logger = logging.getLogger(__name__)
+
+class AudioRecorder(threading.Thread):
+    """
+    Continuously reads from the default recording device (loopback or stereo-mix),
+    applies a simple RMS‐based VAD, and whenever it detects a speech segment,
+    it writes the raw frames to a temp WAV file and enqueues it for transcription.
+    """
+
+    def __init__(self, segment_queue: Queue, sample_rate: int = SAMPLE_RATE, channels: int = CHANNELS,
+                 threshold_db: float = THRESHOLD_DB, lookback_ms: int = LOOKBACK_MS):
+        super().__init__(daemon=True, name="AudioRecorder")
+        self.segment_queue = segment_queue
+        self.sample_rate = sample_rate
+        self.channels = channels
+        self.threshold_db = threshold_db
+        self.lookback_ms = lookback_ms
+
+        self.chunk_size = 1024  # read in 1024-sample increments
+        self.sample_width = pyaudio.PyAudio().get_sample_size(pyaudio.paInt16)
+        self.silence_buffer_chunks = int(math.ceil((lookback_ms / 1000.0) * (sample_rate / self.chunk_size)))
+
+        self.audio_interface = pyaudio.PyAudio()
+        self.stream = None
+        self._stop_event = threading.Event()
+
+    def run(self):
+        logger.info("Starting AudioRecorder thread.")
+        self.stream = self.audio_interface.open(
+            format=pyaudio.paInt16,
+            channels=self.channels,
+            rate=self.sample_rate,
+            input=True,
+            input_device_index=INPUT_DEVICE_INDEX,
+            frames_per_buffer=self.chunk_size
+        )
+        try:
+            while not self._stop_event.is_set():
+                frames = self._record_one_segment()
+                if frames:
+                    # Write the raw frames to a temp WAV, then enqueue the path
+                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    temp_wav_path = RECORDINGS_DIR / f"temp_{timestamp}.wav"
+                    self._write_wav(frames, temp_wav_path)
+                    logger.info(f"Wrote temp WAV: {temp_wav_path}")
+                    self.segment_queue.put(temp_wav_path)
+        except Exception as e:
+            logger.exception(f"AudioRecorder encountered an error: {e}")
+        finally:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.audio_interface.terminate()
+            logger.info("AudioRecorder thread stopped.")
+
+    def stop(self):
+        self._stop_event.set()
+
+    def _record_one_segment(self):
+        """
+        Listens for one “speech segment” (from silence → speech → silence).
+        Returns the list of raw PCM frames for that segment, or None if stop was requested.
+        """
+        lookback_buffer = []
+        active_buffer = []
+        silence_count = 0
+        recording = False
+
+        # Pre-fill the lookback buffer with silence chunks (for initial padding)
+        for _ in range(self.silence_buffer_chunks):
+            lookback_buffer.append(None)
+
+        while not self._stop_event.is_set():
+            data = self.stream.read(self.chunk_size, exception_on_overflow=False)
+            rms = audioop.rms(data, self.sample_width)  # root-mean-square of the raw PCM
+            db = 20 * math.log10(rms) if rms > 0 else -float("inf")
+
+            if db > self.threshold_db:
+                # We’re “in speech”
+                if not recording:
+                    # First chunk above threshold → start recording
+                    recording = True
+                    # Dump lookback_buffer (ignoring the initial None placeholders)
+                    for buffered_frame in lookback_buffer:
+                        if buffered_frame:
+                            active_buffer.append(buffered_frame)
+                active_buffer.append(data)
+                silence_count = 0
+            else:
+                if recording:
+                    # We’re in silence now, but after recording has started
+                    silence_count += 1
+                    active_buffer.append(data)
+                    if silence_count >= self.silence_buffer_chunks:
+                        # End of this speech segment
+                        return active_buffer
+                else:
+                    # Still in lookback phase; rotate the lookback buffer
+                    lookback_buffer.pop(0)
+                    lookback_buffer.append(data)
+            # If not recording yet, just keep filling lookback_buffer
+
+        # If stop was requested mid‐segment, return what we have
+        return None
+
+    def _write_wav(self, frames, wav_path):
+        """
+        Takes a list of raw PCM frames, writes them out to `wav_path`.
+        """
+        with wave.open(str(wav_path), "wb") as wf:
+            wf.setnchannels(self.channels)
+            wf.setsampwidth(self.sample_width)
+            wf.setframerate(self.sample_rate)
+            wf.writeframes(b"".join(frames))
+
+
+----------------------------------------
+File: src/main.py
+# src/main.py
+
+import logging
+import sys
+import threading
+import tempfile
+import shutil
+import pathlib
+from datetime import datetime
+from queue import Queue
+
+from config import (
+    LOGGING_FORMAT,
+    SAMPLE_RATE,
+    CHANNELS,
+    MIN_SILENCE_LEN,
+    THRESHOLD_DB,
+    LOOKBACK_MS,
+    RECORDINGS_DIR,
+)
+from broadcaster import start_and_monitor_broadcastify
+from audio import AudioRecorder
+from transcribe import transcribe_full_segment
+from filters import filter_transcript
+from db import initialize_database, insert_transcription
+from notifier import send_pushover, matches_alert_pattern
+
+# ---------------------------
+# Basic Logging Configuration
+# ---------------------------
+
+logging.basicConfig(
+    level=logging.INFO,
+    format=LOGGING_FORMAT,
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("dispatch_transcriber.log", encoding="utf-8"),
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+def main():
+    # 1) Initialize SQLite
+    initialize_database()
+
+    # 2) Create a queue for audio segments (paths to temp WAVs)
+    segment_queue: Queue = Queue()
+
+    # 3) Launch the Selenium/Broadcastify thread
+    broadcaster_thread = threading.Thread(
+        target=start_and_monitor_broadcastify,
+        name="BroadcasterMonitor",
+        daemon=True
+    )
+    broadcaster_thread.start()
+    logger.info("Started BroadcasterMonitor thread.")
+
+    # 4) Launch the AudioRecorder thread
+    audio_recorder = AudioRecorder(
+        segment_queue=segment_queue,
+        sample_rate=SAMPLE_RATE,
+        channels=CHANNELS,
+        threshold_db=THRESHOLD_DB,
+        lookback_ms=LOOKBACK_MS
+    )
+    audio_recorder.start()
+    logger.info("Started AudioRecorder thread.")
+
+    # 5) Main loop: whenever there's a new segment path, process it
+    while True:
+        try:
+            segment_path = segment_queue.get()  # e.g. recordings/temp_2025-05-31_14-32-15.wav
+            if not segment_path or not segment_path.exists():
+                continue
+
+            logger.info(f"Processing new audio segment: {segment_path.name}")
+
+            # 6) Transcribe → uses a temporary directory for chunk WAVs
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                tmpdir = pathlib.Path(tmpdirname)
+                transcript = transcribe_full_segment(
+                    segment_wav_path=segment_path,
+                    temp_chunks_dir=tmpdir,
+                    min_silence_len=MIN_SILENCE_LEN,
+                    silence_thresh=THRESHOLD_DB
+                )
+
+            # 7) If no transcript or only whitespace, skip & delete
+            if not transcript:
+                logger.info("No transcript returned (maybe blank); deleting temp file.")
+                try:
+                    segment_path.unlink()
+                except Exception:
+                    pass
+                continue
+
+            # 8) Apply profanity / gibberish filters
+            filtered = filter_transcript(transcript)
+            if not filtered:
+                logger.info("Transcript was filtered out; deleting temp file.")
+                try:
+                    segment_path.unlink()
+                except Exception:
+                    pass
+                continue
+
+            # 9) Move the temp WAV into a final timestamped filename
+            final_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            final_wav_filename = f"{final_stamp}.wav"
+            final_wav_path = RECORDINGS_DIR / final_wav_filename
+            shutil.move(str(segment_path), str(final_wav_path))
+            logger.info(f"Saved validated segment WAV as: {final_wav_filename}")
+
+            # 10) Insert into SQLite
+            timestamp_iso = datetime.now().isoformat()
+            insert_transcription(
+                timestamp_iso=timestamp_iso,
+                wav_filename=final_wav_filename,
+                transcript=filtered,
+                notified=False,
+                pushover_code=None
+            )
+
+            # 11) **Notification (only if matches an alert pattern)**
+            #     We pass filtered transcript (or transcript) to check patterns
+            if matches_alert_pattern(filtered):
+                # Send only the first 100 characters as message
+                msg = (filtered[:100] + "...") if len(filtered) > 100 else filtered
+                pushover_code = send_pushover(
+                    title="🚨 Priority Dispatch Alert",
+                    message=msg,
+                    force=False
+                )
+                logger.info(f"Pushover returned HTTP code: {pushover_code}")
+            else:
+                logger.debug("Transcript did not match any high‐priority pattern; no Pushover sent.")
+
+        except KeyboardInterrupt:
+            logger.info("Keyboard interrupt received. Stopping audio recorder thread.")
+            audio_recorder.stop()
+            break
+        except Exception as e:
+            logger.exception(f"Error in main loop: {e}")
+            continue
+
+
+if __name__ == "__main__":
+    main()
+
+----------------------------------------
+File: src/filters.py
+# src/filters.py
+import re
+import logging
+from typing import Optional
+
+from config import FILTERED_WORDS
+
+logger = logging.getLogger(__name__)
+
+def contains_filtered_word(text: str) -> bool:
+    """
+    Returns True if any substring in FILTERED_WORDS is found in text.lower().
+    """
+    lower = text.lower()
+    for w in FILTERED_WORDS:
+        if w in lower:
+            logger.info(f"Dropping transcript because it contains filtered word: {w!r}")
+            return True
+    return False
+
+def is_purely_numeric(text: str) -> bool:
+    """
+    True if text consists solely of digits and whitespace (no letters).
+    """
+    stripped = text.strip()
+    if not stripped:
+        return True
+    return all(char.isdigit() or char.isspace() for char in stripped)
+
+def is_gibberish(text: str, min_words: int = 2) -> bool:
+    """
+    A heuristic: if the transcript has fewer than `min_words` words, or if
+    > 75% of its tokens are single‐character or improbable, consider it gibberish.
+    """
+    words = text.strip().split()
+    if len(words) < min_words:
+        logger.info("Dropping transcript: fewer than minimum words.")
+        return True
+
+    # Count how many “valid” words we have (e.g., length ≥ 2 and alphabetic)
+    valid = sum(1 for w in words if re.fullmatch(r"[A-Za-z0-9]{2,}", w))
+    ratio = valid / len(words)
+    if ratio < 0.25:
+        logger.info("Dropping transcript: too many invalid tokens (gibberish).")
+        return True
+
+    return False
+
+def filter_transcript(text: str) -> Optional[str]:
+    """
+    Returns text if it passes all filters; otherwise returns None.
+    """
+    if contains_filtered_word(text):
+        return None
+    if is_purely_numeric(text):
+        return None
+    if is_gibberish(text):
+        return None
+    return text.strip()
+
+----------------------------------------
