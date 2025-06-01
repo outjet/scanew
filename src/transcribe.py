@@ -3,6 +3,7 @@
 import logging
 from pathlib import Path
 from typing import Optional
+import wave
 from utils import log_transcription_to_console
 import re
 from collections import Counter
@@ -18,27 +19,32 @@ logger = logging.getLogger(__name__)
 
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
+# Load the short-prompt text once
+SHORT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "promptshort.txt"
+SHORT_PROMPT = SHORT_PROMPT_PATH.read_text().strip()
+
+
+def get_audio_duration_seconds(wav_path: Path) -> float:
+    with wave.open(str(wav_path), "rb") as wf:
+        frames = wf.getnframes()
+        rate = wf.getframerate()
+    return frames / float(rate)
+
 
 def detect_repeated_phrases(text, min_phrase_len=3, max_phrase_len=6, min_repeats=3):
     words = text.split()
     phrase_counts = Counter()
     
-    # Build all n-word phrases within specified range
     for n in range(min_phrase_len, max_phrase_len + 1):
         for i in range(len(words) - n + 1):
             phrase = ' '.join(words[i:i+n])
             phrase_counts[phrase] += 1
     
-    # Find any phrase repeated at least min_repeats times
     repeated_phrases = {phrase: count for phrase, count in phrase_counts.items() if count >= min_repeats}
     return repeated_phrases
 
 
 def is_hallucination(text, threshold=0.4):
-    """
-    Returns (flagged: bool, phrase: str or None, count: int).
-    flagged=True if a repeated phrase accounts for ≥ threshold of total words.
-    """
     words = text.split()
     total_words = len(words)
     
@@ -53,13 +59,16 @@ def is_hallucination(text, threshold=0.4):
 
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
 def transcribe_chunk(chunk_path: Path, model: str = "whisper-1") -> str:
-    logger.debug(f"Transcribing {chunk_path.name} with model={model}")
+    duration = get_audio_duration_seconds(chunk_path)
+    prompt_to_use = SHORT_PROMPT if duration < 2.5 else DISPATCH_PROMPT
+
+    logger.debug(f"Transcribing {chunk_path.name} (duration={duration:.2f}s) with model={model}")
     with open(chunk_path, "rb") as f:
         resp = client.audio.transcriptions.create(
             model=model,
             file=f,
             temperature=0.1,
-            prompt=DISPATCH_PROMPT
+            prompt=prompt_to_use
         )
     text = resp.text.strip()
     logger.debug(f"{model} returned: {text!r} for {chunk_path.name}")
@@ -74,7 +83,6 @@ def transcribe_full_segment(
 ) -> Optional[str]:
     temp_chunks_dir.mkdir(parents=True, exist_ok=True)
 
-    # Split the audio into chunks
     chunk_files = split_on_silence(
         wav_path=segment_wav_path,
         output_dir=temp_chunks_dir,
@@ -86,7 +94,6 @@ def transcribe_full_segment(
         logger.info(f"No nonsilent chunks detected in {segment_wav_path}. Skipping transcription.")
         return None
 
-    # First pass: transcribe each chunk with whisper-1
     transcripts = []
     for chunk_path in chunk_files:
         try:
@@ -97,7 +104,6 @@ def transcribe_full_segment(
             logger.error(f"Failed to transcribe chunk {chunk_path.name} with whisper-1: {e}")
             continue
 
-    # Clean up chunk files immediately after whisper pass
     for c in chunk_files:
         try:
             c.unlink()
@@ -108,7 +114,6 @@ def transcribe_full_segment(
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
 
-    # Check for “hallucination” (over‐repeated phrase)
     flagged, phrase, count = is_hallucination(final_transcript)
     if flagged:
         logger.warning(
@@ -116,8 +121,6 @@ def transcribe_full_segment(
             f"in transcript of {segment_wav_path.name}. Re‐transcribing with gpt-4o-mini-transcribe."
         )
 
-        # Re‐transcribe each chunk with the alternative model
-        # (We can assume the chunk files were removed, so re‐split)
         chunk_files_alt = split_on_silence(
             wav_path=segment_wav_path,
             output_dir=temp_chunks_dir,
@@ -134,7 +137,6 @@ def transcribe_full_segment(
                 logger.error(f"Failed to transcribe chunk {chunk_path.name} with gpt-4o-mini-transcribe: {e}")
                 continue
 
-        # Clean up alt chunk files
         for c in chunk_files_alt:
             try:
                 c.unlink()
