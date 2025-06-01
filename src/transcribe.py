@@ -62,7 +62,7 @@ def smells_too_long(text: str, audio_duration_sec: float, wps_threshold: float =
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
 def transcribe_chunk(chunk_path: Path, model: str = "whisper-1") -> str:
     duration = get_audio_duration_seconds(chunk_path)
-    prompt_to_use = SHORT_PROMPT if duration < 2.5 else DISPATCH_PROMPT
+    prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
 
     logger.debug(f"Transcribing {chunk_path.name} ({duration:.2f}s) with model={model}")
     with open(chunk_path, "rb") as f:
