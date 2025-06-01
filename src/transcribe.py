@@ -108,7 +108,8 @@ def reprocess_with_alternate_model(
     return alt_final_transcript
 
 
-def transcribe_full_segment(
+def transcribe_full_segment(...):
+    try:
     segment_wav_path: Path,
     temp_chunks_dir: Path,
     min_silence_len: int,
@@ -181,5 +182,5 @@ def transcribe_full_segment(
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
-    return final_transcript, True   # If it passed hallucination/smell
-    return alt_final_transcript, False  # If we had to fall back
+    return final_transcript, True 
+    return alt_final_transcript, False 
