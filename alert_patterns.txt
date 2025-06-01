@@ -5,6 +5,8 @@
 \bperimeter\b
 \bstep\sit\sup\b
 \bany\savailable\scars\b
+\bany\savailable\sunit\b
+\balakewood\scars\b
 
 # Priority Fire Department Response
 \bengine\s1\sengine\s2\b
@@ -14,11 +16,14 @@
 \bmedic\s1\s?2\s?3\b
 \bentrapment\b
 \brollover\b
-\bsmoke\b
+\bsmoke\b(?!\sdetectors?)
 \binjury\smva\b
+\bflames\sshowing\b
+\bflames\b
 \bflames\sshowing\b
 \bsmoke\sshowing\b
 \bworking\sfire\b
+\bairbags?\s(deployed|deployment|have\sdeployed)\b
 
 # Specific Addresses
 \b1602\slewis\b
@@ -32,3 +37,4 @@
 # Addresses or License Plates
 \b1597\b
 \b3276\b
+\b9594\b

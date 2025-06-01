@@ -91,7 +91,7 @@ def transcribe_full_segment(
     )
 
     if not chunk_files:
-        logger.info(f"No nonsilent chunks detected in {segment_wav_path}. Skipping transcription.")
+        logger.debug(f"No nonsilent chunks detected in {segment_wav_path}. Skipping transcription.")
         return None
 
     transcripts = []

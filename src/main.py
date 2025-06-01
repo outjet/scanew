@@ -93,7 +93,7 @@ def main():
 
             # 7) If no transcript or only whitespace, skip & delete
             if not transcript:
-                logger.info("No transcript returned (maybe blank); deleting temp file.")
+                logger.debug("No transcript returned (maybe blank); deleting temp file.")
                 try:
                     segment_path.unlink()
                 except Exception:
@@ -103,7 +103,7 @@ def main():
             # 8) Apply profanity / gibberish filters
             filtered = filter_transcript(transcript)
             if not filtered:
-                logger.info("Transcript was filtered out; deleting temp file.")
+                logger.debug("Transcript was filtered out; deleting temp file.")
                 try:
                     segment_path.unlink()
                 except Exception:
@@ -146,7 +146,7 @@ def main():
                 )
                 logger.info(f"Pushover returned HTTP code: {pushover_code}")
             else:
-                logger.debug("Transcript did not match any high‐priority pattern; no Pushover sent.")
+                #logger.debug("Transcript did not match any high‐priority pattern; no Pushover sent.")
 
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received. Stopping audio recorder thread.")
