@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcripts Viewer</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 20px;
+    padding: 0;
+}
+h1 {
+    text-align: center;
+    color: #333;
+}
+#transcripts {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.transcript {
+    background: #fff;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+.transcript-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.transcript-info {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.buttons {
+    margin-top: 8px;
+}
+button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 0.9em;
+}
+button:hover {
+    background-color: #0056b3;
+}
+.transcript-text {
+    margin-top: 10px;
+    white-space: pre-wrap;
+}
+</style>
+</head>
+<body>
+<h1>Transcripts Viewer</h1>
+<div id="transcripts"></div>
+<script>
+// Load transcripts on page load
+function loadTranscripts() {
+    fetch('/api/transcripts')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('transcripts');
+            container.innerHTML = '';
+            data.forEach(transcript => {
+                const div = document.createElement('div');
+                div.className = 'transcript';
+                div.innerHTML = `
+<div class="transcript-header">
+    <div class="transcript-info">ID: ${transcript.id} | ${transcript.timestamp}</div>
+    <div>
+        <button onclick="playAudio(${transcript.id})">▶️ Play</button>
+        <button onclick="retryGPT(${transcript.id})">🔄 Retry GPT-4</button>
+    </div>
+</div>
+<div class="transcript-text" id="text-${transcript.id}">${escapeHtml(transcript.transcript)}</div>
+`;
+                container.appendChild(div);
+            });
+        });
+}
+// Escape HTML to prevent injection
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+// Play audio
+function playAudio(id) {
+    fetch('/api/wav/' + id)
+        .then(response => response.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.play();
+        });
+}
+// Retry with GPT-4
+function retryGPT(id) {
+    fetch('/api/retry/' + id, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.transcript) {
+                document.getElementById('text-' + id).innerText = data.transcript;
+            } else if (data.error) {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(err => {
+            alert('Failed to re-transcribe: ' + err);
+        });
+}
+// Initialize
+window.onload = loadTranscripts;
+</script>
+</body>
+</html>
