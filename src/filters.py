@@ -7,10 +7,10 @@ from config import FILTERED_WORDS
 
 logger = logging.getLogger(__name__)
 
-def contains_filtered_word(text):
-    # if text is a tuple, pull out the actual string
-    if isinstance(text, tuple):
-        text = text[0]
+def contains_filtered_word(text: str) -> bool:
+    """
+    Returns True if any substring in FILTERED_WORDS is found in text.lower().
+    """
     lower = text.lower()
     for w in FILTERED_WORDS:
         if w in lower:

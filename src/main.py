@@ -33,7 +33,7 @@ from utils import post_transcription_with_retry
 # ---------------------------
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format=LOGGING_FORMAT,
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -85,13 +85,12 @@ def main():
             # 6) Transcribe → uses a temporary directory for chunk WAVs
             with tempfile.TemporaryDirectory() as tmpdirname:
                 tmpdir = pathlib.Path(tmpdirname)
-                raw = transcribe_full_segment(
+                transcript = transcribe_full_segment(
                     segment_wav_path=segment_path,
                     temp_chunks_dir=tmpdir,
                     min_silence_len=MIN_SILENCE_LEN,
                     silence_thresh=THRESHOLD_DB
                 )
-            transcript = raw[0]
 
             # 7) If no transcript or only whitespace, skip & delete
             if not transcript:
@@ -125,7 +124,7 @@ def main():
                     wav_filename=final_wav_filename,
                     transcript=filtered,
                     notified=False,
-                    pushover_code=None,
+                    pushover_code=None
                     response_code=None
                 )
                 file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
