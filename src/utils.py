@@ -94,7 +94,7 @@ def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: i
             response.raise_for_status()
             conn.execute("UPDATE transcriptions SET response_code = ? WHERE id = ?", (response.status_code, row_id))
             conn.commit()
-            logger.info(f"Posted transcript ({row_id}) OK: {response.status_code}")
+           #logger.info(f"Posted transcript ({row_id}) OK: {response.status_code}")
             return response.status_code
         except requests.exceptions.RequestException as e:
             logger.error(f"Post failed (attempt {attempt + 1}): {e}")
