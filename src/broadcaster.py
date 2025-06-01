@@ -106,7 +106,7 @@ def start_and_monitor_broadcastify(headless: bool = False):
         driver = None
         try:
             driver = initialize_driver(headless=headless)
-            logger.info(f"Selenium: Navigating to {BROADCASTIFY_URL}")
+            logger.debug(f"Selenium: Navigating to {BROADCASTIFY_URL}")
             driver.get(BROADCASTIFY_URL)
 
             # Attempt to click “Play” up to a few times or refresh
