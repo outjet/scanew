@@ -33,7 +33,7 @@ from utils import post_transcription_with_retry
 # ---------------------------
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format=LOGGING_FORMAT,
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -124,7 +124,7 @@ def main():
                     wav_filename=final_wav_filename,
                     transcript=filtered,
                     notified=False,
-                    pushover_code=None
+                    pushover_code=None,
                     response_code=None
                 )
                 file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"

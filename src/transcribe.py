@@ -108,13 +108,12 @@ def reprocess_with_alternate_model(
     return alt_final_transcript
 
 
-def transcribe_full_segment(...):
-    try:
+def transcribe_full_segment(
     segment_wav_path: Path,
     temp_chunks_dir: Path,
     min_silence_len: int,
     silence_thresh: int,
-) -> Optional[str]:
+    ) -> Optional[str]:
     temp_chunks_dir.mkdir(parents=True, exist_ok=True)
 
     # Split the audio into chunks
@@ -183,4 +182,3 @@ def transcribe_full_segment(...):
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
     return final_transcript, True 
-    return alt_final_transcript, False 
