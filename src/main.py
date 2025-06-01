@@ -6,18 +6,19 @@ import threading
 import tempfile
 import shutil
 import pathlib
+import sqlite3
 from datetime import datetime, timezone
 from queue import Queue
-import sqlite3
-from config import SQLITE_DB_PATH
+
 from config import (
+    SQLITE_DB_PATH,
     LOGGING_FORMAT,
     SAMPLE_RATE,
     CHANNELS,
     MIN_SILENCE_LEN,
     THRESHOLD_DB,
     LOOKBACK_MS,
-    RECORDINGS_DIR,
+    RECORDINGS_DIR
 )
 from broadcaster import start_and_monitor_broadcastify
 from audio import AudioRecorder
@@ -32,7 +33,7 @@ from utils import post_transcription_with_retry
 # ---------------------------
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format=LOGGING_FORMAT,
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -75,7 +76,7 @@ def main():
     # 5) Main loop: whenever there's a new segment path, process it
     while True:
         try:
-            segment_path = segment_queue.get()  # e.g. recordings/temp_2025-05-31_14-32-15.wav
+            segment_path = segment_queue.get()
             if not segment_path or not segment_path.exists():
                 continue
 
@@ -93,17 +94,16 @@ def main():
 
             # 7) If no transcript or only whitespace, skip & delete
             if not transcript:
-                logger.debug("No transcript returned (maybe blank); deleting temp file.")
+                logger.debug("No transcript returned; deleting temp file.")
                 try:
                     segment_path.unlink()
                 except Exception:
                     pass
                 continue
 
-            # 8) Apply profanity / gibberish filters
             filtered = filter_transcript(transcript)
             if not filtered:
-                logger.debug("Transcript was filtered out; deleting temp file.")
+                logger.debug("Transcript filtered out; deleting temp file.")
                 try:
                     segment_path.unlink()
                 except Exception:
@@ -115,42 +115,36 @@ def main():
             final_wav_filename = f"{final_stamp}.wav"
             final_wav_path = RECORDINGS_DIR / final_wav_filename
             shutil.move(str(segment_path), str(final_wav_path))
-            logger.debug(f"Saved validated segment WAV as: {final_wav_filename}")
+            logger.debug(f"Saved WAV as: {final_wav_filename}")
 
-            # 10) Insert into SQLite
-            timestamp_iso = datetime.now().isoformat()
-            conn = sqlite3.connect(str(SQLITE_DB_PATH))
-            row_id = insert_transcription(
-                timestamp_iso=timestamp_iso,
-                wav_filename=final_wav_filename,
-                transcript=filtered,
-                notified=False,
-                pushover_code=None,
-                response_code=None
-            )
+            timestamp_iso = datetime.now(timezone.utc).isoformat()
+            with sqlite3.connect(str(SQLITE_DB_PATH)) as conn:
+                row_id = insert_transcription(
+                    timestamp_iso=timestamp_iso,
+                    wav_filename=final_wav_filename,
+                    transcript=filtered,
+                    notified=False,
+                    pushover_code=None
+                    response_code=None
+                )
+                file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
+                post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
 
-            # Construct URL if needed
-            file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
-            post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
-            conn.close()
-
-            # 11) **Notification (only if matches an alert pattern)**
-            #     We pass filtered transcript (or transcript) to check patterns
             if matches_alert_pattern(filtered):
-                # Send only the first 100 characters as message
-                msg = (filtered[:100] + "...") if len(filtered) > 100 else filtered
-                pushover_code = send_pushover(
+                msg = filtered[:100] + "..." if len(filtered) > 100 else filtered
+                code = send_pushover(
                     title="🚨 Priority Dispatch Alert",
                     message=msg,
                     force=False
                 )
-                logger.info(f"Pushover returned HTTP code: {pushover_code}")
-            else:
-                continue
-                #logger.debug("Transcript did not match any high‐priority pattern; no Pushover sent.")
+                if code == 0:
+                    logger.warning("Pushover returned 0—see previous logs for the exception.")
+                else:
+                    logger.info(f"Pushover succeeded: {code}")
+            # else: no alert, keep looping
 
         except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received. Stopping audio recorder thread.")
+            logger.info("Keyboard interrupt received; shutting down AudioRecorder.")
             audio_recorder.stop()
             break
         except Exception as e:
