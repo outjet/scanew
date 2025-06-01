@@ -181,4 +181,4 @@ def transcribe_full_segment(
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
-    return final_transcript, True 
+    return final_transcript 

@@ -82,16 +82,16 @@ def main():
 
             logger.debug(f"Processing new audio segment: {segment_path.name}")
 
-            # 6) Transcribe → uses a temporary directory for chunk WAVs
+            # 6) Transcribe
             with tempfile.TemporaryDirectory() as tmpdirname:
                 tmpdir = pathlib.Path(tmpdirname)
                 transcript = transcribe_full_segment(
-                    segment_wav_path=segment_path,
-                    temp_chunks_dir=tmpdir,
-                    min_silence_len=MIN_SILENCE_LEN,
-                    silence_thresh=THRESHOLD_DB
-                )
-
+                     segment_wav_path=segment_path,
+                     temp_chunks_dir=tmpdir,
+                     min_silence_len=MIN_SILENCE_LEN,
+                     silence_thresh=THRESHOLD_DB
+                 )
+                 
             # 7) If no transcript or only whitespace, skip & delete
             if not transcript:
                 logger.debug("No transcript returned; deleting temp file.")

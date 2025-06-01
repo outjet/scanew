@@ -47,13 +47,8 @@ def is_gibberish(text: str, min_words: int = 2) -> bool:
     return False
 
 def filter_transcript(text: str) -> Optional[str]:
-    """
-    Returns text if it passes all filters; otherwise returns None.
-    """
+    if not text or not isinstance(text, str):
+        return None
     if contains_filtered_word(text):
         return None
-    #if is_purely_numeric(text):
-    #    return None
-    #if is_gibberish(text):
-    #    return None
-    return text.strip()
+    return text
