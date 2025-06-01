@@ -16,7 +16,6 @@ from utils import retry_on_exception
 from splitter import split_on_silence
 
 logger = logging.getLogger(__name__)
-
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Load the short-prompt text once (project root)
@@ -78,6 +77,37 @@ def transcribe_chunk(chunk_path: Path, model: str = "whisper-1") -> str:
     return text
 
 
+def reprocess_with_alternate_model(
+    segment_wav_path: Path,
+    temp_chunks_dir: Path,
+    min_silence_len: int,
+    silence_thresh: int
+) -> str:
+    chunk_files_alt = split_on_silence(
+        wav_path=segment_wav_path,
+        output_dir=temp_chunks_dir,
+        min_silence_len=min_silence_len,
+        silence_thresh=silence_thresh,
+    )
+    transcripts_alt = []
+    for chunk_path in chunk_files_alt:
+        try:
+            text_alt = transcribe_chunk(chunk_path, model="gpt-4o-mini-transcribe")
+            if text_alt:
+                transcripts_alt.append(text_alt)
+        except Exception as e:
+            logger.error(f"Failed to transcribe chunk {chunk_path.name} with gpt-4o-mini-transcribe: {e}")
+    for c in chunk_files_alt:
+        try:
+            c.unlink()
+        except Exception:
+            pass
+    alt_final_transcript = " ".join(transcripts_alt).strip()
+    logger.debug(f"gpt-4o-mini-transcribe final result for {segment_wav_path.name!r}: {alt_final_transcript!r}")
+    log_transcription_to_console(alt_final_transcript)
+    return alt_final_transcript
+
+
 def transcribe_full_segment(
     segment_wav_path: Path,
     temp_chunks_dir: Path,
@@ -137,72 +167,16 @@ def transcribe_full_segment(
             f"Transcript too long ({len(final_transcript.split())} words in {final_duration:.2f}s) "
             f"for {segment_wav_path.name}. Retrying with gpt-4o-mini-transcribe."
         )
-
-        # Re-split for the fallback transcription
-        chunk_files_alt = split_on_silence(
-            wav_path=segment_wav_path,
-            output_dir=temp_chunks_dir,
-            min_silence_len=min_silence_len,
-            silence_thresh=silence_thresh,
-        )
-        transcripts_alt = []
-        for chunk_path in chunk_files_alt:
-            try:
-                text_alt = transcribe_chunk(chunk_path, model="gpt-4o-mini-transcribe")
-                if text_alt:
-                    transcripts_alt.append(text_alt)
-            except Exception as e:
-                logger.error(f"Failed to transcribe chunk {chunk_path.name} with gpt-4o-mini-transcribe: {e}")
-                continue
-
-        # Clean up fallback chunk files
-        for c in chunk_files_alt:
-            try:
-                c.unlink()
-            except Exception:
-                pass
-
-        alt_final_transcript = " ".join(transcripts_alt).strip()
-        logger.debug(
-            f"gpt-4o-mini-transcribe (smell test) transcript for {segment_wav_path.name!r}: {alt_final_transcript!r}"
-        )
-        log_transcription_to_console(alt_final_transcript)
-        return alt_final_transcript
+        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
     # Check for repeated-phrase hallucinations
     flagged, phrase, count = is_hallucination(final_transcript)
     if flagged:
         logger.warning(
-            f"Detected repeated phrase '{phrase}' ({count} times) in transcript of {segment_wav_path.name}. "
+            f"Detected repeated phrase '{phrase}' ({count}x) in {segment_wav_path.name}. "
             f"Retrying with gpt-4o-mini-transcribe."
         )
-
-        chunk_files_alt = split_on_silence(
-            wav_path=segment_wav_path,
-            output_dir=temp_chunks_dir,
-            min_silence_len=min_silence_len,
-            silence_thresh=silence_thresh,
-        )
-        transcripts_alt = []
-        for chunk_path in chunk_files_alt:
-            try:
-                text_alt = transcribe_chunk(chunk_path, model="gpt-4o-mini-transcribe")
-                if text_alt:
-                    transcripts_alt.append(text_alt)
-            except Exception as e:
-                logger.error(f"Failed to transcribe chunk {chunk_path.name} with gpt-4o-mini-transcribe: {e}")
-                continue
-
-        for c in chunk_files_alt:
-            try:
-                c.unlink()
-            except Exception:
-                pass
-
-        alt_final_transcript = " ".join(transcripts_alt).strip()
-        logger.debug(f"gpt-4o-mini-transcribe transcript for {segment_wav_path.name!r}: {alt_final_transcript!r}")
-        log_transcription_to_console(alt_final_transcript)
-        return alt_final_transcript
+        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
