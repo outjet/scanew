@@ -6,7 +6,6 @@ import logging
 from queue import Queue
 from datetime import datetime
 import wave
-from config import INPUT_DEVICE_INDEX
 import pyaudio
 
 from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
@@ -21,13 +20,14 @@ class AudioRecorder(threading.Thread):
     """
 
     def __init__(self, segment_queue: Queue, sample_rate: int = SAMPLE_RATE, channels: int = CHANNELS,
-                 threshold_db: float = THRESHOLD_DB, lookback_ms: int = LOOKBACK_MS):
+                 threshold_db: float = THRESHOLD_DB, lookback_ms: int = LOOKBACK_MS, input_device_index: int | None = None):
         super().__init__(daemon=True, name="AudioRecorder")
         self.segment_queue = segment_queue
         self.sample_rate = sample_rate
         self.channels = channels
         self.threshold_db = threshold_db
         self.lookback_ms = lookback_ms
+        self.input_device_index = input_device_index
 
         self.chunk_size = 1024  # read in 1024-sample increments
         self.sample_width = pyaudio.PyAudio().get_sample_size(pyaudio.paInt16)
@@ -44,7 +44,7 @@ class AudioRecorder(threading.Thread):
             channels=self.channels,
             rate=self.sample_rate,
             input=True,
-            input_device_index=INPUT_DEVICE_INDEX,
+            input_device_index=self.input_device_index,
             frames_per_buffer=self.chunk_size
         )
         try:

@@ -4,6 +4,9 @@ import os
 import re
 from pathlib import Path
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Attempt to load .env from the project root
 env_path = Path(__file__).parent.parent / ".env"
@@ -19,7 +22,16 @@ SQLITE_DB_PATH = BASE_DIR / DB_PATH
 ALERT_PATTERNS_FILE = BASE_DIR / "alert_patterns.txt"
 PROMPT_FILE         = BASE_DIR / "prompt.txt"
 
-INPUT_DEVICE_INDEX = int(os.getenv("INPUT_DEVICE_INDEX", "-1"))
+import pyaudio
+
+def find_input_device(preferred_name: str = "BlackHole") -> int | None:
+    p = pyaudio.PyAudio()
+    for i in range(p.get_device_count()):
+        info = p.get_device_info_by_index(i)
+        logger.debug(f"[{i}] {info['name']} — in: {info['maxInputChannels']}, out: {info['maxOutputChannels']}")
+        if preferred_name.lower() in info['name'].lower() and info['maxInputChannels'] > 0:
+            return i
+    return None
 
 # Filtered words are words that indicate Broadcastify is currently playing a 30-second advertisement on the stream
 FILTERED_WORDS_FILE = BASE_DIR / "filtered_words.txt"

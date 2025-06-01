@@ -62,13 +62,20 @@ def main():
     broadcaster_thread.start()
     logger.info("Started BroadcasterMonitor thread.")
 
+    from config import find_input_device
+
+    device_index = find_input_device("BlackHole 2ch")
+    if device_index is None:
+        raise RuntimeError("Preferred input device not found.")
+
     # 4) Launch the AudioRecorder thread
     audio_recorder = AudioRecorder(
         segment_queue=segment_queue,
         sample_rate=SAMPLE_RATE,
         channels=CHANNELS,
         threshold_db=THRESHOLD_DB,
-        lookback_ms=LOOKBACK_MS
+        lookback_ms=LOOKBACK_MS,
+        input_device_index=device_index
     )
     audio_recorder.start()
     logger.debug("Started AudioRecorder thread.")
@@ -91,7 +98,7 @@ def main():
                      min_silence_len=MIN_SILENCE_LEN,
                      silence_thresh=THRESHOLD_DB
                  )
-                 
+
             # 7) If no transcript or only whitespace, skip & delete
             if not transcript:
                 logger.debug("No transcript returned; deleting temp file.")
