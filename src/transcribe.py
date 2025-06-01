@@ -96,6 +96,16 @@ def transcribe_full_segment(
 
     transcripts = []
     for chunk_path in chunk_files:
+        # skip anything under 0.1s
+        duration = get_audio_duration_seconds(chunk_path)
+        if duration < 0.25:
+            logger.debug(f"Skipping {chunk_path.name}: too short ({duration:.3f}s)")
+            try:
+                chunk_path.unlink()
+            except Exception:
+                pass
+            continue
+
         try:
             text = transcribe_chunk(chunk_path, model="whisper-1")
             if text:
