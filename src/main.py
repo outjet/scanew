@@ -146,6 +146,7 @@ def main():
                 )
                 logger.info(f"Pushover returned HTTP code: {pushover_code}")
             else:
+                continue
                 #logger.debug("Transcript did not match any high‐priority pattern; no Pushover sent.")
 
         except KeyboardInterrupt:
