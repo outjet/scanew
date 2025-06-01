@@ -3,6 +3,7 @@
 \bcars\srespond\b
 \bpursuit\b
 \bperimeter\b
+\bcrossfire\b
 \bstep\sit\sup\b
 \bany\savailable\scars\b
 \bany\savailable\sunit\b

@@ -82,6 +82,9 @@ import os
 import re
 from pathlib import Path
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Attempt to load .env from the project root
 env_path = Path(__file__).parent.parent / ".env"
@@ -97,7 +100,16 @@ SQLITE_DB_PATH = BASE_DIR / DB_PATH
 ALERT_PATTERNS_FILE = BASE_DIR / "alert_patterns.txt"
 PROMPT_FILE         = BASE_DIR / "prompt.txt"
 
-INPUT_DEVICE_INDEX = int(os.getenv("INPUT_DEVICE_INDEX", "-1"))
+import pyaudio
+
+def find_input_device(preferred_name: str = "BlackHole") -> int | None:
+    p = pyaudio.PyAudio()
+    for i in range(p.get_device_count()):
+        info = p.get_device_info_by_index(i)
+        logger.debug(f"[{i}] {info['name']} — in: {info['maxInputChannels']}, out: {info['maxOutputChannels']}")
+        if preferred_name.lower() in info['name'].lower() and info['maxInputChannels'] > 0:
+            return i
+    return None
 
 # Filtered words are words that indicate Broadcastify is currently playing a 30-second advertisement on the stream
 FILTERED_WORDS_FILE = BASE_DIR / "filtered_words.txt"
@@ -251,6 +263,12 @@ def send_pushover(title: str, message: str, force: bool = False) -> int:
         logger.error(f"Error sending Pushover: {e}")
         return 0
 
+----------------------------------------
+File: src/quickaudiotest.py
+import pyaudio
+p = pyaudio.PyAudio()
+for i in range(p.get_device_count()):
+    print(p.get_device_info_by_index(i))
 ----------------------------------------
 File: src/splitter.py
 # src/splitter.py
@@ -629,7 +647,7 @@ def smells_too_long(text: str, audio_duration_sec: float, wps_threshold: float =
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
 def transcribe_chunk(chunk_path: Path, model: str = "whisper-1") -> str:
     duration = get_audio_duration_seconds(chunk_path)
-    prompt_to_use = SHORT_PROMPT if duration < 2.5 else DISPATCH_PROMPT
+    prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
 
     logger.debug(f"Transcribing {chunk_path.name} ({duration:.2f}s) with model={model}")
     with open(chunk_path, "rb") as f:
@@ -748,7 +766,7 @@ def transcribe_full_segment(
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
-    return final_transcript, True 
+    return final_transcript 
 ----------------------------------------
 File: src/app.py
 from flask import Flask, jsonify, request, render_template, send_from_directory
@@ -864,7 +882,6 @@ import logging
 from queue import Queue
 from datetime import datetime
 import wave
-from config import INPUT_DEVICE_INDEX
 import pyaudio
 
 from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
@@ -879,13 +896,14 @@ class AudioRecorder(threading.Thread):
     """
 
     def __init__(self, segment_queue: Queue, sample_rate: int = SAMPLE_RATE, channels: int = CHANNELS,
-                 threshold_db: float = THRESHOLD_DB, lookback_ms: int = LOOKBACK_MS):
+                 threshold_db: float = THRESHOLD_DB, lookback_ms: int = LOOKBACK_MS, input_device_index: int | None = None):
         super().__init__(daemon=True, name="AudioRecorder")
         self.segment_queue = segment_queue
         self.sample_rate = sample_rate
         self.channels = channels
         self.threshold_db = threshold_db
         self.lookback_ms = lookback_ms
+        self.input_device_index = input_device_index
 
         self.chunk_size = 1024  # read in 1024-sample increments
         self.sample_width = pyaudio.PyAudio().get_sample_size(pyaudio.paInt16)
@@ -902,7 +920,7 @@ class AudioRecorder(threading.Thread):
             channels=self.channels,
             rate=self.sample_rate,
             input=True,
-            input_device_index=INPUT_DEVICE_INDEX,
+            input_device_index=self.input_device_index,
             frames_per_buffer=self.chunk_size
         )
         try:
@@ -1050,13 +1068,20 @@ def main():
     broadcaster_thread.start()
     logger.info("Started BroadcasterMonitor thread.")
 
+    from config import find_input_device
+
+    device_index = find_input_device("BlackHole 2ch")
+    if device_index is None:
+        raise RuntimeError("Preferred input device not found.")
+
     # 4) Launch the AudioRecorder thread
     audio_recorder = AudioRecorder(
         segment_queue=segment_queue,
         sample_rate=SAMPLE_RATE,
         channels=CHANNELS,
         threshold_db=THRESHOLD_DB,
-        lookback_ms=LOOKBACK_MS
+        lookback_ms=LOOKBACK_MS,
+        input_device_index=device_index
     )
     audio_recorder.start()
     logger.debug("Started AudioRecorder thread.")
@@ -1070,15 +1095,15 @@ def main():
 
             logger.debug(f"Processing new audio segment: {segment_path.name}")
 
-            # 6) Transcribe → uses a temporary directory for chunk WAVs
+            # 6) Transcribe
             with tempfile.TemporaryDirectory() as tmpdirname:
                 tmpdir = pathlib.Path(tmpdirname)
                 transcript = transcribe_full_segment(
-                    segment_wav_path=segment_path,
-                    temp_chunks_dir=tmpdir,
-                    min_silence_len=MIN_SILENCE_LEN,
-                    silence_thresh=THRESHOLD_DB
-                )
+                     segment_wav_path=segment_path,
+                     temp_chunks_dir=tmpdir,
+                     min_silence_len=MIN_SILENCE_LEN,
+                     silence_thresh=THRESHOLD_DB
+                 )
 
             # 7) If no transcript or only whitespace, skip & delete
             if not transcript:
@@ -1193,15 +1218,10 @@ def is_gibberish(text: str, min_words: int = 2) -> bool:
     return False
 
 def filter_transcript(text: str) -> Optional[str]:
-    """
-    Returns text if it passes all filters; otherwise returns None.
-    """
+    if not text or not isinstance(text, str):
+        return None
     if contains_filtered_word(text):
         return None
-    #if is_purely_numeric(text):
-    #    return None
-    #if is_gibberish(text):
-    #    return None
-    return text.strip()
+    return text
 
 ----------------------------------------
