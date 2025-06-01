@@ -75,7 +75,7 @@ def click_play_button(driver: webdriver.Chrome, retries: int = 3) -> bool:
                     logger.warning(f"Click did not start playback (button text is still {updated_text!r}); attempt {attempt}/{retries}")
             else:
                 # Maybe it’s already playing?
-                logger.info(f"Play button text is {btn_text!r}, assuming playback already active.")
+                logger.debug(f"Play button text is {btn_text!r}, assuming playback already active.")
                 return True
         except Exception as e:
             logger.warning(f"Attempt {attempt}/{retries} to click play button raised {e.__class__.__name__}: {e}")
