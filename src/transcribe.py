@@ -1,5 +1,3 @@
-# src/transcribe.py
-
 import logging
 from pathlib import Path
 from typing import Optional
@@ -18,7 +16,7 @@ from splitter import split_on_silence
 logger = logging.getLogger(__name__)
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-# Load the short-prompt text once (project root)
+# Load the short‐prompt text once (project root)
 SHORT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "promptshort.txt"
 SHORT_PROMPT = SHORT_PROMPT_PATH.read_text().strip()
 
@@ -57,6 +55,21 @@ def smells_too_long(text: str, audio_duration_sec: float, wps_threshold: float =
         return False
     words_per_second = word_count / max(audio_duration_sec, 0.1)
     return words_per_second > wps_threshold
+
+
+def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 30) -> bool:
+    """
+    Returns True if any substring of length `char_threshold` from `text` appears in `prompt_text`.
+    """
+    if len(text) < char_threshold:
+        return False
+
+    # Slide a window of length `char_threshold` across `text`
+    for i in range(len(text) - char_threshold + 1):
+        snippet = text[i : i + char_threshold]
+        if snippet in prompt_text:
+            return True
+    return False
 
 
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
@@ -113,7 +126,7 @@ def transcribe_full_segment(
     temp_chunks_dir: Path,
     min_silence_len: int,
     silence_thresh: int,
-    ) -> Optional[str]:
+) -> Optional[str]:
     temp_chunks_dir.mkdir(parents=True, exist_ok=True)
 
     # Split the audio into chunks
@@ -178,7 +191,17 @@ def transcribe_full_segment(
         )
         return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
+    # NEW: "Smell like the prompt" check
+    # If more than 30 consecutive characters of final_transcript are found in the prompt text,
+    # re-run using the alternate model.
+    if contains_prompt_snippet(final_transcript, DISPATCH_PROMPT) or contains_prompt_snippet(final_transcript, SHORT_PROMPT):
+        logger.warning(
+            f"Detected at least 30 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
+            f"Retrying with gpt-4o-mini-transcribe."
+        )
+        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
+
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
     log_transcription_to_console(final_transcript)
-    return final_transcript 
+    return final_transcript
