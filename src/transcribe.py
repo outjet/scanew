@@ -16,9 +16,16 @@ from splitter import split_on_silence
 logger = logging.getLogger(__name__)
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-# Load the short‐prompt text once (project root)
-SHORT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "promptshort.txt"
+# Load prompt text files once (project root)
+BASE_DIR = Path(__file__).resolve().parent.parent
+SHORT_PROMPT_PATH = BASE_DIR / "promptshort.txt"
+BASIC_PROMPT_PATH = BASE_DIR / "promptbasic.txt"
+
 SHORT_PROMPT = SHORT_PROMPT_PATH.read_text().strip()
+if BASIC_PROMPT_PATH.exists():
+    BASIC_PROMPT = BASIC_PROMPT_PATH.read_text().strip()
+else:
+    BASIC_PROMPT = ""
 
 
 def get_audio_duration_seconds(wav_path: Path) -> float:
@@ -73,18 +80,34 @@ def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 3
 
 
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
-def transcribe_chunk(chunk_path: Path, model: str = "whisper-1") -> str:
+def transcribe_chunk(
+    chunk_path: Path,
+    model: str = "whisper-1",
+    *,
+    use_prompt: bool = True,
+    prompt_override: Optional[str] = None,
+) -> str:
     duration = get_audio_duration_seconds(chunk_path)
-    prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
 
-    logger.debug(f"Transcribing {chunk_path.name} ({duration:.2f}s) with model={model}")
+    prompt_to_use = None
+    if prompt_override is not None:
+        prompt_to_use = prompt_override
+    elif use_prompt:
+        prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
+
+    logger.debug(
+        f"Transcribing {chunk_path.name} ({duration:.2f}s) with model={model}"
+        + (" using prompt" if prompt_to_use else " without prompt")
+    )
     with open(chunk_path, "rb") as f:
-        resp = client.audio.transcriptions.create(
-            model=model,
-            file=f,
-            temperature=0.1,
-            prompt=prompt_to_use,
-        )
+        kwargs = {
+            "model": model,
+            "file": f,
+            "temperature": 0.1,
+        }
+        if prompt_to_use:
+            kwargs["prompt"] = prompt_to_use
+        resp = client.audio.transcriptions.create(**kwargs)
     text = resp.text.strip()
     logger.debug(f"{model} returned: {text!r} for {chunk_path.name}")
     return text
@@ -105,7 +128,14 @@ def reprocess_with_alternate_model(
     transcripts_alt = []
     for chunk_path in chunk_files_alt:
         try:
-            text_alt = transcribe_chunk(chunk_path, model="gpt-4o-mini-transcribe")
+            duration_alt = get_audio_duration_seconds(chunk_path)
+            prompt_override = SHORT_PROMPT if duration_alt < 2.0 else BASIC_PROMPT
+            text_alt = transcribe_chunk(
+                chunk_path,
+                model="gpt-4o-mini-transcribe",
+                use_prompt=True,
+                prompt_override=prompt_override,
+            )
             if text_alt:
                 transcripts_alt.append(text_alt)
         except Exception as e:
@@ -116,7 +146,21 @@ def reprocess_with_alternate_model(
         except Exception:
             pass
     alt_final_transcript = " ".join(transcripts_alt).strip()
-    logger.debug(f"gpt-4o-mini-transcribe final result for {segment_wav_path.name!r}: {alt_final_transcript!r}")
+    logger.debug(
+        f"gpt-4o-mini-transcribe final result for {segment_wav_path.name!r}: {alt_final_transcript!r}"
+    )
+
+    # If the alternate model still mirrors any prompt text, drop it
+    if (
+        contains_prompt_snippet(alt_final_transcript, DISPATCH_PROMPT)
+        or contains_prompt_snippet(alt_final_transcript, SHORT_PROMPT)
+        or contains_prompt_snippet(alt_final_transcript, BASIC_PROMPT)
+    ):
+        logger.warning(
+            f"Alternate model output for {segment_wav_path.name} appears to contain the prompt."
+        )
+        return ""
+
     log_transcription_to_console(alt_final_transcript)
     return alt_final_transcript
 
@@ -194,7 +238,11 @@ def transcribe_full_segment(
     # NEW: "Smell like the prompt" check
     # If more than 30 consecutive characters of final_transcript are found in the prompt text,
     # re-run using the alternate model.
-    if contains_prompt_snippet(final_transcript, DISPATCH_PROMPT) or contains_prompt_snippet(final_transcript, SHORT_PROMPT):
+    if (
+        contains_prompt_snippet(final_transcript, DISPATCH_PROMPT)
+        or contains_prompt_snippet(final_transcript, SHORT_PROMPT)
+        or contains_prompt_snippet(final_transcript, BASIC_PROMPT)
+    ):
         logger.warning(
             f"Detected at least 30 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
             f"Retrying with gpt-4o-mini-transcribe."
