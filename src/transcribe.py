@@ -78,11 +78,14 @@ def transcribe_chunk(
     model: str = "whisper-1",
     *,
     use_prompt: bool = True,
+    prompt_override: Optional[str] = None,
 ) -> str:
     duration = get_audio_duration_seconds(chunk_path)
 
     prompt_to_use = None
-    if use_prompt:
+    if prompt_override is not None:
+        prompt_to_use = prompt_override
+    elif use_prompt:
         prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
 
     logger.debug(
@@ -121,7 +124,8 @@ def reprocess_with_alternate_model(
             text_alt = transcribe_chunk(
                 chunk_path,
                 model="gpt-4o-mini-transcribe",
-                use_prompt=False,
+                use_prompt=True,
+                prompt_override=SHORT_PROMPT,
             )
             if text_alt:
                 transcripts_alt.append(text_alt)
