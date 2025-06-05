@@ -38,16 +38,16 @@ FILTERED_WORDS_FILE = BASE_DIR / "filtered_words.txt"
 
 BROADCASTIFY_URL=str = os.getenv("BROADCASTIFY_URL", "").strip()
 
-OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_API_KEY = str = os.getenv("OPENAI_API_KEY", "").strip()
 if not OPENAI_API_KEY:
     raise RuntimeError("Missing required environment variable: OPENAI_API_KEY")
 
-BROADCASTIFY_URL: str = os.getenv("BROADCASTIFY_URL", "").strip()
+BROADCASTIFY_URL = str = os.getenv("BROADCASTIFY_URL", "").strip()
 if not BROADCASTIFY_URL:
     raise RuntimeError("Missing required environment variable: BROADCASTIFY_URL")
 
-PUSHOVER_TOKEN: str = os.getenv("PUSHOVER_TOKEN", "").strip()
-PUSHOVER_USER: str = os.getenv("PUSHOVER_USER", "").strip()
+PUSHOVER_TOKEN = str = os.getenv("PUSHOVER_TOKEN", "").strip()
+PUSHOVER_USER = str = os.getenv("PUSHOVER_USER", "").strip()
 USE_PUSHOVER: bool = bool(PUSHOVER_TOKEN and PUSHOVER_USER)
 
 THRESHOLD_DB: float = float(os.getenv("THRESHOLD_DB", "-50"))

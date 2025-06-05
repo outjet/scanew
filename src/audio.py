@@ -8,6 +8,7 @@ from queue import Queue
 from datetime import datetime
 import wave
 import pyaudio
+from pathlib import Path
 
 from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
 
@@ -132,7 +133,7 @@ class AudioRecorder(threading.Thread):
         # If stop was requested mid-segment
         return None
 
-    def _write_wav(self, frames: list[bytes], wav_path: pathlib.Path):
+    def _write_wav(self, frames: list[bytes], wav_path: Path):
         """
         Takes a list of raw PCM frames, writes them out to `wav_path`.
         """
