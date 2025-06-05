@@ -6,7 +6,7 @@ A Python-based system that:
 * Captures system audio (via a loopback or “Stereo Mix” device) in real time
 * Splits each detected speech segment into shorter WAV files whenever silence is detected
 * Uses OpenAI’s Whisper to transcribe each chunk (with automatic retries)
-* Filters out low-value transcripts (numeric-only, profanity, gibberish)
+* Filters out low-value transcripts (Broadcastify advertisements)
 * Saves valid transcripts into a local SQLite database
 * Checks each transcript against high-priority regex patterns (from `alert_patterns.txt`)
 * Sends a Pushover push notification whenever a transcript matches one of those patterns
