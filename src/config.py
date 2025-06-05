@@ -59,6 +59,10 @@ RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver")
 
+# If set to 0/false, transcripts will only be saved locally and
+# not POSTed to the remote /transcription endpoint.
+POST_TRANSCRIPTIONS = os.getenv("POST_TRANSCRIPTIONS", "1").lower() not in {"0", "false", "no"}
+
 # -------------------------------------------
 # Derived / Default values
 # -------------------------------------------

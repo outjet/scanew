@@ -18,7 +18,8 @@ from config import (
     MIN_SILENCE_LEN,
     THRESHOLD_DB,
     LOOKBACK_MS,
-    RECORDINGS_DIR
+    RECORDINGS_DIR,
+    POST_TRANSCRIPTIONS
 )
 from broadcaster import start_and_monitor_broadcastify
 from audio import AudioRecorder
@@ -135,7 +136,8 @@ def main():
                     response_code=None
                 )
                 file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
-                post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
+                if POST_TRANSCRIPTIONS:
+                    post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
 
             if matches_alert_pattern(filtered):
                 msg = filtered[:100] + "..." if len(filtered) > 100 else filtered

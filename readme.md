@@ -28,10 +28,11 @@ python src/main.py
 3. [Environment Variables](#environment-variables)
 4. [Installation](#installation)
 5. [Usage](#usage)
-6. [How It Works](#how-it-works)
-7. [Alert Patterns](#alert-patterns)
-8. [Troubleshooting](#troubleshooting)
-9. [Customization](#customization)
+6. [Web Viewer](#web-viewer)
+7. [How It Works](#how-it-works)
+8. [Alert Patterns](#alert-patterns)
+9. [Troubleshooting](#troubleshooting)
+10. [Customization](#customization)
 
 ---
 
@@ -66,7 +67,6 @@ dispatch_transcriber/
 ├── filtered_words.txt         # Optional list of profanity/unwanted words
 ├── prompt.txt                 # Optional Whisper prompt for dispatch style
 ├── recordings/                # Final validated WAVs are saved here
-├── .env.example               # Example environment variables
 ├── requirements.txt           # pip dependencies
 ├── README.md                  # (This file)
 └── src/
@@ -75,10 +75,13 @@ dispatch_transcriber/
     ├── broadcaster.py         # Selenium logic
     ├── audio.py               # PyAudio + VAD logic
     ├── splitter.py            # Splits WAVs on silence
-    ├── transcribe.py          # Whisper transcription
+    ├── transcribe.py          # Whisper transcription + GPT-4o fallback
     ├── filters.py             # Filters profanity, gibberish, etc
     ├── db.py                  # SQLite DB logic
     ├── notifier.py            # Pushover logic
+    ├── app.py                 # Flask transcript viewer
+    ├── templates/
+    │   └── index.html         # Web UI
     └── utils.py               # Logging, retry, etc
 ```
 
@@ -86,7 +89,7 @@ dispatch_transcriber/
 
 ## Environment Variables
 
-Create a `.env` file (or export these manually). Copy from `.env.example`.
+Create a `.env` file (or export these manually) using the variables below as a template.
 
 ```ini
 # Whisper
@@ -116,6 +119,8 @@ FILTERED_WORDS_FILE=filtered_words.txt
 # Selenium
 CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 PLAY_BUTTON_SELECTOR=button.playpause
+# Disable remote posting (optional)
+POST_TRANSCRIPTIONS=1
 ```
 
 ---
@@ -126,7 +131,7 @@ PLAY_BUTTON_SELECTOR=button.playpause
 git clone ...  # or copy the repo
 cd dispatch_transcriber
 pip install -r requirements.txt
-cp .env.example .env  # then edit your API key, Broadcastify URL, etc.
+# create a .env file as shown above and fill in your keys/URLs
 ```
 
 ---
@@ -154,6 +159,17 @@ You should see logs in:
 6. Saves valid transcripts and WAVs
 7. Sends push alerts if a transcript matches an alert pattern
 
+## Web Viewer
+
+Run the optional Flask app to browse saved transcripts and play audio files. You can also retry a segment using GPT-4 for improved accuracy.
+
+```bash
+python src/app.py
+```
+
+Open `http://localhost:5500` in your browser.
+
+
 ---
 
 ## How It Works
@@ -176,6 +192,8 @@ You should see logs in:
 * Sends chunks to Whisper API (`model=whisper-1`)
 * Retries up to 3x on failure
 * Concatenates final transcript
+* Runs hallucination and "smell" checks; if triggered, re-transcribes using
+  `gpt-4o-mini-transcribe` for better accuracy
 
 ### 4. Filtering
 
@@ -248,6 +266,7 @@ Lines starting with `#` or blank lines are ignored.
 * **Tweak VAD settings:** Adjust `THRESHOLD_DB`, `LOOKBACK_MS`, `MIN_SILENCE_LEN`
 * **Change regexes:** Edit `alert_patterns.txt`
 * **Disable push:** Leave `PUSHOVER_TOKEN` or `PUSHOVER_USER` blank
+* **Skip remote posting:** Set `POST_TRANSCRIPTIONS=0`
 * **Log more:** Modify log level by editing `main.py` or running with `LOGLEVEL=DEBUG`
 * **Run headless:** Default is headless Chrome; comment `--headless=new` in `broadcaster.py` to show the browser
 
