@@ -7,6 +7,9 @@ import os
 from openai import OpenAI
 from openai._exceptions import OpenAIError
 from utils import retry_on_exception
+from transcribe import transcribe_chunk
+from pathlib import Path
+import tempfile
 
 # New OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -83,14 +86,25 @@ def retry_transcript(transcript_id):
 
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
 def run_retry_transcription(audio_data: bytes) -> str:
-    # You must use the audio endpoint, not ChatCompletion, if sending audio
-    response = client.audio.transcriptions.create(
-        model="whisper-1",
-        file=("retry.wav", audio_data, "audio/wav"),
-        temperature=0.3,
-        prompt="28 Traffic.  28 10-4.  210. I'm out with her. Notes added. We'll be 10-8. UTL GOA. 10-8. 13 I'm all set. 205. 13 I'm out. 28 10-4. 212 10-7. 23 are you all set?  Station 1 copies. You can go. Car 2's on scene. 12 I'll be checking. 25 disregard. Stall door please. Advise the jailer. I'll get him. 10-7. Stall door. 211 Traffic. Go ahead. 19 to the property. Code 3 from back hill. Lunch List. You can go. I copy. 24 I'm closer."
-    )
-    return response.text.strip()
+    """Transcribe raw audio bytes using whisper-1 via transcribe_chunk."""
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp.write(audio_data)
+        tmp_path = Path(tmp.name)
+
+    try:
+        text = transcribe_chunk(
+            tmp_path,
+            model="whisper-1",
+            use_prompt=True,
+        )
+    finally:
+        try:
+            tmp_path.unlink()
+        except Exception:
+            pass
+
+    return text.strip()
+
 # Helper to get DB connection
 
 def get_db_connection():

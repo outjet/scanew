@@ -85,15 +85,15 @@ def transcribe_chunk(
     model: str = "whisper-1",
     *,
     use_prompt: bool = True,
-    prompt_override: Optional[str] = None,
 ) -> str:
     duration = get_audio_duration_seconds(chunk_path)
 
     prompt_to_use = None
-    if prompt_override is not None:
-        prompt_to_use = prompt_override
-    elif use_prompt:
-        prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
+    if use_prompt:
+        if model == "gpt-4o-mini-transcribe":
+            prompt_to_use = SHORT_PROMPT if duration < 2.0 else BASIC_PROMPT
+        else:
+            prompt_to_use = SHORT_PROMPT if duration < 2.0 else DISPATCH_PROMPT
 
     logger.debug(
         f"Transcribing {chunk_path.name} ({duration:.2f}s) with model={model}"
@@ -113,56 +113,99 @@ def transcribe_chunk(
     return text
 
 
-def reprocess_with_alternate_model(
+def _alt_transcribe(
+    *,
     segment_wav_path: Path,
     temp_chunks_dir: Path,
     min_silence_len: int,
-    silence_thresh: int
+    silence_thresh: int,
+    use_prompt: bool = True,
 ) -> str:
-    chunk_files_alt = split_on_silence(
+    """Helper to transcribe a segment using gpt-4o-mini-transcribe."""
+    chunk_files = split_on_silence(
         wav_path=segment_wav_path,
         output_dir=temp_chunks_dir,
         min_silence_len=min_silence_len,
         silence_thresh=silence_thresh,
     )
-    transcripts_alt = []
-    for chunk_path in chunk_files_alt:
+    transcripts = []
+    for chunk_path in chunk_files:
         try:
-            duration_alt = get_audio_duration_seconds(chunk_path)
-            prompt_override = SHORT_PROMPT if duration_alt < 2.0 else BASIC_PROMPT
-            text_alt = transcribe_chunk(
+            text = transcribe_chunk(
                 chunk_path,
                 model="gpt-4o-mini-transcribe",
-                use_prompt=True,
-                prompt_override=prompt_override,
+                use_prompt=use_prompt,
             )
-            if text_alt:
-                transcripts_alt.append(text_alt)
+            if text:
+                transcripts.append(text)
         except Exception as e:
-            logger.error(f"Failed to transcribe chunk {chunk_path.name} with gpt-4o-mini-transcribe: {e}")
-    for c in chunk_files_alt:
+            logger.error(
+                f"Failed to transcribe chunk {chunk_path.name} with gpt-4o-mini-transcribe: {e}"
+            )
+    for c in chunk_files:
         try:
             c.unlink()
         except Exception:
             pass
-    alt_final_transcript = " ".join(transcripts_alt).strip()
+    final_text = " ".join(transcripts).strip()
     logger.debug(
-        f"gpt-4o-mini-transcribe final result for {segment_wav_path.name!r}: {alt_final_transcript!r}"
+        f"gpt-4o-mini-transcribe ({'prompt' if use_prompt else 'no prompt'}) result for {segment_wav_path.name!r}: {final_text!r}"
+    )
+    return final_text
+
+
+def reprocess_with_alternate_model(
+    segment_wav_path: Path,
+    temp_chunks_dir: Path,
+    min_silence_len: int,
+    silence_thresh: int,
+) -> str:
+    final_duration = get_audio_duration_seconds(segment_wav_path)
+
+    # First attempt with prompt
+    transcript = _alt_transcribe(
+        segment_wav_path=segment_wav_path,
+        temp_chunks_dir=temp_chunks_dir,
+        min_silence_len=min_silence_len,
+        silence_thresh=silence_thresh,
+        use_prompt=True,
     )
 
-    # If the alternate model still mirrors any prompt text, drop it
+    flagged, _, _ = is_hallucination(transcript)
     if (
-        contains_prompt_snippet(alt_final_transcript, DISPATCH_PROMPT)
-        or contains_prompt_snippet(alt_final_transcript, SHORT_PROMPT)
-        or contains_prompt_snippet(alt_final_transcript, BASIC_PROMPT)
+        smells_too_long(transcript, final_duration)
+        or flagged
+        or contains_prompt_snippet(transcript, DISPATCH_PROMPT)
+        or contains_prompt_snippet(transcript, SHORT_PROMPT)
+        or contains_prompt_snippet(transcript, BASIC_PROMPT)
     ):
         logger.warning(
-            f"Alternate model output for {segment_wav_path.name} appears to contain the prompt."
+            f"Alternate model output for {segment_wav_path.name} triggered heuristics; retrying without prompt."
+        )
+        transcript = _alt_transcribe(
+            segment_wav_path=segment_wav_path,
+            temp_chunks_dir=temp_chunks_dir,
+            min_silence_len=min_silence_len,
+            silence_thresh=silence_thresh,
+            use_prompt=False,
+        )
+        flagged, _, _ = is_hallucination(transcript)
+
+    # Drop if transcript still looks like the prompt or fails heuristics
+    if (
+        contains_prompt_snippet(transcript, DISPATCH_PROMPT)
+        or contains_prompt_snippet(transcript, SHORT_PROMPT)
+        or contains_prompt_snippet(transcript, BASIC_PROMPT)
+        or smells_too_long(transcript, final_duration)
+        or flagged
+    ):
+        logger.warning(
+            f"Alternate model output for {segment_wav_path.name} appears invalid after retries."
         )
         return ""
 
-    log_transcription_to_console(alt_final_transcript)
-    return alt_final_transcript
+    log_transcription_to_console(transcript)
+    return transcript
 
 
 def transcribe_full_segment(
