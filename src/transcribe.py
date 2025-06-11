@@ -287,7 +287,7 @@ def transcribe_full_segment(
         or contains_prompt_snippet(final_transcript, BASIC_PROMPT)
     ):
         logger.warning(
-            f"Detected at least 30 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
+            f"Detected at least 24 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
             f"Retrying with gpt-4o-mini-transcribe."
         )
         return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
