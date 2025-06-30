@@ -27,7 +27,7 @@ from transcribe import transcribe_full_segment
 from filters import filter_transcript
 from db import initialize_database, insert_transcription
 from notifier import send_pushover, matches_alert_pattern
-from utils import post_transcription_with_retry
+from utils import post_transcription_with_retry, copy_to_raspberry_pi
 
 # ---------------------------
 # Basic Logging Configuration
@@ -125,6 +125,14 @@ def main():
             shutil.move(str(segment_path), str(final_wav_path))
             logger.debug(f"Saved WAV as: {final_wav_filename}")
 
+            # Copy to Raspberry Pi
+            copy_success = copy_to_raspberry_pi(str(final_wav_path), final_wav_filename)
+            if not copy_success:
+                logger.warning(f"Failed to copy {final_wav_filename} to Raspberry Pi. No public URL will be generated.")
+                final_wav_filename = None
+            else:
+                logger.info(f"Copied {final_wav_filename} to Raspberry Pi successfully.")
+
             timestamp_iso = datetime.now(timezone.utc).isoformat()
             with sqlite3.connect(str(SQLITE_DB_PATH)) as conn:
                 row_id = insert_transcription(
@@ -135,9 +143,10 @@ def main():
                     pushover_code=None,
                     response_code=None
                 )
-                file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
-                if POST_TRANSCRIPTIONS:
-                    post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
+                if final_wav_filename:
+                    file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
+                    if POST_TRANSCRIPTIONS:
+                        post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
 
             if matches_alert_pattern(filtered):
                 msg = filtered[:100] + "..." if len(filtered) > 100 else filtered

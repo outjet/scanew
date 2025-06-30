@@ -64,17 +64,25 @@ def smells_too_long(text: str, audio_duration_sec: float, wps_threshold: float =
     return words_per_second > wps_threshold
 
 
-def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 30) -> bool:
-    """
-    Returns True if any substring of length `char_threshold` from `text` appears in `prompt_text`.
-    """
-    if len(text) < char_threshold:
-        return False
+def normalize_text(text: str) -> str:
+    """Lowercase, remove extra whitespace, and strip punctuation for robust matching."""
+    text = text.lower()
+    text = re.sub(r"[\s]+", " ", text)  # collapse whitespace
+    text = re.sub(r"[\.,;:!?\-\(\)\[\]{}'\"]", "", text)  # remove punctuation
+    return text.strip()
 
-    # Slide a window of length `char_threshold` across `text`
-    for i in range(len(text) - char_threshold + 1):
-        snippet = text[i : i + char_threshold]
-        if snippet in prompt_text:
+
+def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 24) -> bool:
+    """
+    Returns True if any substring of length `char_threshold` from the prompt appears in the transcript, after normalization.
+    """
+    norm_text = normalize_text(text)
+    norm_prompt = normalize_text(prompt_text)
+    if len(norm_prompt) < char_threshold or len(norm_text) < char_threshold:
+        return False
+    for i in range(len(norm_prompt) - char_threshold + 1):
+        snippet = norm_prompt[i : i + char_threshold]
+        if snippet in norm_text:
             return True
     return False
 
@@ -180,7 +188,8 @@ def reprocess_with_alternate_model(
         or contains_prompt_snippet(transcript, BASIC_PROMPT)
     ):
         logger.warning(
-            f"Alternate model output for {segment_wav_path.name} triggered heuristics; retrying without prompt."
+            f"Alternate model output for {segment_wav_path.name} triggered heuristics; retrying without prompt.\n"
+            f"Original alternate transcript: {transcript!r}"
         )
         transcript = _alt_transcribe(
             segment_wav_path=segment_wav_path,
@@ -265,7 +274,8 @@ def transcribe_full_segment(
     if smells_too_long(final_transcript, final_duration):
         logger.warning(
             f"Transcript too long ({len(final_transcript.split())} words in {final_duration:.2f}s) "
-            f"for {segment_wav_path.name}. Retrying with gpt-4o-mini-transcribe."
+            f"for {segment_wav_path.name}. Retrying with gpt-4o-mini-transcribe.\n"
+            f"Original transcript: {final_transcript!r}"
         )
         return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
@@ -274,7 +284,8 @@ def transcribe_full_segment(
     if flagged:
         logger.warning(
             f"Detected repeated phrase '{phrase}' ({count}x) in {segment_wav_path.name}. "
-            f"Retrying with gpt-4o-mini-transcribe."
+            f"Retrying with gpt-4o-mini-transcribe.\n"
+            f"Original transcript: {final_transcript!r}"
         )
         return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
@@ -288,7 +299,8 @@ def transcribe_full_segment(
     ):
         logger.warning(
             f"Detected at least 24 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
-            f"Retrying with gpt-4o-mini-transcribe."
+            f"Retrying with gpt-4o-mini-transcribe.\n"
+            f"Original transcript: {final_transcript!r}"
         )
         return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
