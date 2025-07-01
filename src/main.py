@@ -44,6 +44,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 #hide httpx INFO 
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 timestamp_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -130,8 +131,6 @@ def main():
             if not copy_success:
                 logger.warning(f"Failed to copy {final_wav_filename} to Raspberry Pi. No public URL will be generated.")
                 final_wav_filename = None
-            else:
-                logger.info(f"Copied {final_wav_filename} to Raspberry Pi successfully.")
 
             timestamp_iso = datetime.now(timezone.utc).isoformat()
             with sqlite3.connect(str(SQLITE_DB_PATH)) as conn:
@@ -144,7 +143,7 @@ def main():
                     response_code=None
                 )
                 if final_wav_filename:
-                    file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
+                    file_url = f"https://lkwd.agency/static/recordings/{final_wav_filename}"
                     if POST_TRANSCRIPTIONS:
                         post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
 
