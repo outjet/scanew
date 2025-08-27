@@ -52,8 +52,8 @@ def is_hallucination(text: str, threshold: float = 0.4):
     for phrase, count in repeats.items():
         word_count = len(phrase.split()) * count
         if word_count / total_words >= threshold:
-            return True
-    return False
+            return True, phrase, count
+    return False, None, 0
 
 
 def smells_too_long(text: str, audio_duration_sec: float, wps_threshold: float = 5.5, min_words: int = 20) -> bool:
@@ -125,14 +125,16 @@ def _alt_transcribe(
     *,
     segment_wav_path: Path,
     temp_chunks_dir: Path,
+    min_silence_len: int,
+    silence_thresh: int,
     use_prompt: bool = True,
 ) -> str:
     """Helper to transcribe a segment using gpt-4o-mini-transcribe."""
     chunk_files = split_on_silence(
         wav_path=segment_wav_path,
         output_dir=temp_chunks_dir,
-        min_silence_len=1000,
-        silence_thresh=-40,
+        min_silence_len=min_silence_len,
+        silence_thresh=silence_thresh,
     )
     transcripts = []
     for chunk_path in chunk_files:
@@ -163,6 +165,8 @@ def _alt_transcribe(
 def reprocess_with_alternate_model(
     segment_wav_path: Path,
     temp_chunks_dir: Path,
+    min_silence_len: int,
+    silence_thresh: int,
 ) -> str:
     final_duration = get_audio_duration_seconds(segment_wav_path)
 
@@ -170,10 +174,12 @@ def reprocess_with_alternate_model(
     transcript = _alt_transcribe(
         segment_wav_path=segment_wav_path,
         temp_chunks_dir=temp_chunks_dir,
+        min_silence_len=min_silence_len,
+        silence_thresh=silence_thresh,
         use_prompt=True,
     )
 
-    flagged = is_hallucination(transcript)
+    flagged, _, _ = is_hallucination(transcript)
     if (
         smells_too_long(transcript, final_duration)
         or flagged
@@ -181,12 +187,6 @@ def reprocess_with_alternate_model(
         or contains_prompt_snippet(transcript, SHORT_PROMPT)
         or contains_prompt_snippet(transcript, BASIC_PROMPT)
     ):
-        if final_duration < 1.0:
-            logger.info(
-                f"Alternate model output for {segment_wav_path.name} sounds like the prompt and is under 1s. Skipping."
-            )
-            return ""
-
         logger.warning(
             f"Alternate model output for {segment_wav_path.name} triggered heuristics; retrying without prompt.\n"
             f"Original alternate transcript: {transcript!r}"
@@ -194,9 +194,11 @@ def reprocess_with_alternate_model(
         transcript = _alt_transcribe(
             segment_wav_path=segment_wav_path,
             temp_chunks_dir=temp_chunks_dir,
+            min_silence_len=min_silence_len,
+            silence_thresh=silence_thresh,
             use_prompt=False,
         )
-        flagged = is_hallucination(transcript)
+        flagged, _, _ = is_hallucination(transcript)
 
     # Drop if transcript still looks like the prompt or fails heuristics
     if (
@@ -218,6 +220,8 @@ def reprocess_with_alternate_model(
 def transcribe_full_segment(
     segment_wav_path: Path,
     temp_chunks_dir: Path,
+    min_silence_len: int,
+    silence_thresh: int,
 ) -> Optional[str]:
     temp_chunks_dir.mkdir(parents=True, exist_ok=True)
 
@@ -225,8 +229,8 @@ def transcribe_full_segment(
     chunk_files = split_on_silence(
         wav_path=segment_wav_path,
         output_dir=temp_chunks_dir,
-        min_silence_len=1000,
-        silence_thresh=-40,
+        min_silence_len=min_silence_len,
+        silence_thresh=silence_thresh,
     )
 
     if not chunk_files:
@@ -273,36 +277,32 @@ def transcribe_full_segment(
             f"for {segment_wav_path.name}. Retrying with gpt-4o-mini-transcribe.\n"
             f"Original transcript: {final_transcript!r}"
         )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir)
+        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
     # Check for repeated-phrase hallucinations
-    flagged = is_hallucination(final_transcript)
+    flagged, phrase, count = is_hallucination(final_transcript)
     if flagged:
         logger.warning(
-            f"Detected repeated phrase in {segment_wav_path.name}. "
+            f"Detected repeated phrase '{phrase}' ({count}x) in {segment_wav_path.name}. "
             f"Retrying with gpt-4o-mini-transcribe.\n"
             f"Original transcript: {final_transcript!r}"
         )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir)
+        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
-    
+    # NEW: "Smell like the prompt" check
+    # If more than 30 consecutive characters of final_transcript are found in the prompt text,
+    # re-run using the alternate model.
     if (
         contains_prompt_snippet(final_transcript, DISPATCH_PROMPT)
         or contains_prompt_snippet(final_transcript, SHORT_PROMPT)
         or contains_prompt_snippet(final_transcript, BASIC_PROMPT)
     ):
-        if final_duration < 1.0:
-            logger.info(
-                f"Transcript for {segment_wav_path.name} sounds like the prompt and is under 1s. Skipping."
-            )
-            return None
-        
         logger.warning(
             f"Detected at least 24 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
             f"Retrying with gpt-4o-mini-transcribe.\n"
             f"Original transcript: {final_transcript!r}"
         )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir)
+        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")

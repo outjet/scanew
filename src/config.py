@@ -50,7 +50,9 @@ PUSHOVER_TOKEN = str = os.getenv("PUSHOVER_TOKEN", "").strip()
 PUSHOVER_USER = str = os.getenv("PUSHOVER_USER", "").strip()
 USE_PUSHOVER: bool = bool(PUSHOVER_TOKEN and PUSHOVER_USER)
 
-
+THRESHOLD_DB: float = float(os.getenv("THRESHOLD_DB", "-50"))
+LOOKBACK_MS: int = int(os.getenv("LOOKBACK_MS", "1000"))
+MIN_SILENCE_LEN: int = int(os.getenv("MIN_SILENCE_LEN", "500"))
 
 RECORDINGS_DIR = Path(os.getenv("RECORDINGS_DIR", "recordings"))
 RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)

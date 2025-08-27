@@ -15,6 +15,9 @@ from config import (
     LOGGING_FORMAT,
     SAMPLE_RATE,
     CHANNELS,
+    MIN_SILENCE_LEN,
+    THRESHOLD_DB,
+    LOOKBACK_MS,
     RECORDINGS_DIR,
     POST_TRANSCRIPTIONS
 )
@@ -72,6 +75,8 @@ def main():
         segment_queue=segment_queue,
         sample_rate=SAMPLE_RATE,
         channels=CHANNELS,
+        threshold_db=THRESHOLD_DB,
+        lookback_ms=LOOKBACK_MS,
         input_device_index=device_index
     )
     audio_recorder.start()
@@ -91,7 +96,9 @@ def main():
                 tmpdir = pathlib.Path(tmpdirname)
                 transcript = transcribe_full_segment(
                      segment_wav_path=segment_path,
-                     temp_chunks_dir=tmpdir
+                     temp_chunks_dir=tmpdir,
+                     min_silence_len=MIN_SILENCE_LEN,
+                     silence_thresh=THRESHOLD_DB
                  )
 
             # 7) If no transcript or only whitespace, skip & delete

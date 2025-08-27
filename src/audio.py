@@ -10,7 +10,7 @@ import wave
 import pyaudio
 from pathlib import Path
 
-from config import SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
+from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -26,21 +26,23 @@ class AudioRecorder(threading.Thread):
         segment_queue: Queue,
         sample_rate: int = SAMPLE_RATE,
         channels: int = CHANNELS,
+        threshold_db: float = THRESHOLD_DB,
+        lookback_ms: int = LOOKBACK_MS,
         input_device_index: int | None = None
     ):
         super().__init__(daemon=True, name="AudioRecorder")
         self.segment_queue = segment_queue
         self.sample_rate = sample_rate
         self.channels = channels
-        self.threshold_db = -40
-        self.lookback_ms = 1000
+        self.threshold_db = threshold_db
+        self.lookback_ms = lookback_ms
         self.input_device_index = input_device_index
 
         self.chunk_size = 1024  # read in 1024-sample increments
         self.audio_interface = pyaudio.PyAudio()
         self.sample_width = self.audio_interface.get_sample_size(pyaudio.paInt16)
         self.silence_buffer_chunks = int(
-            math.ceil((self.lookback_ms / 1000.0) * (self.sample_rate / self.chunk_size))
+            math.ceil((lookback_ms / 1000.0) * (sample_rate / self.chunk_size))
         )
 
         self.stream = None
