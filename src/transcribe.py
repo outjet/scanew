@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 from typing import Optional
 import wave
@@ -270,14 +271,62 @@ def transcribe_full_segment(
     # Measure full audio duration once
     final_duration = get_audio_duration_seconds(segment_wav_path)
 
-    # Smell test: if too many words for the audio length, retry with gpt-4o-mini-transcribe
+    # Smell test: if too many words for the audio length, retry with whisper-1 without prompt
     if smells_too_long(final_transcript, final_duration):
         logger.warning(
             f"Transcript too long ({len(final_transcript.split())} words in {final_duration:.2f}s) "
-            f"for {segment_wav_path.name}. Retrying with gpt-4o-mini-transcribe.\n"
+            f"for {segment_wav_path.name}. Expected issue. Saving audio and retrying with whisper-1 without prompt.\n"
+            f"Audio file: {segment_wav_path}\n"
             f"Original transcript: {final_transcript!r}"
         )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
+
+        recordings_dir = BASE_DIR / "recordings"
+        recordings_dir.mkdir(exist_ok=True)
+        debug_audio_path = recordings_dir / f"temp_{segment_wav_path.name}"
+        shutil.copy(segment_wav_path, debug_audio_path)
+        logger.info(f"Saved debug audio to {debug_audio_path}")
+
+        # Re-split and transcribe with whisper-1 without prompt
+        chunk_files = split_on_silence(
+            wav_path=segment_wav_path,
+            output_dir=temp_chunks_dir,
+            min_silence_len=min_silence_len,
+            silence_thresh=silence_thresh,
+        )
+
+        if not chunk_files:
+            logger.debug(f"No nonsilent chunks detected in {segment_wav_path} on retry. Skipping.")
+            return None
+
+        transcripts = []
+        for chunk_path in chunk_files:
+            duration = get_audio_duration_seconds(chunk_path)
+            if duration < 0.25:
+                logger.debug(f"Skipping {chunk_path.name}: too short ({duration:.3f}s)")
+                try:
+                    chunk_path.unlink()
+                except Exception:
+                    pass
+                continue
+
+            try:
+                text = transcribe_chunk(chunk_path, model="whisper-1", use_prompt=False)
+                if text:
+                    transcripts.append(text)
+            except Exception as e:
+                logger.error(f"Failed to transcribe chunk {chunk_path.name} with whisper-1 on retry: {e}")
+                continue
+        
+        for c in chunk_files:
+            try:
+                c.unlink()
+            except Exception:
+                pass
+
+        final_transcript = " ".join(transcripts).strip()
+        logger.debug(f"Whisper (no prompt) transcript for {segment_wav_path.name!r}: {final_transcript!r}")
+        log_transcription_to_console(final_transcript)
+        return final_transcript
 
     # Check for repeated-phrase hallucinations
     flagged, phrase, count = is_hallucination(final_transcript)
