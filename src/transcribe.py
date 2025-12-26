@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 from typing import Optional
 import wave
@@ -64,17 +65,25 @@ def smells_too_long(text: str, audio_duration_sec: float, wps_threshold: float =
     return words_per_second > wps_threshold
 
 
-def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 30) -> bool:
-    """
-    Returns True if any substring of length `char_threshold` from `text` appears in `prompt_text`.
-    """
-    if len(text) < char_threshold:
-        return False
+def normalize_text(text: str) -> str:
+    """Lowercase, remove extra whitespace, and strip punctuation for robust matching."""
+    text = text.lower()
+    text = re.sub(r"[\s]+", " ", text)  # collapse whitespace
+    text = re.sub(r"[\.,;:!?\-\(\)\[\]{}'\"]", "", text)  # remove punctuation
+    return text.strip()
 
-    # Slide a window of length `char_threshold` across `text`
-    for i in range(len(text) - char_threshold + 1):
-        snippet = text[i : i + char_threshold]
-        if snippet in prompt_text:
+
+def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 24) -> bool:
+    """
+    Returns True if any substring of length `char_threshold` from the prompt appears in the transcript, after normalization.
+    """
+    norm_text = normalize_text(text)
+    norm_prompt = normalize_text(prompt_text)
+    if len(norm_prompt) < char_threshold or len(norm_text) < char_threshold:
+        return False
+    for i in range(len(norm_prompt) - char_threshold + 1):
+        snippet = norm_prompt[i : i + char_threshold]
+        if snippet in norm_text:
             return True
     return False
 
@@ -180,7 +189,8 @@ def reprocess_with_alternate_model(
         or contains_prompt_snippet(transcript, BASIC_PROMPT)
     ):
         logger.warning(
-            f"Alternate model output for {segment_wav_path.name} triggered heuristics; retrying without prompt."
+            f"Alternate model output for {segment_wav_path.name} triggered heuristics; retrying without prompt.\n"
+            f"Original alternate transcript: {transcript!r}"
         )
         transcript = _alt_transcribe(
             segment_wav_path=segment_wav_path,
@@ -261,36 +271,95 @@ def transcribe_full_segment(
     # Measure full audio duration once
     final_duration = get_audio_duration_seconds(segment_wav_path)
 
-    # Smell test: if too many words for the audio length, retry with gpt-4o-mini-transcribe
-    if smells_too_long(final_transcript, final_duration):
-        logger.warning(
-            f"Transcript too long ({len(final_transcript.split())} words in {final_duration:.2f}s) "
-            f"for {segment_wav_path.name}. Retrying with gpt-4o-mini-transcribe."
-        )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
-
-    # Check for repeated-phrase hallucinations
+    # Hallucination and issue detection
     flagged, phrase, count = is_hallucination(final_transcript)
-    if flagged:
-        logger.warning(
-            f"Detected repeated phrase '{phrase}' ({count}x) in {segment_wav_path.name}. "
-            f"Retrying with gpt-4o-mini-transcribe."
-        )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
+    too_long = smells_too_long(final_transcript, final_duration)
+    has_prompt = contains_prompt_snippet(final_transcript, DISPATCH_PROMPT) or \
+                 contains_prompt_snippet(final_transcript, SHORT_PROMPT) or \
+                 contains_prompt_snippet(final_transcript, BASIC_PROMPT)
 
-    # NEW: "Smell like the prompt" check
-    # If more than 30 consecutive characters of final_transcript are found in the prompt text,
-    # re-run using the alternate model.
-    if (
-        contains_prompt_snippet(final_transcript, DISPATCH_PROMPT)
-        or contains_prompt_snippet(final_transcript, SHORT_PROMPT)
-        or contains_prompt_snippet(final_transcript, BASIC_PROMPT)
-    ):
-        logger.warning(
-            f"Detected at least 24 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
-            f"Retrying with gpt-4o-mini-transcribe."
-        )
-        return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
+    transcription_issue = flagged or too_long or has_prompt
+
+    if transcription_issue:
+        file_size_kb = segment_wav_path.stat().st_size / 1024
+        if file_size_kb < 120:
+            logger.warning(
+                f"Transcription issue detected for {segment_wav_path.name} ({file_size_kb:.2f}KB), which is under 120KB. Discarding."
+            )
+            return None
+
+        # Handle issues for larger files
+        if too_long:
+            logger.warning(
+                f"Transcript too long ({len(final_transcript.split())} words in {final_duration:.2f}s) "
+                f"for {segment_wav_path.name}. Expected issue. Saving audio and retrying with whisper-1 without prompt.\n"
+                f"Audio file: {segment_wav_path}\n"
+                f"Original transcript: {final_transcript!r}"
+            )
+
+            recordings_dir = BASE_DIR / "recordings"
+            recordings_dir.mkdir(exist_ok=True)
+            debug_audio_path = recordings_dir / f"temp_{segment_wav_path.name}"
+            shutil.copy(segment_wav_path, debug_audio_path)
+            logger.info(f"Saved debug audio to {debug_audio_path}")
+
+            # Re-split and transcribe with whisper-1 without prompt
+            chunk_files = split_on_silence(
+                wav_path=segment_wav_path,
+                output_dir=temp_chunks_dir,
+                min_silence_len=min_silence_len,
+                silence_thresh=silence_thresh,
+            )
+
+            if not chunk_files:
+                logger.debug(f"No nonsilent chunks detected in {segment_wav_path} on retry. Skipping.")
+                return None
+
+            transcripts = []
+            for chunk_path in chunk_files:
+                duration = get_audio_duration_seconds(chunk_path)
+                if duration < 0.25:
+                    logger.debug(f"Skipping {chunk_path.name}: too short ({duration:.3f}s)")
+                    try:
+                        chunk_path.unlink()
+                    except Exception:
+                        pass
+                    continue
+
+                try:
+                    text = transcribe_chunk(chunk_path, model="whisper-1", use_prompt=False)
+                    if text:
+                        transcripts.append(text)
+                except Exception as e:
+                    logger.error(f"Failed to transcribe chunk {chunk_path.name} with whisper-1 on retry: {e}")
+                    continue
+            
+            for c in chunk_files:
+                try:
+                    c.unlink()
+                except Exception:
+                    pass
+
+            final_transcript = " ".join(transcripts).strip()
+            logger.debug(f"Whisper (no prompt) transcript for {segment_wav_path.name!r}: {final_transcript!r}")
+            log_transcription_to_console(final_transcript)
+            return final_transcript
+
+        if flagged:
+            logger.warning(
+                f"Detected repeated phrase '{phrase}' ({count}x) in {segment_wav_path.name}. "
+                f"Retrying with gpt-4o-mini-transcribe.\n"
+                f"Original transcript: {final_transcript!r}"
+            )
+            return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
+
+        if has_prompt:
+            logger.warning(
+                f"Detected at least 24 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
+                f"Retrying with gpt-4o-mini-transcribe.\n"
+                f"Original transcript: {final_transcript!r}"
+            )
+            return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
     # Final accepted transcript
     logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")

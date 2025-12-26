@@ -9,6 +9,8 @@ import re
 import sys
 from config import ALERT_PATTERNS
 import json
+import paramiko
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -108,3 +110,44 @@ def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: i
                 delay *= 2
     logger.error("Final failure after retries.")
     return 0
+
+# Raspberry Pi SFTP constants
+RASPBERRY_PI_IP = "172.16.0.40"
+RASPBERRY_PI_USER = "outjet"
+RASPBERRY_PI_PATH = "/home/outjet/Projects/dispatch/static/recordings"
+
+def copy_to_raspberry_pi(local_file_path, remote_file_name, max_retries=3):
+    """
+    Copy a file to the Raspberry Pi using SFTP with SSH key authentication.
+    Returns True on success, False on failure after retries.
+    """
+    for attempt in range(max_retries):
+        ssh = None
+        sftp = None
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(
+                RASPBERRY_PI_IP,
+                username=RASPBERRY_PI_USER,
+                key_filename=os.path.expanduser('~/.ssh/id_rsa'),
+                timeout=10
+            )
+            sftp = ssh.open_sftp()
+            # Ensure destination directory exists
+            try:
+                sftp.stat(RASPBERRY_PI_PATH)
+            except IOError:
+                sftp.mkdir(RASPBERRY_PI_PATH)
+            remote_path = f"{RASPBERRY_PI_PATH}/{remote_file_name}"
+            sftp.put(local_file_path, remote_path)
+            return True
+        except Exception as e:
+            logger.warning(f"SFTP attempt {attempt+1} failed: {e}")
+            time.sleep(2 ** attempt)
+        finally:
+            if sftp is not None:
+                sftp.close()
+            if ssh is not None:
+                ssh.close()
+    return False
