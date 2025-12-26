@@ -1,0 +1,18 @@
+Success! Your new application key has been created. It will only appear here once.
+keyID:
+0051da70f17fc880000000001
+0051da70f17fc880000000001
+keyName:
+rcloneupload
+applicationKey:
+K005zr7JyGMDc4ICvegkKaoqghSgYpo
+K005zr7JyGMDc4ICvegkKaoqghSgYpo
+
+rclone config create b2 backblaze account 0051da70f17fc880000000001 key K005zr7JyGMDc4ICvegkKaoqghSgYpo
+
+rclone config create b2 b2 account 0051da70f17fc880000000001 key K005zr7JyGMDc4ICvegkKaoqghSgYpo
+
+rclone sync "/Users/outjet/python/scannerstream/recordings/2024" "dispatchaudio:2024" \
+  -P --stats-one-line --stats 15s \
+  --filter-from "/Users/outjet/.rcloneignore" \
+  --transfers 8 --checkers 12
