@@ -183,7 +183,7 @@ def main():
                     response_code=None
                 )
                 if final_wav_filename:
-                    file_url = f"https://lkwd.agency/static/recordings/{final_wav_filename}"
+                    file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
                     if POST_TRANSCRIPTIONS:
                         post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
 

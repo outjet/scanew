@@ -2,7 +2,8 @@
 
 from flask import (
     Blueprint, render_template, request, jsonify,
-    current_app, abort, Response, stream_with_context, url_for
+    current_app, abort, Response, stream_with_context, url_for,
+    send_from_directory
 )
 from flask_login import login_required, current_user
 dispatch_bp = Blueprint(
@@ -23,6 +24,7 @@ from zoneinfo import ZoneInfo
 import json, time
 from .extensions import db
 from redis import Redis
+from .config import RECORDINGS_DIR
 
 # TODO: Placeholder function because the original `convert_to_eastern` was in a missing `utils.py` file.
 # This implementation does not perform the timezone conversion.
@@ -269,11 +271,14 @@ def add_transcription():
         timestamp_str = data.get('timestamp')
         wav_filename = data.get('wav_filename')
         transcript = data.get('transcript')
+        url = data.get('url')
+        text = data.get('text')
 
         # Validate the incoming data
-        if not all([timestamp_str, transcript]):
+        if not all([timestamp_str, transcript or text]):
             return jsonify({'error': 'Missing data'}), 400
 
+        transcript = transcript or text
         if len(transcript) > 10000:  # Adjust this limit as needed
             return jsonify({'error': 'Text too long'}), 400
 
@@ -283,6 +288,9 @@ def add_transcription():
             return jsonify({'error': 'Invalid timestamp format'}), 400
 
         # Create a new Transcription object and add it to the session
+        if not wav_filename and url:
+            wav_filename = url.split('/')[-1]
+
         new_transcription = Transcription(
             timestamp=timestamp_dt.isoformat(),  # Store as ISO string
             wav_filename=wav_filename,
@@ -299,7 +307,7 @@ def add_transcription():
             'transcript': transcript,
             'formatted_timestamp': timestamp_dt.strftime('%a %d-%b %H:%M:%S'),
             'text': transcript,
-            'url': f"/static/recordings/{wav_filename}" if wav_filename else None
+            'url': f"/recordings/{wav_filename}" if wav_filename else None
         }
 
         # Publish the new transcription to Redis
@@ -346,6 +354,14 @@ def event_stream():
         current_app.logger.error(f"Error in event stream: {e}", exc_info=True)
         # Optionally, yield an error message or close the stream
         yield "data: {\"error\": \"Internal Server Error\"}\n\n"
+
+
+@dispatch_bp.route('/recordings/<path:filename>')
+def recordings(filename):
+    try:
+        return send_from_directory(str(RECORDINGS_DIR), filename, as_attachment=False)
+    except FileNotFoundError:
+        abort(404)
 
 @dispatch_bp.route('/transcription_context/<int:transcription_id>')
 @login_required

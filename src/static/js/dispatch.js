@@ -305,10 +305,10 @@ function buildAudioUrl(transcription) {
         return transcription.url;
     }
     if (transcription.wav_filename) {
-        return `/static/recordings/${transcription.wav_filename}`;
+        return `/recordings/${transcription.wav_filename}`;
     }
     if (transcription.wavFilename) {
-        return `/static/recordings/${transcription.wavFilename}`;
+        return `/recordings/${transcription.wavFilename}`;
     }
     return null;
 }
