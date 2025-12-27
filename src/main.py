@@ -21,7 +21,7 @@ from config import (
     RECORDINGS_DIR,
     POST_TRANSCRIPTIONS
 )
-from broadcaster import start_and_monitor_broadcastify
+from stream_handler import start_ffmpeg_stream
 from audio import AudioRecorder
 from transcribe import transcribe_full_segment
 from filters import filter_transcript
@@ -55,29 +55,20 @@ def main():
     # 2) Create a queue for audio segments (paths to temp WAVs)
     segment_queue: Queue = Queue()
 
-    # 3) Launch the Selenium/Broadcastify thread
-    broadcaster_thread = threading.Thread(
-        target=start_and_monitor_broadcastify,
-        name="BroadcasterMonitor",
-        daemon=True
-    )
-    broadcaster_thread.start()
-    logger.info("Started BroadcasterMonitor thread.")
-
-    from config import find_input_device
-
-    device_index = find_input_device("BlackHole 2ch")
-    if device_index is None:
-        raise RuntimeError("Preferred input device not found.")
+    # 3) Start FFmpeg to capture the audio stream
+    ffmpeg_process = start_ffmpeg_stream()
+    if not ffmpeg_process or not ffmpeg_process.stdout:
+        logger.critical("Failed to start FFmpeg stream. Exiting.")
+        sys.exit(1)
 
     # 4) Launch the AudioRecorder thread
     audio_recorder = AudioRecorder(
         segment_queue=segment_queue,
+        input_stream=ffmpeg_process.stdout,
         sample_rate=SAMPLE_RATE,
         channels=CHANNELS,
         threshold_db=THRESHOLD_DB,
-        lookback_ms=LOOKBACK_MS,
-        input_device_index=device_index
+        lookback_ms=LOOKBACK_MS
     )
     audio_recorder.start()
     logger.debug("Started AudioRecorder thread.")
@@ -161,8 +152,15 @@ def main():
             # else: no alert, keep looping
 
         except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received; shutting down AudioRecorder.")
+            logger.info("Keyboard interrupt received; shutting down.")
             audio_recorder.stop()
+            ffmpeg_process.terminate()
+            try:
+                # Wait a moment for the process to terminate
+                ffmpeg_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning("FFmpeg process did not terminate gracefully, killing.")
+                ffmpeg_process.kill()
             break
         except Exception as e:
             logger.exception(f"Error in main loop: {e}")

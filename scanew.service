@@ -1,0 +1,24 @@
+[Unit]
+Description=Scannew Dispatch Transcriber
+After=network.target
+
+[Service]
+# IMPORTANT: Replace with the username you are running the app as on your server
+User=outjet
+# IMPORTANT: Replace with the group for that user
+Group=outjet
+
+# IMPORTANT: Replace with the absolute path to the project directory on your server
+WorkingDirectory=/home/outjet/scanew
+
+# IMPORTANT: Replace with the absolute path to the python executable in your virtual environment
+ExecStart=/home/outjet/scanew/myenv/bin/python /home/outjet/scanew/src/main.py
+
+# Optional: Uncomment and set the destination for transcription POSTs
+# Environment="TRANSCRIPTION_POST_URL=http://localhost:8000/transcription"
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

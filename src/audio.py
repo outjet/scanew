@@ -7,8 +7,8 @@ import logging
 from queue import Queue
 from datetime import datetime
 import wave
-import pyaudio
 from pathlib import Path
+from typing import IO
 
 from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
 
@@ -16,54 +16,38 @@ logger = logging.getLogger(__name__)
 
 class AudioRecorder(threading.Thread):
     """
-    Continuously reads from the default recording device (loopback or stereo-mix),
-    applies a simple RMS-based VAD, and whenever it detects a speech segment,
-    it writes the raw frames to a temp WAV file and enqueues it for transcription.
+    Continuously reads raw PCM data from an input stream, applies a simple
+    RMS-based VAD, and whenever it detects a speech segment, it writes the raw
+    frames to a temp WAV file and enqueues it for transcription.
     """
 
     def __init__(
         self,
         segment_queue: Queue,
+        input_stream: IO[bytes],
         sample_rate: int = SAMPLE_RATE,
         channels: int = CHANNELS,
         threshold_db: float = THRESHOLD_DB,
         lookback_ms: int = LOOKBACK_MS,
-        input_device_index: int | None = None
     ):
         super().__init__(daemon=True, name="AudioRecorder")
         self.segment_queue = segment_queue
+        self.input_stream = input_stream
         self.sample_rate = sample_rate
         self.channels = channels
         self.threshold_db = threshold_db
         self.lookback_ms = lookback_ms
-        self.input_device_index = input_device_index
 
         self.chunk_size = 1024  # read in 1024-sample increments
-        self.audio_interface = pyaudio.PyAudio()
-        self.sample_width = self.audio_interface.get_sample_size(pyaudio.paInt16)
+        self.sample_width = 2  # Corresponds to 16-bit PCM
+        self.bytes_per_chunk = self.chunk_size * self.channels * self.sample_width
         self.silence_buffer_chunks = int(
             math.ceil((lookback_ms / 1000.0) * (sample_rate / self.chunk_size))
         )
-
-        self.stream = None
         self._stop_event = threading.Event()
 
     def run(self):
         logger.info("Starting AudioRecorder thread.")
-        try:
-            logger.debug(f"Opening PyAudio stream on device index {self.input_device_index}")
-            self.stream = self.audio_interface.open(
-                format=pyaudio.paInt16,
-                channels=self.channels,
-                rate=self.sample_rate,
-                input=True,
-                input_device_index=self.input_device_index,
-                frames_per_buffer=self.chunk_size
-            )
-        except Exception as e:
-            logger.exception(f"Failed to open audio stream: {e}")
-            return
-
         try:
             while not self._stop_event.is_set():
                 frames = self._record_one_segment()
@@ -74,12 +58,10 @@ class AudioRecorder(threading.Thread):
                     logger.debug(f"Wrote temp WAV: {temp_wav_path}")
                     self.segment_queue.put(temp_wav_path)
         except Exception as e:
-            logger.exception(f"AudioRecorder encountered an error: {e}")
+            # Avoid logging errors if the thread was stopped intentionally
+            if not self._stop_event.is_set():
+                logger.exception("AudioRecorder encountered an error")
         finally:
-            if self.stream:
-                self.stream.stop_stream()
-                self.stream.close()
-            self.audio_interface.terminate()
             logger.info("AudioRecorder thread stopped.")
 
     def stop(self):
@@ -96,13 +78,16 @@ class AudioRecorder(threading.Thread):
         recording = False
 
         # Pre-fill the lookback buffer with silent chunks
-        silent_frame = (b"\x00" * self.chunk_size * self.channels * self.sample_width)
+        silent_frame = (b"\x00" * self.bytes_per_chunk)
         for _ in range(self.silence_buffer_chunks):
             lookback_buffer.append(silent_frame)
 
         while not self._stop_event.is_set():
             try:
-                data = self.stream.read(self.chunk_size, exception_on_overflow=False)
+                data = self.input_stream.read(self.bytes_per_chunk)
+                if not data:
+                    logger.warning("Audio stream ended.")
+                    return None
             except Exception as e:
                 logger.warning(f"Error reading from audio stream: {e}")
                 return None
