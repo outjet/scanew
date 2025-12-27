@@ -255,7 +255,7 @@
 
   <!-- Define URLs before loading dispatch.js -->
   <script>
-    var streamUrl             = "{{ url_for('dispatch.stream') }}";
+    var streamUrl             = {{ stream_url|tojson }};
     var blotterUrl            = "{{ url_for('dispatch.blotter') }}";
     var editTranscriptionUrl  = "{{ url_for('dispatch.edit_transcription') }}";
     var addTranscriptionUrl   = "{{ url_for('dispatch.add_transcription') }}";

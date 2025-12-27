@@ -84,7 +84,8 @@ def view_transcriptions():
                                per_page=per_page,
                                search_query=search_query,
                                page_range_start=page_range_start,
-                               page_range_end=page_range_end)
+                               page_range_end=page_range_end,
+                               stream_url=None)
 
     except Exception as e:
         current_app.logger.error(f"Error fetching transcriptions: {e}", exc_info=True)
