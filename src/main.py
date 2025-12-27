@@ -182,6 +182,10 @@ def main():
                     pushover_code=None,
                     response_code=None
                 )
+                with state_lock:
+                    current_recorder = state.get("recorder")
+                if current_recorder:
+                    current_recorder.mark_transcription()
                 if final_wav_filename:
                     file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
                     if POST_TRANSCRIPTIONS:

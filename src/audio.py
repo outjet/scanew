@@ -53,6 +53,7 @@ class AudioRecorder(threading.Thread):
         self._bytes_read_total = 0
         self._bytes_read_last = 0
         self._last_db = None
+        self._last_transcription_time = None
 
     def run(self):
         logger.info("Starting AudioRecorder thread.")
@@ -112,10 +113,11 @@ class AudioRecorder(threading.Thread):
                     elapsed = now - self._last_heartbeat
                     rate = (delta / elapsed) if elapsed > 0 else 0.0
                     logger.info(
-                        "Audio heartbeat: bytes=%d bytes_per_sec=%.1f last_db=%.1f",
+                        "Audio heartbeat: bytes=%d bytes_per_sec=%.1f last_db=%.1f last_transcription_age=%s",
                         delta,
                         rate,
                         db,
+                        self._format_transcription_age(now),
                     )
                     self._bytes_read_last = self._bytes_read_total
                     self._last_heartbeat = now
@@ -145,6 +147,15 @@ class AudioRecorder(threading.Thread):
 
     def last_read_age(self) -> float:
         return time.monotonic() - self._last_read_time
+
+    def mark_transcription(self) -> None:
+        self._last_transcription_time = time.monotonic()
+
+    def _format_transcription_age(self, now: float) -> str:
+        if self._last_transcription_time is None:
+            return "n/a"
+        age = now - self._last_transcription_time
+        return f"{age:.0f}s"
 
     def _write_wav(self, frames: list[bytes], wav_path: Path):
         """
