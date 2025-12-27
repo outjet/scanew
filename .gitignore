@@ -7,6 +7,7 @@ __pycache__/
 myenv/
 env/
 venv/
+dispatch/
 
 # Environment and config files
 .env
@@ -21,7 +22,7 @@ recordings/
 
 # SQLite database
 transcriptions.db
-instance/transcriptions.sql
+dispatch/instance/transcriptions.sql
 
 # OS / Editor junk
 .DS_Store
