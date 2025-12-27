@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 def _drain_ffmpeg_stderr(process: subprocess.Popen) -> None:
     if not process.stderr:
         return
-    for line in iter(process.stderr.readline, ""):
-        line = line.strip()
+    for raw_line in iter(process.stderr.readline, b""):
+        line = raw_line.decode("utf-8", errors="replace").strip()
         if line:
             logger.debug("FFmpeg: %s", line)
 
@@ -49,8 +49,6 @@ def start_ffmpeg_stream(stream_url: str = BROADCASTIFY_URL):
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
         )
         threading.Thread(
             target=_drain_ffmpeg_stderr,
