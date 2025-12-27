@@ -21,6 +21,7 @@ recordings/
 
 # SQLite database
 transcriptions.db
+instance/transcriptions.sql
 
 # OS / Editor junk
 .DS_Store
