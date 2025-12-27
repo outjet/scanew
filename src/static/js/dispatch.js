@@ -8,6 +8,7 @@ let eventSource;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 const audioUrl = '/static/tones/Long MP7 ID.mp3';  // Updated path
+const SSE_ENABLED = false;
 
 function formatTimestampEastern(isoString) {
     const date = new Date(isoString);
@@ -36,6 +37,11 @@ function formatTimestampEastern(isoString) {
 
 // Replace hardcoded '/streamers' with streamUrl
 function setupSSE(calledFrom = 'unknown') {
+    if (!SSE_ENABLED) {
+        console.log(`SSE disabled - skipping setup (called from: ${calledFrom})`);
+        updateConnectionStatus('disabled');
+        return;
+    }
     if (eventSource) {
         eventSource.close();
     }
@@ -163,6 +169,11 @@ function updateConnectionStatus(status) {
                 statusElement.innerHTML = '<i class="fas fa-times-circle"></i> Failed';
                 statusElement.className = 'sse-status failed';
                 statusElement.title = 'Connection failed. Please refresh the page';
+                break;
+            case 'disabled':
+                statusElement.innerHTML = '<i class="fas fa-ban"></i> SSE Off';
+                statusElement.className = 'sse-status disabled';
+                statusElement.title = 'Real-time updates are temporarily disabled';
                 break;
             case 'search_mode':
                 statusElement.innerHTML = '<i class="fas fa-search"></i> Search Mode';

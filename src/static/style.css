@@ -250,6 +250,11 @@ table tbody tr:hover {
     animation: pulse 1s infinite; /* Faster pulse for failed */
 }
 
+.sse-status.disabled {
+    background-color: #6C757D; /* Gray for disabled */
+    color: white;
+}
+
 .sse-status.search-mode {
     background-color: #6C757D; /* Gray for search mode */
     color: white;
