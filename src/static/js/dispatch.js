@@ -8,7 +8,7 @@ let eventSource;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 const audioUrl = '/static/tones/Long MP7 ID.mp3';  // Updated path
-const SSE_ENABLED = false;
+const SSE_ENABLED = true;
 
 function formatTimestampEastern(isoString) {
     const date = new Date(isoString);

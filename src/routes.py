@@ -2,7 +2,7 @@
 
 from flask import (
     Blueprint, render_template, request, jsonify,
-    current_app, abort, Response, stream_with_context
+    current_app, abort, Response, stream_with_context, url_for
 )
 from flask_login import login_required, current_user
 dispatch_bp = Blueprint(
@@ -85,7 +85,7 @@ def view_transcriptions():
                                search_query=search_query,
                                page_range_start=page_range_start,
                                page_range_end=page_range_end,
-                               stream_url=None)
+                               stream_url=url_for('dispatch.stream'))
 
     except Exception as e:
         current_app.logger.error(f"Error fetching transcriptions: {e}", exc_info=True)
@@ -312,38 +312,38 @@ def add_transcription():
         db.session.rollback()  # Roll back any changes on error
         return jsonify({'error': 'Unexpected error'}), 500
 
-# @dispatch_bp.route('/streamers')
-# def stream():
-#     try:
-#         return Response(
-#             stream_with_context(event_stream()),
-#             mimetype='text/event-stream',
-#             content_type='text/event-stream'
-#         )
-#     except Exception as e:
-#         current_app.logger.error(f"Error in stream route: {str(e)}")
-#         return "Error", 500
+@dispatch_bp.route('/streamers')
+def stream():
+    try:
+        return Response(
+            stream_with_context(event_stream()),
+            mimetype='text/event-stream',
+            content_type='text/event-stream'
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error in stream route: {str(e)}")
+        return "Error", 500
 
-# def event_stream():
-#     try:
-#         redis_client = Redis.from_url(current_app.config['REDIS_URL'])
-#         pubsub = redis_client.pubsub()
-#         pubsub.subscribe('sse_channel')
-#         last_keepalive = time.time()
-#         keepalive_interval = 15  # seconds
+def event_stream():
+    try:
+        redis_client = Redis.from_url(current_app.config['REDIS_URL'])
+        pubsub = redis_client.pubsub()
+        pubsub.subscribe('sse_channel')
+        last_keepalive = time.time()
+        keepalive_interval = 15  # seconds
 
-#         for message in pubsub.listen():
-#             if message['type'] == 'message':
-#                 yield f"data: {message['data'].decode('utf-8')}\n\n"
+        for message in pubsub.listen():
+            if message['type'] == 'message':
+                yield f"data: {message['data'].decode('utf-8')}\n\n"
 
-#             # Send a comment every 15 seconds to keep the connection alive
-#             if time.time() - last_keepalive > keepalive_interval:
-#                 yield ": keep-alive\n\n"
-#                 last_keepalive = time.time()
-#     except Exception as e:
-#         current_app.logger.error(f"Error in event stream: {e}", exc_info=True)
-#         # Optionally, yield an error message or close the stream
-#         yield f"data: {{'error': 'Internal Server Error'}}\n\n"
+            # Send a comment every 15 seconds to keep the connection alive
+            if time.time() - last_keepalive > keepalive_interval:
+                yield ": keep-alive\n\n"
+                last_keepalive = time.time()
+    except Exception as e:
+        current_app.logger.error(f"Error in event stream: {e}", exc_info=True)
+        # Optionally, yield an error message or close the stream
+        yield "data: {\"error\": \"Internal Server Error\"}\n\n"
 
 @dispatch_bp.route('/transcription_context/<int:transcription_id>')
 @login_required
