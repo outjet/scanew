@@ -33,7 +33,7 @@ def convert_to_eastern(timestamp_str):
         return None
 
 @dispatch_bp.route('/', methods=['GET', 'POST'])
-# @login_required # Temporarily commented out for debugging Gunicorn timeouts
+@login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
 def view_transcriptions():
     try:
@@ -92,7 +92,7 @@ def view_transcriptions():
         abort(500, description="An internal error occurred.")
 
 @dispatch_bp.route('/fetch_new_transcriptions')
-# @login_required # Temporarily commented out for debugging Gunicorn timeouts
+@login_required
 # @role_required('dispatch', 'user') # TODO: Commented out due to missing `utils.py`
 def fetch_new_transcriptions():
     try:
@@ -127,7 +127,7 @@ def fetch_new_transcriptions():
         abort(500, description="An internal error occurred.")
         
 @dispatch_bp.route('/blotter')
-# @login_required
+@login_required
 # @role_required('admin','user')
 def blotter():
     try:
@@ -204,7 +204,7 @@ def blotter():
 
 @dispatch_bp.route('/daily_blotter')
 @dispatch_bp.route('/daily_blotter/<date>')
-# @login_required # Temporarily commented out for debugging Gunicorn timeouts
+@login_required
 # @role_required('admin') # TODO: Commented out due to missing `utils.py`
 def daily_blotter(date=None):
     try:
@@ -230,7 +230,7 @@ def daily_blotter(date=None):
         abort(500, description="An internal error occurred.")
 
 @dispatch_bp.route('/unit_locations')
-# @login_required # Temporarily commented out for debugging Gunicorn timeouts
+@login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
 def unit_locations():
     try:
@@ -346,7 +346,7 @@ def add_transcription():
 #         yield f"data: {{'error': 'Internal Server Error'}}\n\n"
 
 @dispatch_bp.route('/transcription_context/<int:transcription_id>')
-# @login_required # Temporarily commented out for debugging Gunicorn timeouts
+@login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
 def transcription_context(transcription_id):
     try:
@@ -397,7 +397,7 @@ def transcription_context(transcription_id):
         abort(500, description="An internal error occurred.")
 
 @dispatch_bp.route('/edit_transcription', methods=['POST'])
-# @login_required # Temporarily commented out for debugging Gunicorn timeouts
+@login_required
 # @role_required('admin') # TODO: Commented out due to missing `utils.py`
 def edit_transcription():
     try:
