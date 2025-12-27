@@ -55,7 +55,7 @@
                         <th style="width: 50px;">▶︎</th>
                         <th style="width: 150px;">Time</th>
                         <th>Text</th>
-                        {% if current_user.has_role('admin') %}
+                        {% if current_user.is_authenticated and current_user.has_role('admin') %}
                             <th style="width: 100px;">Actions</th>
                         {% endif %}
                     </tr>
@@ -78,7 +78,7 @@
                             <td>
                                 <span class="transcription-text">{{ transcription.transcript }}</span>
                             </td>
-                            {% if current_user.has_role('admin') %}
+                            {% if current_user.is_authenticated and current_user.has_role('admin') %}
                                 <td>
                                     <button class="btn btn-sm btn-primary edit-btn" data-id="{{ transcription.id }}">
                                         Edit
@@ -135,7 +135,7 @@
     <!-- Define URLs before loading dispatch.js -->
     <script>
         var editTranscriptionUrl = "{{ url_for('dispatch.edit_transcription') }}";
-        var userHasAdminRole = "{{ 'true' if current_user.has_role('admin') else 'false' }}" === "true";
+        var userHasAdminRole = "{{ 'true' if (current_user.is_authenticated and current_user.has_role('admin')) else 'false' }}" === "true";
     </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
