@@ -297,7 +297,9 @@ def add_transcription():
             'timestamp': timestamp_dt.isoformat(),
             'wav_filename': wav_filename,
             'transcript': transcript,
-            'formatted_timestamp': timestamp_dt.strftime('%a %d-%b %H:%M:%S')
+            'formatted_timestamp': timestamp_dt.strftime('%a %d-%b %H:%M:%S'),
+            'text': transcript,
+            'url': f"/static/recordings/{wav_filename}" if wav_filename else None
         }
 
         # Publish the new transcription to Redis

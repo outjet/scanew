@@ -66,7 +66,7 @@
                             data-id="{{ transcription.id }}">
                             <td>
                                 {% if transcription.wav_filename %}
-                                    <span class="audio-icon" onclick="playAudio('{{ transcription.wav_filename }}')">▶︎</span>
+                                    <span class="audio-icon" onclick="playAudio('/static/recordings/{{ transcription.wav_filename }}')">▶︎</span>
                                 {% endif %}
                             </td>
                             <td>

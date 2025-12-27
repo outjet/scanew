@@ -281,7 +281,7 @@ function addNewTranscription(timestamp, url, text) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ timestamp, url, text }),
+        body: JSON.stringify({ timestamp, wav_filename: null, transcript: text, url }),
     })
     .then(response => {
         if (!response.ok) {
@@ -300,14 +300,32 @@ function addNewTranscription(timestamp, url, text) {
     });
 }
 
+function buildAudioUrl(transcription) {
+    if (transcription.url) {
+        return transcription.url;
+    }
+    if (transcription.wav_filename) {
+        return `/static/recordings/${transcription.wav_filename}`;
+    }
+    if (transcription.wavFilename) {
+        return `/static/recordings/${transcription.wavFilename}`;
+    }
+    return null;
+}
+
+function getTranscriptionText(transcription) {
+    return transcription.text || transcription.transcript || '';
+}
+
 function createTranscriptionRow(transcription) {
     const newRow = document.createElement('tr');
     newRow.setAttribute('data-id', transcription.id);
     
     // Build left column HTML (audio + context icon)
     let leftColumnHtml = '';
-    if (transcription.url) {
-        leftColumnHtml += `<span class="audio-icon" onclick="playAudio('${transcription.url}')">▶︎</span>`;
+    const audioUrl = buildAudioUrl(transcription);
+    if (audioUrl) {
+        leftColumnHtml += `<span class="audio-icon" onclick="playAudio('${audioUrl}')">▶︎</span>`;
     }
     
     // Add context icon only when there's a search query
@@ -332,7 +350,7 @@ function createTranscriptionRow(transcription) {
         </td>
         <td data-timestamp="${transcription.timestamp}">
             <small>${formatTimestampEastern(transcription.timestamp)}</small><br>
-            <span class="transcription-text">${transcription.text}</span>
+            <span class="transcription-text">${getTranscriptionText(transcription)}</span>
         </td>
         ${actionsCellHtml}
     `;
@@ -340,6 +358,10 @@ function createTranscriptionRow(transcription) {
 }
 
 function playAudio(url) {
+    if (!url) {
+        console.warn('No audio URL provided for playback.');
+        return;
+    }
     const audio = new Audio(url);
     audio.play();
 }
