@@ -4,13 +4,14 @@ import audioop
 import math
 import threading
 import logging
+import time
 from queue import Queue
 from datetime import datetime
 import wave
 from pathlib import Path
 from typing import IO
 
-from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR
+from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR, AUDIO_HEARTBEAT_SEC
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class AudioRecorder(threading.Thread):
         channels: int = CHANNELS,
         threshold_db: float = THRESHOLD_DB,
         lookback_ms: int = LOOKBACK_MS,
+        heartbeat_sec: int = AUDIO_HEARTBEAT_SEC,
     ):
         super().__init__(daemon=True, name="AudioRecorder")
         self.segment_queue = segment_queue
@@ -45,6 +47,12 @@ class AudioRecorder(threading.Thread):
             math.ceil((lookback_ms / 1000.0) * (sample_rate / self.chunk_size))
         )
         self._stop_event = threading.Event()
+        self._heartbeat_interval = heartbeat_sec
+        self._last_heartbeat = time.monotonic()
+        self._last_read_time = time.monotonic()
+        self._bytes_read_total = 0
+        self._bytes_read_last = 0
+        self._last_db = None
 
     def run(self):
         logger.info("Starting AudioRecorder thread.")
@@ -94,6 +102,23 @@ class AudioRecorder(threading.Thread):
 
             rms = audioop.rms(data, self.sample_width)
             db = 20 * math.log10(rms) if rms > 0 else -float("inf")
+            self._bytes_read_total += len(data)
+            self._last_read_time = time.monotonic()
+            self._last_db = db
+            if self._heartbeat_interval > 0:
+                now = time.monotonic()
+                if now - self._last_heartbeat >= self._heartbeat_interval:
+                    delta = self._bytes_read_total - self._bytes_read_last
+                    elapsed = now - self._last_heartbeat
+                    rate = (delta / elapsed) if elapsed > 0 else 0.0
+                    logger.info(
+                        "Audio heartbeat: bytes=%d bytes_per_sec=%.1f last_db=%.1f",
+                        delta,
+                        rate,
+                        db,
+                    )
+                    self._bytes_read_last = self._bytes_read_total
+                    self._last_heartbeat = now
 
             if db > self.threshold_db:
                 # We're “in speech”
@@ -117,6 +142,9 @@ class AudioRecorder(threading.Thread):
 
         # If stop was requested mid-segment
         return None
+
+    def last_read_age(self) -> float:
+        return time.monotonic() - self._last_read_time
 
     def _write_wav(self, frames: list[bytes], wav_path: Path):
         """
