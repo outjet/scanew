@@ -65,8 +65,8 @@
                         <tr class="transcription-row {% if transcription.is_target %}target-transcription{% endif %}" 
                             data-id="{{ transcription.id }}">
                             <td>
-                                {% if transcription.url %}
-                                    <span class="audio-icon" onclick="playAudio('{{ transcription.url }}')">▶︎</span>
+                                {% if transcription.wav_filename %}
+                                    <span class="audio-icon" onclick="playAudio('{{ transcription.wav_filename }}')">▶︎</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -76,7 +76,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="transcription-text">{{ transcription.text }}</span>
+                                <span class="transcription-text">{{ transcription.transcript }}</span>
                             </td>
                             {% if current_user.has_role('admin') %}
                                 <td>

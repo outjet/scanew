@@ -98,9 +98,9 @@
         {% for transcription in transcriptions %}
           <tr data-id="{{ transcription.id }}">
             <td>
-              {% if transcription.url %}
+              {% if transcription.wav_filename %}
                 <span class="audio-icon"
-                      onclick="playAudio('{{ transcription.url }}')">▶︎</span>
+                      onclick="playAudio('{{ transcription.wav_filename }}')">▶︎</span>
               {% endif %}
               {% if search_query %}
                 <br>
@@ -113,7 +113,7 @@
             </td>
             <td data-timestamp="{{ transcription.timestamp }}">
               <small>{{ transcription.formatted_timestamp }}</small><br>
-              <span class="transcription-text">{{ transcription.text }}</span>
+              <span class="transcription-text">{{ transcription.transcript }}</span>
             </td>
             {% if current_user.has_role('admin') %}
               <td class="admin-actions-cell">
