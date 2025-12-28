@@ -77,7 +77,8 @@ def create_app():
                 db.session.commit()
                 app.logger.info(f"Created new user: {db_user.email}")
 
-            login_user(db_user)
+            session.permanent = True
+            login_user(db_user, remember=True)
             app.logger.info(f"Logged in user: {db_user.email}")
 
             return redirect(session.get("next", url_for("dispatch.view_transcriptions")))

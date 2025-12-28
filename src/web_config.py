@@ -13,7 +13,11 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     REDIS_URL = 'redis://localhost:6379'
-    PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
+    PERMANENT_SESSION_LIFETIME = timedelta(days=14)
+    REMEMBER_COOKIE_DURATION = timedelta(days=14)
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = 'Lax'
     LOG_FILE = '/var/log/gunicorn/dispatch-debug.log'
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(basedir, "transcriptions.db")}'
