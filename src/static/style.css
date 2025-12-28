@@ -1,0 +1,380 @@
+/* style.css */
+/* Combined and pruned styles for dispatch.html */
+
+/* --- Base Styles (from style.css originally, potentially modified/simplified) --- */
+body {
+    /* font-family: 'Lora', serif; */ /* Overridden by inline style in HTML */
+    font-family: Arial, sans-serif; /* Match inline style */
+    margin: 0;
+    padding: 20px; /* As per inline style */
+    background-color: #f7f9fc;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto; /* Centering */
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    /* padding handled by inline style in body */
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #444;
+    /* margin-top handled by .mt-5 class */
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px; /* Reduced default */
+    /* Specific styling for toneSelect label if needed */
+}
+
+select, input {
+    /* Base styles for select/input elements */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    max-width: 200px; /* Applied to toneSelect */
+}
+
+/* Input specifically used for search */
+#searchInput {
+    width: 100%; /* Takes available space in input-group */
+    max-width: 600px; /* Limited max width */
+    padding: 10px; /* Larger padding for search */
+    font-size: 16px; /* Larger font for search */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* Bootstrap .form-control class will handle most styling */
+}
+
+button.btn {
+    /* Base custom button style - may be overridden by Bootstrap classes */
+    padding: 10px 20px;
+    background-color: #4d544e; /* Default custom background */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+    /* Bootstrap .btn-* classes will override background, etc. */
+}
+
+button.btn:hover {
+    /* Base custom hover - may be overridden by Bootstrap classes */
+    background-color: #45a049;
+}
+
+/* --- Search/Input Group Styles (from dispatch.css) --- */
+#searchForm {
+    margin-bottom: 15px; /* Space below the form */
+}
+
+.input-group-append .btn {
+    margin-left: 5px; /* Space between buttons in the append group */
+}
+
+.input-group-append .btn:first-child {
+    margin-left: 0; /* No margin for the first button next to input */
+}
+
+/* --- Table Styles --- */
+table {
+    width: 100%;
+    /* border-collapse: collapse; */ /* Bootstrap uses collapse by default */
+    /* border-spacing: 0 10px; */ /* Not needed with collapse */
+    margin-top: 20px;
+}
+
+/* Base th, td from style.css - May conflict/be overridden by Bootstrap & dispatch.css rules */
+/* Consider removing if Bootstrap + dispatch.css rules below are sufficient */
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    background: #fff;
+    box-shadow: -1px -1px 0px rgba(0, 0, 0, 0.1);
+}
+th {
+    background-color: #f2f2f2;
+    border-bottom: 2px solid #ddd;
+}
+td {
+    border: none;
+}
+
+
+/* Table style overrides/additions from dispatch.css */
+.table { /* Style for the table element itself */
+    box-shadow: 0 2px 5px rgba(0,0,0,.1);
+}
+
+.table thead th { /* Style for table headers */
+    background-color: #f8f9fa; /* Bootstrap-like header color */
+    border-bottom: 2px solid #dee2e6; /* Bootstrap-like border */
+    /* Overrides th style from style.css */
+}
+
+/* Hover effect from style.css */
+table tbody tr:hover {
+    background-color: #f9f9f9;
+    transform: translateY(-2px);
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.audio-icon { /* From dispatch.css */
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
+.context-icon {
+    cursor: pointer;
+    font-size: 1.1em;
+    color: #17a2b8;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 2px;
+    transition: all 0.2s ease;
+    padding: 2px;
+    border-radius: 3px;
+}
+
+.context-icon:hover {
+    color: #138496;
+    transform: scale(1.1);
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+/* Blotter section styling */
+#blotterOutput {
+    transition: all 0.3s ease;
+}
+
+#blotterOutput.loading {
+    opacity: 0.7;
+}
+
+#loadBlotterBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#blotterSection {
+    transition: all 0.3s ease;
+}
+
+#refreshBlotterBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* --- Pagination Styles (from style.css) --- */
+.pagination {
+    display: flex; /* Bootstrap handles this */
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* Custom pagination link appearance */
+.pagination .page-link { /* Target Bootstrap's class within our pagination */
+    color: rgb(0, 0, 0);
+    padding: 8px 16px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    border: 1px solid #ddd;
+    margin: 0 5px;
+    border-radius: 4px;
+    background-color: #fff; /* Ensure background for non-active */
+}
+
+.pagination .page-item.active .page-link { /* Target Bootstrap active state */
+    background-color: #4CAF50;
+    color: white;
+    border: 1px solid #4CAF50;
+    z-index: 3; /* Ensure active is on top */
+}
+
+.pagination .page-item:not(.active) .page-link:hover { /* Custom hover for non-active */
+    background-color: #ddd;
+    color: rgb(0, 0, 0); /* Keep text color on hover */
+}
+
+.pagination .page-item.disabled .page-link { /* Style disabled links */
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #ddd;
+}
+
+
+/* --- SSE Status Styles (from dispatch.css) --- */
+.sse-status {
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
+    padding: 8px 12px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    z-index: 9999 !important; /* Very high z-index to ensure visibility */
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+    min-width: 80px !important;
+    text-align: center !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.sse-status.connected {
+    background-color: #4CAF50; /* Green for connected */
+    color: white;
+}
+
+.sse-status.disconnected {
+    background-color: #FFC107; /* Yellow for disconnected */
+    color: black;
+    animation: pulse 2s infinite; /* Pulse animation for disconnected */
+}
+
+.sse-status.failed {
+    background-color: #DC3545; /* Red for failed */
+    color: white;
+    animation: pulse 1s infinite; /* Faster pulse for failed */
+}
+
+.sse-status.disabled {
+    background-color: #6C757D; /* Gray for disabled */
+    color: white;
+}
+
+.sse-status.search-mode {
+    background-color: #6C757D; /* Gray for search mode */
+    color: white;
+}
+
+.sse-status.unknown {
+    background-color: #6C757D; /* Gray for unknown */
+    color: white;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* --- Modal Styles (from dispatch.css) --- */
+
+/* Styles for the fullscreen Unit Locations modal */
+.modal.fullscreen-modal .modal-dialog {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.modal.fullscreen-modal .modal-content {
+    height: 100%;
+    border-radius: 0; /* No rounded corners on fullscreen */
+    display: flex; /* Needed for flex body */
+    flex-direction: column; /* Needed for flex body */
+}
+
+.modal.fullscreen-modal .modal-body {
+    flex: 1; /* Allow body to grow */
+    overflow-y: auto; /* Enable scrolling within the modal body */
+}
+
+/* --- Unit Location Card Styles (from dispatch.css) --- */
+.unit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); /* Responsive grid */
+    gap: 20px;
+    padding: 10px; /* Padding inside the content area */
+}
+
+.unit-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.unit-card:hover {
+    transform: translateY(-3px); /* Slight lift on hover */
+}
+
+.unit-header {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.unit-body p {
+    margin: 5px 0; /* Spacing for paragraphs inside card */
+    font-size: 0.9rem; /* Slightly smaller text */
+}
+
+.unit-body p strong {
+    /* Style for labels if needed */
+}
+.unit-body p small {
+    /* Style for timestamp if needed */
+     color: #6c757d;
+}
+
+
+/* --- Responsive Adjustments --- */
+
+/* Adjust input group buttons on smaller screens */
+@media (max-width: 768px) {
+    .input-group {
+        flex-wrap: nowrap; /* Prevent wrapping */
+    }
+    .input-group-append {
+        display: flex;
+        flex-wrap: nowrap;
+    }
+    .input-group-append .btn {
+        padding-left: 8px; /* Smaller padding */
+        padding-right: 8px;
+    }
+}
+
+/* Hide Admin Actions column on smaller screens */
+@media screen and (max-width: 767px) {
+    .admin-actions-cell { /* Use the class added to the th/td */
+        display: none;
+    }
+}
+
+/* Reduce H1 size on very small screens */
+@media screen and (max-width: 505px) {
+    h1#dispatch-log {
+        font-size: 1.2em; /* Adjust as needed */
+    }
+}
+
+/* Adjust SSE status for mobile */
+@media screen and (max-width: 768px) {
+    .sse-status {
+        top: 5px;
+        right: 5px;
+        font-size: 11px;
+        padding: 6px 10px;
+        min-width: 70px;
+    }
+}
+
+/* --- End of style.css --- */
