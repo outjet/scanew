@@ -22,8 +22,10 @@ from config import (
     RECORDINGS_DIR,
     POST_TRANSCRIPTIONS,
     AUDIO_STALL_SECONDS,
-    AUDIO_HEARTBEAT_SEC
+    AUDIO_HEARTBEAT_SEC,
+    REDIS_URL
 )
+from redis import Redis
 from stream_handler import start_ffmpeg_stream
 from audio import AudioRecorder
 from transcribe import transcribe_full_segment
@@ -190,6 +192,21 @@ def main():
                     file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
                     if POST_TRANSCRIPTIONS:
                         post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
+
+                try:
+                    redis_client = Redis.from_url(REDIS_URL)
+                    payload = {
+                        "id": row_id,
+                        "timestamp": timestamp_iso,
+                        "wav_filename": final_wav_filename,
+                        "transcript": filtered,
+                        "formatted_timestamp": datetime.now().strftime("%a %d-%b %H:%M:%S"),
+                        "text": filtered,
+                        "url": f"/recordings/{final_wav_filename}" if final_wav_filename else None,
+                    }
+                    redis_client.publish("sse_channel", json.dumps(payload))
+                except Exception as e:
+                    logger.warning("Failed to publish transcription to Redis: %s", e)
 
             if matches_alert_pattern(filtered):
                 msg = filtered[:100] + "..." if len(filtered) > 100 else filtered
