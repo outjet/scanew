@@ -46,6 +46,8 @@ LOOKBACK_MS: int = int(os.getenv("LOOKBACK_MS", "1000"))
 MIN_SILENCE_LEN: int = int(os.getenv("MIN_SILENCE_LEN", "500"))
 AUDIO_HEARTBEAT_SEC: int = int(os.getenv("AUDIO_HEARTBEAT_SEC", "60"))
 AUDIO_STALL_SECONDS: int = int(os.getenv("AUDIO_STALL_SECONDS", "300"))
+TRANSCRIPTION_STALL_SECONDS: int = int(os.getenv("TRANSCRIPTION_STALL_SECONDS", "600"))
+SILENCE_DB_THRESHOLD: float = float(os.getenv("SILENCE_DB_THRESHOLD", "-80"))
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 RECORDINGS_DIR = Path(os.getenv("RECORDINGS_DIR", "recordings"))

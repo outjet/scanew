@@ -148,8 +148,16 @@ class AudioRecorder(threading.Thread):
     def last_read_age(self) -> float:
         return time.monotonic() - self._last_read_time
 
+    def last_db(self):
+        return self._last_db
+
     def mark_transcription(self) -> None:
         self._last_transcription_time = time.monotonic()
+
+    def last_transcription_age(self):
+        if self._last_transcription_time is None:
+            return None
+        return time.monotonic() - self._last_transcription_time
 
     def _format_transcription_age(self, now: float) -> str:
         if self._last_transcription_time is None:

@@ -24,7 +24,9 @@ from config import (
     POST_TRANSCRIPTIONS,
     AUDIO_STALL_SECONDS,
     AUDIO_HEARTBEAT_SEC,
-    REDIS_URL
+    REDIS_URL,
+    TRANSCRIPTION_STALL_SECONDS,
+    SILENCE_DB_THRESHOLD
 )
 from redis import Redis
 from stream_handler import start_ffmpeg_stream
@@ -122,6 +124,19 @@ def main():
                 continue
             if recorder and recorder.last_read_age() > AUDIO_STALL_SECONDS:
                 restart_pipeline(f"no audio bytes for {AUDIO_STALL_SECONDS}s")
+                continue
+            if recorder:
+                transcription_age = recorder.last_transcription_age()
+                last_db = recorder.last_db()
+                if (
+                    transcription_age is not None
+                    and transcription_age > TRANSCRIPTION_STALL_SECONDS
+                    and last_db is not None
+                    and last_db <= SILENCE_DB_THRESHOLD
+                ):
+                    restart_pipeline(
+                        f"no transcriptions for {int(transcription_age)}s and silence db={last_db:.1f}"
+                    )
 
     threading.Thread(target=monitor_pipeline, daemon=True, name="StreamWatchdog").start()
 
