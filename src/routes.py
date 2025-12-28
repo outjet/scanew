@@ -325,11 +325,14 @@ def add_transcription():
 @dispatch_bp.route('/streamers')
 def stream():
     try:
-        return Response(
+        response = Response(
             stream_with_context(event_stream()),
             mimetype='text/event-stream',
             content_type='text/event-stream'
         )
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["X-Accel-Buffering"] = "no"
+        return response
     except Exception as e:
         current_app.logger.error(f"Error in stream route: {str(e)}")
         return "Error", 500
@@ -339,17 +342,19 @@ def event_stream():
         redis_client = Redis.from_url(current_app.config['REDIS_URL'])
         pubsub = redis_client.pubsub()
         pubsub.subscribe('sse_channel')
-        last_keepalive = time.time()
+        last_keepalive = time.monotonic()
         keepalive_interval = 15  # seconds
 
-        for message in pubsub.listen():
-            if message['type'] == 'message':
+        while True:
+            message = pubsub.get_message(timeout=1.0)
+            if message and message.get('type') == 'message':
                 yield f"data: {message['data'].decode('utf-8')}\n\n"
 
             # Send a comment every 15 seconds to keep the connection alive
-            if time.time() - last_keepalive > keepalive_interval:
+            now = time.monotonic()
+            if now - last_keepalive > keepalive_interval:
                 yield ": keep-alive\n\n"
-                last_keepalive = time.time()
+                last_keepalive = now
     except Exception as e:
         current_app.logger.error(f"Error in event stream: {e}", exc_info=True)
         # Optionally, yield an error message or close the stream
