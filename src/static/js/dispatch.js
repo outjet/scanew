@@ -338,7 +338,8 @@ function createTranscriptionRow(transcription) {
     
     // Build actions HTML (edit button only)
     let actionsHtml = '';
-    if (userHasAdminRole) {
+    const hasActionsHeader = document.querySelector('th.admin-actions-cell');
+    if (userHasAdminRole && hasActionsHeader) {
         actionsHtml = `<button class="btn btn-sm btn-primary edit-btn" data-id="${transcription.id}">Edit</button>`;
     }
     
@@ -364,6 +365,18 @@ function playAudio(url) {
     }
     const audio = new Audio(url);
     audio.play();
+}
+
+function resetBlotterUI() {
+    const blotterOutput = document.getElementById('blotterOutput');
+    if (blotterOutput) {
+        blotterOutput.innerHTML = `
+          <div class="text-center text-muted">
+            <i class="fas fa-info-circle"></i>
+            <p class="mb-0">Loading blotter...</p>
+          </div>
+        `;
+    }
 }
 
 function editTranscription(id, text, audioUrl) {
@@ -558,6 +571,20 @@ $(document).ready(function() {
     $('#refreshBlotterBtn').on('click', function() {
         console.log('Refresh Blotter button clicked');
         fetchBlotter();
+    });
+
+    // Add event listener for Close Blotter button
+    $('#closeBlotterBtn').on('click', function() {
+        const blotterSection = document.getElementById('blotterSection');
+        if (blotterSection) {
+            blotterSection.style.display = 'none';
+        }
+        const loadButton = document.getElementById('loadBlotterBtn');
+        if (loadButton) {
+            loadButton.disabled = false;
+            loadButton.innerHTML = '<i class="fas fa-newspaper"></i> Load Blotter';
+        }
+        resetBlotterUI();
     });
 
     $('#unitLocations').on('click', function() {

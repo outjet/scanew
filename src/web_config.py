@@ -20,6 +20,8 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = 'Lax'
     LOG_FILE = '/var/log/gunicorn/dispatch-debug.log'
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    BLOTTER_MODEL = os.environ.get("BLOTTER_MODEL", "gpt-5-mini")
+    OPENAI_API_MODE = os.environ.get("OPENAI_API_MODE", "chat")
     SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(basedir, "transcriptions.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     BLOTTER_FILE_PATH = os.path.join(basedir, 'blotter.txt')

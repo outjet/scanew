@@ -17,7 +17,12 @@ from .models import Transcription, DailyBlotter
 # TODO: The following imports are for modules that were not found in the 'dispatch' directory.
 # from utils import role_required, sanitize_input, convert_to_eastern
 # from tasks import generate_daily_blotter
-from .openai_utils import call_openai_api, get_unit_status_from_openai
+from .openai_utils import (
+    call_openai_api,
+    call_openai_responses,
+    extract_response_text,
+    get_unit_status_from_openai,
+)
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -146,33 +151,64 @@ def blotter():
             f"[{t.timestamp}] {t.transcript}" for t in transcripts
         )
 
-        blotter_file_path = current_app.config.get('BLOTTER_FILE_PATH','blotter.txt')
-        with open(blotter_file_path,'r') as f:
-            file_prompt = f.read().strip()
+        if not transcripts:
+            top_events = [{
+                "time": "N/A",
+                "nature": "Summary",
+                "summary": "No dispatch transcripts available for the selected time window.",
+                "unitsDispatched": []
+            }]
+            return render_template('blotter_fragment.html', events=top_events)
+
+        blotter_file_path = current_app.config.get('BLOTTER_FILE_PATH', 'blotter.txt')
+        try:
+            with open(blotter_file_path, 'r') as f:
+                file_prompt = f.read().strip()
+        except FileNotFoundError:
+            current_app.logger.warning(
+                f"BLOTTER_FILE_PATH not found: {blotter_file_path}; using empty prompt"
+            )
+            file_prompt = ""
 
         blotter_prompt = (
             f"The following are dispatch transcripts from the last {hours} hours. "
             + file_prompt
         )
 
-        payload = {
-            "model": "gpt-4.1-nano-2025-04-14",
-            "messages": [
-                {"role":"system", "content":blotter_prompt},
-                {"role":"user",   "content":combined_text}
-            ]
-        }
+        blotter_model = current_app.config.get('BLOTTER_MODEL', 'gpt-5-mini')
+        api_mode = current_app.config.get("OPENAI_API_MODE", "chat").lower()
+        if api_mode == "responses":
+            payload = {
+                "model": blotter_model,
+                "input": combined_text
+            }
+            if blotter_prompt:
+                payload["instructions"] = blotter_prompt
+        else:
+            payload = {
+                "model": blotter_model,
+                "messages": [
+                    {"role": "system", "content": blotter_prompt},
+                    {"role": "user", "content": combined_text}
+                ]
+            }
 
         current_app.logger.info(
             f"[BLOTTER] Sending {len(combined_text)} chars "
-            f"from {len(transcripts)} transcripts"
+            f"from {len(transcripts)} transcripts using {blotter_model} ({api_mode})"
         )
         current_app.logger.debug(
             f"[BLOTTER] Prompt payload: {json.dumps(payload)[:2000]}..."
         )
 
-        response_data = call_openai_api(payload)
-        summary_text = response_data['choices'][0]['message']['content'].strip()
+        if api_mode == "responses":
+            response_data = call_openai_responses(payload)
+            summary_text = extract_response_text(response_data).strip()
+        else:
+            response_data = call_openai_api(payload)
+            summary_text = response_data['choices'][0]['message']['content'].strip()
+        if not summary_text:
+            raise ValueError(f"Empty response from OpenAI API mode: {api_mode}")
 
         # strip code fences if any
         if summary_text.startswith('```json'):

@@ -4,6 +4,13 @@ import requests
 from flask import current_app
 import json
 
+def _redact_api_key(api_key):
+    if not api_key:
+        return ""
+    if len(api_key) <= 14:
+        return f"{api_key[:2]}...{api_key[-2:]}"
+    return f"{api_key[:10]}...{api_key[-4:]}"
+
 def call_openai_api(payload):
     """Calls the OpenAI API and returns the response data."""
     api_key = current_app.config.get('OPENAI_API_KEY')
@@ -28,6 +35,45 @@ def call_openai_api(payload):
     except requests.exceptions.RequestException as e:
         current_app.logger.error(f"Error in OpenAI API call: {e}", exc_info=True)
         raise
+
+def call_openai_responses(payload):
+    """Calls the OpenAI Responses API and returns the response data."""
+    api_key = current_app.config.get('OPENAI_API_KEY')
+    if not api_key:
+        current_app.logger.error("OpenAI API key is not set in the configuration")
+        raise ValueError("OpenAI API key is missing")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        current_app.logger.error(f"Error in OpenAI Responses API call: {e}", exc_info=True)
+        raise
+
+def extract_response_text(response_data):
+    """Extracts text content from a Responses API result."""
+    if not response_data:
+        return ""
+    if isinstance(response_data, dict) and response_data.get("output_text"):
+        return response_data.get("output_text", "")
+    output = response_data.get("output", []) if isinstance(response_data, dict) else []
+    for item in output:
+        for content in item.get("content", []) if isinstance(item, dict) else []:
+            text = content.get("text")
+            if text:
+                return text
+    return ""
 
 def get_unit_status_from_openai(dispatch_text):
     """Analyzes dispatch text and returns unit status information."""
