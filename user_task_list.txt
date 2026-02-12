@@ -66,10 +66,10 @@ Please read through these steps carefully. Remember to replace placeholders like
 2.  **Activate Environment & Install Python Packages:**
     ```bash
     source myenv/bin/activate
+    pip install --upgrade pip
     pip install -r requirements.txt
     deactivate # Deactivate when done
     ```
-    *(This `pip install` will correctly use `cffi==2.0.0` as per our fix.)*
 
 3.  **Create Database Tables for the Web Application:**
     This creates tables like `users` and `daily_blotter` that the Flask app needs.

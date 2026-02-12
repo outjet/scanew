@@ -130,9 +130,14 @@ POST_TRANSCRIPTIONS=1
 ```bash
 git clone ...  # or copy the repo
 cd dispatch_transcriber
+pip install --upgrade pip
 pip install -r requirements.txt
 # create a .env file as shown above and fill in your keys/URLs
 ```
+
+---
+
+This project keeps the actual imported dependencies in `requirements.txt`. Update that file before sharing new packages so `pip install -r requirements.txt` stays accurate.
 
 ---
 
