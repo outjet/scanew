@@ -32,7 +32,7 @@
   content: '';
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.75) 100%);
+  /* background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.75) 100%); */
   pointer-events: none;
   z-index: 9997;
 }
@@ -297,7 +297,7 @@
   display: block;
   font-size: 10px;
   font-family: 'Share Tech Mono', monospace;
-  color: rgba(0, 255, 136, 0.35) !important;
+  color: rgba(244,244,244,.85) !important;
   margin-bottom: 7px;
   font-weight: 400;
 }
