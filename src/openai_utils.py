@@ -33,7 +33,16 @@ def call_openai_api(payload):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"Error in OpenAI API call: {e}", exc_info=True)
+        response_body = ""
+        if getattr(e, "response", None) is not None:
+            try:
+                response_body = e.response.text[:2000]
+            except Exception:
+                response_body = "<unavailable>"
+        current_app.logger.error(
+            f"Error in OpenAI API call: {e}; response_body={response_body}",
+            exc_info=True,
+        )
         raise
 
 def call_openai_responses(payload):
@@ -58,7 +67,16 @@ def call_openai_responses(payload):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"Error in OpenAI Responses API call: {e}", exc_info=True)
+        response_body = ""
+        if getattr(e, "response", None) is not None:
+            try:
+                response_body = e.response.text[:2000]
+            except Exception:
+                response_body = "<unavailable>"
+        current_app.logger.error(
+            f"Error in OpenAI Responses API call: {e}; response_body={response_body}",
+            exc_info=True,
+        )
         raise
 
 def extract_response_text(response_data):

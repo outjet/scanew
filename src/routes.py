@@ -39,6 +39,20 @@ def convert_to_eastern(timestamp_str):
     except (ValueError, TypeError):
         return None
 
+def _resolve_blotter_api_mode(model_name: str, configured_mode: str) -> str:
+    """
+    Choose the OpenAI API surface for blotter generation.
+    GPT-5 family models should use the Responses API.
+    """
+    model_lower = (model_name or "").lower()
+    mode = (configured_mode or "chat").lower()
+    if model_lower.startswith("gpt-5") and mode != "responses":
+        current_app.logger.warning(
+            f"[BLOTTER] Forcing OPENAI_API_MODE from '{mode}' to 'responses' for model={model_name}"
+        )
+        return "responses"
+    return mode
+
 @dispatch_bp.route('/', methods=['GET', 'POST'])
 @login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
@@ -177,7 +191,8 @@ def blotter():
         )
 
         blotter_model = current_app.config.get('BLOTTER_MODEL', 'gpt-4o-mini')
-        api_mode = current_app.config.get("OPENAI_API_MODE", "chat").lower()
+        configured_api_mode = current_app.config.get("OPENAI_API_MODE", "chat")
+        api_mode = _resolve_blotter_api_mode(blotter_model, configured_api_mode)
         if api_mode == "responses":
             payload = {
                 "model": blotter_model,
