@@ -89,6 +89,7 @@ def view_transcriptions():
                                page=page,
                                total_pages=total_pages,
                                per_page=per_page,
+                               records_count=total_transcriptions,
                                search_query=search_query,
                                page_range_start=page_range_start,
                                page_range_end=page_range_end,

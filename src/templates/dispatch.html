@@ -6,109 +6,85 @@
   <title>Lakewood Dispatch</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('dispatch.static', filename='style.css') }}">
 </head>
-<body>
-  <div class="container mt-4 mb-5">
+<body class="dispatch-dashboard">
+  <div class="container mt-3 mb-4">
     <div class="dispatch-shell">
-      <div class="dispatch-header">
-        <div>
-          <p class="dispatch-kicker mb-1">Live Operations</p>
-          <h1 id="dispatch-log" class="mb-0">Dispatch Log</h1>
+      <header class="dash-toolbar">
+        <div class="dash-title">DISPATCH // CMD</div>
+        <div class="dash-controls" role="toolbar" aria-label="Dispatch controls">
+          <button id="toggleSearchBtn" class="icon-btn" type="button" title="Search">
+            <i class="fas fa-search"></i>
+          </button>
+          <button id="loadBlotterBtn" class="icon-btn" type="button" title="Blotter">
+            <i class="fas fa-newspaper"></i>
+          </button>
+          <button id="unitLocations" class="icon-btn" type="button" title="Unit Locations">
+            <i class="fas fa-shield-alt"></i>
+          </button>
+          <button id="toneCycleBtn" class="icon-btn" type="button" title="Radio Tone">
+            <i class="fas fa-volume-up"></i>
+          </button>
+          <button id="windowCycleBtn" class="icon-btn" type="button" title="Blotter Window">
+            <i class="fas fa-clock"></i>
+          </button>
         </div>
-        <div class="tone-picker">
-          <label for="toneSelect" class="mb-1">Radio Tone</label>
-          <select id="toneSelect" class="form-control form-control-sm">
-            <option value="">No audio tone</option>
-            <option value="Moto">Moto</option>
-            <option value="Kenwood">Kenwood</option>
-            <option value="TRBO">TRBO</option>
-            <option value="MP7">MP7</option>
-            <option value="Moto TPS">Moto TPS</option>
-            <option value="MDC-1200">MDC-1200</option>
-          </select>
+        <div id="sseStatus" class="sse-status">
+          <span class="status-dot">●</span> LIVE
         </div>
+      </header>
+
+      <div class="toolbar-meta">
+        <span id="toneValue">TONE: NONE</span>
+        <span id="windowValue">WINDOW: 2H</span>
       </div>
 
-      <div class="control-card mb-4">
-        <form id="searchForm" action="{{ url_for('dispatch.view_transcriptions') }}" method="POST">
-          <div class="form-row align-items-center">
-            <div class="col-lg-6 col-md-12 mb-2 mb-lg-0">
-              <input
-                type="text"
-                id="searchInput"
-                name="search_query"
-                class="form-control"
-                placeholder="Search transcriptions..."
-                value="{{ search_query }}"
-              >
-            </div>
-            <div class="col-lg-6 col-md-12">
-              <div class="control-actions">
-                <button class="btn btn-sm btn-outline-secondary icon-btn" type="submit" title="Search">
-                  <i class="fas fa-search"></i>
-                </button>
-                {% if search_query %}
-                  <button id="resetButton" class="btn btn-sm btn-outline-secondary icon-btn" type="button" title="Reset Search">
-                    <i class="fas fa-undo"></i>
-                  </button>
-                {% endif %}
+      <form id="searchForm" action="{{ url_for('dispatch.view_transcriptions') }}" method="POST" class="search-panel {% if not search_query %}is-collapsed{% endif %}">
+        <input
+          type="text"
+          id="searchInput"
+          name="search_query"
+          class="form-control"
+          placeholder="Search transcripts..."
+          value="{{ search_query }}"
+          autocomplete="off"
+        >
+      </form>
 
-                <div class="blotter-range-control">
-                  <label for="hourSelect" class="mb-0">Blotter Window</label>
-                  <select id="hourSelect" class="form-control form-control-sm">
-                    <option value="1">Last 1h</option>
-                    <option value="2" selected>Last 2h</option>
-                    <option value="4">Last 4h</option>
-                    <option value="8">Last 8h</option>
-                    <option value="12">Last 12h</option>
-                  </select>
-                </div>
-
-                <button id="loadBlotterBtn" class="btn btn-sm btn-primary icon-btn" type="button" title="Load Blotter">
-                  <i class="fas fa-newspaper"></i>
-                </button>
-                <button id="unitLocations" class="btn btn-sm btn-info icon-btn" type="button" title="Unit Locations">
-                  <i class="fas fa-shield-alt"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
-
-        <div id="searchIndicator" class="mt-3 alert alert-secondary py-2 {% if not search_query %}d-none{% endif %}">
-          <i class="fas fa-pause-circle"></i> Search mode active. Automatic updates paused.
-        </div>
+      <div id="searchIndicator" class="search-indicator {% if not search_query %}d-none{% endif %}">
+        SEARCH MODE ACTIVE // LIVE FEED PAUSED
       </div>
 
-      <div id="blotterSection" class="blotter-panel mb-4" style="display: none;">
-        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
-          <h4 class="mb-2 mb-sm-0"><i class="fas fa-newspaper"></i> Daily Blotter</h4>
+      <section id="blotterSection" class="blotter-panel" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h4 class="mb-0"><i class="fas fa-newspaper"></i> BLOTTER</h4>
           <div class="btn-group" role="group" aria-label="Blotter controls">
-            <button id="refreshBlotterBtn" class="btn btn-sm btn-outline-primary" type="button">
-              <i class="fas fa-sync-alt"></i> Refresh
+            <button id="refreshBlotterBtn" class="icon-btn icon-btn-sm" type="button" title="Refresh Blotter">
+              <i class="fas fa-sync-alt"></i>
             </button>
-            <button id="closeBlotterBtn" class="btn btn-sm btn-outline-secondary" type="button">
-              <i class="fas fa-times"></i> Close
+            <button id="closeBlotterBtn" class="icon-btn icon-btn-sm" type="button" title="Close Blotter">
+              <i class="fas fa-times"></i>
             </button>
           </div>
         </div>
-        <p id="timeRangeDisplay" class="text-muted small mb-3"></p>
-        <div id="blotterOutput" class="border rounded p-3">
+        <p id="timeRangeDisplay" class="small mb-2"></p>
+        <div id="blotterOutput" class="blotter-output">
           <div class="text-center text-muted">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <div class="spinner-border spinner-border-sm" role="status">
               <span class="sr-only">Loading blotter...</span>
             </div>
             <p class="mb-0 mt-2">Loading blotter...</p>
           </div>
         </div>
-      </div>
+      </section>
 
       <div class="table-card table-responsive">
         <table class="table mb-0">
           <thead>
             <tr>
-              <th>Live Transcript Feed</th>
+              <th>LIVE TRANSCRIPT FEED</th>
             </tr>
           </thead>
           <tbody id="transcriptionTable">
@@ -126,7 +102,9 @@
                     </a>
                   {% endif %}
                   <span class="transcription-text">{{ transcription.transcript }}</span>
-                  <div class="play-waveform" aria-hidden="true"></div>
+                  <div class="play-waveform" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
@@ -134,14 +112,14 @@
         </table>
       </div>
 
-      <nav aria-label="Page navigation" class="mt-4">
+      <nav aria-label="Page navigation" class="mt-3">
         <ul class="pagination justify-content-center">
           {% if page > 1 %}
             <li class="page-item">
-              <a class="page-link" href="{{ url_for('dispatch.view_transcriptions', page=page-1, per_page=per_page, search_query=search_query) }}">Previous</a>
+              <a class="page-link" href="{{ url_for('dispatch.view_transcriptions', page=page-1, per_page=per_page, search_query=search_query) }}">Prev</a>
             </li>
           {% else %}
-            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+            <li class="page-item disabled"><span class="page-link">Prev</span></li>
           {% endif %}
 
           {% for p in range(page_range_start, page_range_end) %}
@@ -178,8 +156,8 @@
     </div>
   </div>
 
-  <div id="sseStatus" class="sse-status">
-    <i class="fas fa-question-circle"></i> Loading...
+  <div id="bottomStatusBar" class="bottom-status">
+    SYS//ONLINE | FEED: ACTIVE | RECORDS: {{ records_count }} <span class="blink-block">█</span>
   </div>
 
   <div class="modal fade fullscreen-modal" id="unitLocationsModal" tabindex="-1" role="dialog" aria-labelledby="unitLocationsModalLabel" aria-hidden="true">
@@ -188,7 +166,7 @@
         <div class="modal-body p-4">
           <h2 class="mb-4">Current Unit Locations</h2>
           <div id="unitLocationsLoading" class="text-center my-5">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border" role="status">
               <span class="sr-only">Loading...</span>
             </div>
             <p class="mt-2">Fetching unit locations...</p>

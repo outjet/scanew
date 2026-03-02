@@ -5,6 +5,8 @@ let lastProcessedId = 0;
 let eventSource = null;
 
 const SSE_ENABLED = true;
+const toneOptions = ['', 'Moto', 'Kenwood', 'TRBO', 'MP7', 'Moto TPS', 'MDC-1200'];
+const windowOptions = [1, 2, 4, 8, 12];
 const toneUrls = {
   Moto: '/static/tones/Moto Talk Permit.mp3',
   Kenwood: '/static/tones/Kenwwod_Talk_Permit.mp3',
@@ -35,7 +37,7 @@ function formatTimestampEastern(isoString) {
     if (part.type !== 'literal') lookup[part.type] = part.value;
   }
 
-  return `${lookup.weekday} ${lookup.day}-${lookup.month} ${lookup.hour}:${lookup.minute}:${lookup.second}`;
+  return `${lookup.weekday.toUpperCase()} ${lookup.day}-${lookup.month.toUpperCase()} · ${lookup.hour}:${lookup.minute}:${lookup.second}`;
 }
 
 function updateConnectionStatus(status) {
@@ -44,40 +46,25 @@ function updateConnectionStatus(status) {
 
   switch (status) {
     case 'connected':
-      statusElement.innerHTML = '<i class="fas fa-wifi"></i> Live';
-      statusElement.className = 'sse-status connected';
-      statusElement.title = 'Real-time updates are active';
+      statusElement.innerHTML = '<span class="status-dot">●</span> LIVE';
       break;
     case 'disconnected':
-      statusElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Reconnecting...';
-      statusElement.className = 'sse-status disconnected';
-      statusElement.title = 'Connection lost, attempting to reconnect';
+      statusElement.innerHTML = '<span class="status-dot">●</span> RECONNECT';
       break;
     case 'failed':
-      statusElement.innerHTML = '<i class="fas fa-times-circle"></i> Failed';
-      statusElement.className = 'sse-status failed';
-      statusElement.title = 'Connection failed. Please refresh the page';
-      break;
-    case 'disabled':
-      statusElement.innerHTML = '<i class="fas fa-ban"></i> SSE Off';
-      statusElement.className = 'sse-status disabled';
-      statusElement.title = 'Real-time updates are disabled';
+      statusElement.innerHTML = '<span class="status-dot">●</span> FAILED';
       break;
     case 'search_mode':
-      statusElement.innerHTML = '<i class="fas fa-search"></i> Search Mode';
-      statusElement.className = 'sse-status search-mode';
-      statusElement.title = 'Real-time updates paused during search';
+      statusElement.innerHTML = '<span class="status-dot">●</span> SEARCH';
       break;
     default:
-      statusElement.innerHTML = '<i class="fas fa-question-circle"></i> Unknown';
-      statusElement.className = 'sse-status unknown';
-      statusElement.title = 'Connection status unknown';
+      statusElement.innerHTML = '<span class="status-dot">●</span> IDLE';
   }
 }
 
 function setupSSE(calledFrom = 'unknown') {
   if (!SSE_ENABLED || typeof streamUrl === 'undefined' || !streamUrl) {
-    updateConnectionStatus('disabled');
+    updateConnectionStatus('failed');
     return;
   }
 
@@ -90,6 +77,7 @@ function setupSSE(calledFrom = 'unknown') {
 
   eventSource.onmessage = function (event) {
     if (!event.data || (!event.data.startsWith('{') && !event.data.startsWith('['))) return;
+
     try {
       const transcription = JSON.parse(event.data);
       processNewTranscription(transcription);
@@ -122,6 +110,10 @@ function getTranscriptionText(transcription) {
   return transcription.text || transcription.transcript || '';
 }
 
+function buildWaveformHtml() {
+  return '<div class="play-waveform" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>';
+}
+
 function createTranscriptionRow(transcription) {
   const row = document.createElement('tr');
   row.setAttribute('data-id', transcription.id);
@@ -133,7 +125,7 @@ function createTranscriptionRow(transcription) {
     <td class="transcription-cell" data-timestamp="${transcription.timestamp}" ${audioUrl ? `data-audio-url="${audioUrl}"` : ''}>
       <small class="transcription-meta">${timestamp}</small>
       <span class="transcription-text"></span>
-      <div class="play-waveform" aria-hidden="true"></div>
+      ${buildWaveformHtml()}
     </td>
   `;
 
@@ -145,7 +137,7 @@ function createTranscriptionRow(transcription) {
     contextLink.className = 'context-icon';
     contextLink.title = 'See in context (29 before + 70 after)';
     contextLink.innerHTML = '<i class="fas fa-recycle"></i>';
-    row.querySelector('.transcription-cell').appendChild(contextLink);
+    row.querySelector('.transcription-cell').insertBefore(contextLink, row.querySelector('.transcription-text'));
   }
 
   row.querySelector('.transcription-text').textContent = getTranscriptionText(transcription);
@@ -161,7 +153,7 @@ function processNewTranscription(transcription) {
   const newRow = createTranscriptionRow(transcription);
   newRow.classList.add('row-new');
   tableBody.insertBefore(newRow, tableBody.firstChild);
-  window.setTimeout(() => newRow.classList.remove('row-new'), 1100);
+  window.setTimeout(() => newRow.classList.remove('row-new'), 1500);
 
   lastProcessedId = transcription.id;
   playSelectedTone();
@@ -194,18 +186,40 @@ function playAudio(url, rowToHighlight = null) {
   };
 }
 
-function initializeTonePicker() {
-  const toneSelect = document.getElementById('toneSelect');
-  if (!toneSelect) return;
+function updateToneLabel() {
+  const toneValue = document.getElementById('toneValue');
+  if (!toneValue) return;
+  const tone = localStorage.getItem('selectedTone') || '';
+  toneValue.textContent = `TONE: ${tone ? tone.toUpperCase() : 'NONE'}`;
+}
 
-  let selectedTone = localStorage.getItem('selectedTone') || '';
-  toneSelect.value = selectedTone;
+function updateWindowLabel() {
+  const windowValue = document.getElementById('windowValue');
+  if (!windowValue) return;
+  const hours = parseInt(localStorage.getItem('blotterHours') || '2', 10);
+  windowValue.textContent = `WINDOW: ${hours}H`;
+}
 
-  toneSelect.addEventListener('change', function () {
-    selectedTone = this.value;
-    localStorage.setItem('selectedTone', selectedTone);
-    playSelectedTone();
-  });
+function cycleTone() {
+  const current = localStorage.getItem('selectedTone') || '';
+  const idx = toneOptions.indexOf(current);
+  const next = toneOptions[(idx + 1) % toneOptions.length];
+  localStorage.setItem('selectedTone', next);
+  updateToneLabel();
+  playSelectedTone();
+}
+
+function cycleWindow() {
+  const current = parseInt(localStorage.getItem('blotterHours') || '2', 10);
+  const idx = windowOptions.indexOf(current);
+  const next = windowOptions[(idx + 1) % windowOptions.length];
+  localStorage.setItem('blotterHours', String(next));
+  updateWindowLabel();
+  updateTimeRangeDisplay();
+
+  if ($('#blotterSection').is(':visible')) {
+    fetchBlotter();
+  }
 }
 
 function playSelectedTone() {
@@ -222,7 +236,7 @@ function resetBlotterUI() {
 
   blotterOutput.innerHTML = `
     <div class="text-center text-muted">
-      <div class="spinner-border spinner-border-sm text-primary" role="status">
+      <div class="spinner-border spinner-border-sm" role="status">
         <span class="sr-only">Loading blotter...</span>
       </div>
       <p class="mb-0 mt-2">Loading blotter...</p>
@@ -231,16 +245,15 @@ function resetBlotterUI() {
 }
 
 function updateTimeRangeDisplay() {
-  const hourSelect = document.getElementById('hourSelect');
   const display = document.getElementById('timeRangeDisplay');
-  if (!hourSelect || !display) return;
+  if (!display) return;
 
-  const hours = parseInt(hourSelect.value, 10);
+  const hours = parseInt(localStorage.getItem('blotterHours') || '2', 10);
   const now = new Date();
   const past = new Date(now.getTime() - hours * 60 * 60 * 1000);
-  const fmt = { hour: '2-digit', minute: '2-digit' };
+  const fmt = { hour: '2-digit', minute: '2-digit', hour12: false };
 
-  display.textContent = `Coverage: ${past.toLocaleTimeString([], fmt)} to ${now.toLocaleTimeString([], fmt)} (${hours}h window)`;
+  display.textContent = `RANGE ${past.toLocaleTimeString([], fmt)} - ${now.toLocaleTimeString([], fmt)} (${hours}H)`;
 }
 
 function fetchBlotter() {
@@ -250,7 +263,6 @@ function fetchBlotter() {
   const loadButton = document.getElementById('loadBlotterBtn');
   const refreshButton = document.getElementById('refreshBlotterBtn');
   const blotterSection = document.getElementById('blotterSection');
-  const hourSelect = document.getElementById('hourSelect');
 
   if (!blotterOutput || !blotterSection) return;
 
@@ -258,12 +270,12 @@ function fetchBlotter() {
     blotterSection.style.display = 'block';
   }
 
-  const hours = hourSelect ? hourSelect.value : '2';
+  const hours = parseInt(localStorage.getItem('blotterHours') || '2', 10);
   updateTimeRangeDisplay();
 
   blotterOutput.innerHTML = `
-    <div class="text-center">
-      <div class="spinner-border text-primary" role="status">
+    <div class="text-center text-muted">
+      <div class="spinner-border" role="status">
         <span class="sr-only">Loading blotter...</span>
       </div>
       <p class="mt-2 mb-0">Loading blotter...</p>
@@ -318,6 +330,18 @@ function toggleSearchMode(active) {
     updateConnectionStatus('search_mode');
   } else if (!active && document.getElementById('transcriptionTable')) {
     setupSSE('search-exit');
+  }
+}
+
+function toggleSearchPanel(forceOpen = null) {
+  const panel = document.querySelector('.search-panel');
+  if (!panel) return;
+
+  const shouldOpen = forceOpen === null ? panel.classList.contains('is-collapsed') : forceOpen;
+  panel.classList.toggle('is-collapsed', !shouldOpen);
+  if (shouldOpen) {
+    const input = document.getElementById('searchInput');
+    if (input) input.focus();
   }
 }
 
@@ -446,7 +470,15 @@ function togglePlayPause() {
 }
 
 $(document).ready(function () {
-  initializeTonePicker();
+  if (!localStorage.getItem('blotterHours')) {
+    localStorage.setItem('blotterHours', '2');
+  }
+  if (!localStorage.getItem('selectedTone')) {
+    localStorage.setItem('selectedTone', '');
+  }
+
+  updateToneLabel();
+  updateWindowLabel();
 
   const searchInput = $('#searchInput');
   const searchQuery = searchInput.length ? (searchInput.val() || '').trim() : '';
@@ -455,7 +487,7 @@ $(document).ready(function () {
 
   document.querySelectorAll('#transcriptionTable .transcription-cell[data-timestamp], #transcriptionTable td[data-timestamp]').forEach((cell) => {
     const iso = cell.getAttribute('data-timestamp');
-    const small = cell.querySelector('small');
+    const small = cell.querySelector('.transcription-meta, small');
     if (small) small.textContent = formatTimestampEastern(iso);
   });
 
@@ -464,16 +496,18 @@ $(document).ready(function () {
   } else if (isSearchActive) {
     updateConnectionStatus('search_mode');
   } else {
-    updateConnectionStatus('unknown');
+    updateConnectionStatus('failed');
   }
+
+  $('#toggleSearchBtn').on('click', function () {
+    toggleSearchPanel();
+  });
 
   $('#loadBlotterBtn').on('click', fetchBlotter);
   $('#refreshBlotterBtn').on('click', fetchBlotter);
 
-  $('#hourSelect').on('change', function () {
-    updateTimeRangeDisplay();
-    if ($('#blotterSection').is(':visible')) fetchBlotter();
-  });
+  $('#toneCycleBtn').on('click', cycleTone);
+  $('#windowCycleBtn').on('click', cycleWindow);
 
   $('#closeBlotterBtn').on('click', function () {
     const blotterSection = document.getElementById('blotterSection');
@@ -488,11 +522,13 @@ $(document).ready(function () {
   $('#searchForm').on('submit', function (e) {
     e.preventDefault();
     const value = ($('#searchInput').val() || '').trim();
-    if (value) toggleSearchMode(true);
-    this.submit();
-  });
+    if (value) {
+      toggleSearchMode(true);
+      this.submit();
+      return;
+    }
 
-  $('#resetButton').on('click', function () {
+    toggleSearchMode(false);
     window.location.href = '/';
   });
 
