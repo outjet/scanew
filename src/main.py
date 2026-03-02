@@ -191,6 +191,7 @@ def main():
                 final_wav_filename = None
 
             timestamp_iso = datetime.now(timezone.utc).isoformat()
+            alert_match = matches_alert_pattern(filtered)
             with sqlite3.connect(str(SQLITE_DB_PATH)) as conn:
                 row_id = insert_transcription(
                     timestamp_iso=timestamp_iso,
@@ -216,6 +217,7 @@ def main():
                         "timestamp": timestamp_iso,
                         "wav_filename": final_wav_filename,
                         "transcript": filtered,
+                        "alert_match": alert_match,
                         "formatted_timestamp": datetime.now().strftime("%a %d-%b %H:%M:%S"),
                         "text": filtered,
                         "url": f"/recordings/{final_wav_filename}" if final_wav_filename else None,
@@ -224,7 +226,7 @@ def main():
                 except Exception as e:
                     logger.warning("Failed to publish transcription to Redis: %s", e)
 
-            if matches_alert_pattern(filtered):
+            if alert_match:
                 msg = filtered[:100] + "..." if len(filtered) > 100 else filtered
                 code = send_pushover(
                     title="🚨 Priority Dispatch Alert",

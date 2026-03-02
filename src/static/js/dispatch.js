@@ -43,6 +43,7 @@ function formatTimestampEastern(isoString) {
 function updateConnectionStatus(status) {
   const statusElement = document.getElementById('sseStatus');
   if (!statusElement) return;
+  statusElement.className = `sse-status ${status}`;
 
   switch (status) {
     case 'connected':
@@ -110,6 +111,20 @@ function getTranscriptionText(transcription) {
   return transcription.text || transcription.transcript || '';
 }
 
+function matchesAlertPatternText(text) {
+  if (!text) return false;
+  if (typeof alertPatterns === 'undefined' || !Array.isArray(alertPatterns)) return false;
+
+  return alertPatterns.some((pattern) => {
+    try {
+      const re = new RegExp(pattern, 'i');
+      return re.test(text);
+    } catch (_) {
+      return false;
+    }
+  });
+}
+
 function buildWaveformHtml() {
   return '<div class="play-waveform" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>';
 }
@@ -120,14 +135,17 @@ function createTranscriptionRow(transcription) {
 
   const audioUrl = buildAudioUrl(transcription);
   const timestamp = formatTimestampEastern(transcription.timestamp);
+  const text = getTranscriptionText(transcription);
+  const alertMatch = Boolean(transcription.alert_match) || matchesAlertPatternText(text);
 
   row.innerHTML = `
-    <td class="transcription-cell" data-timestamp="${transcription.timestamp}" ${audioUrl ? `data-audio-url="${audioUrl}"` : ''}>
+    <td class="transcription-cell" data-timestamp="${transcription.timestamp}" data-alert-match="${alertMatch ? 'true' : 'false'}" ${audioUrl ? `data-audio-url="${audioUrl}"` : ''}>
       <small class="transcription-meta">${timestamp}</small>
       <span class="transcription-text"></span>
       ${buildWaveformHtml()}
     </td>
   `;
+  if (alertMatch) row.classList.add('alert-match');
 
   const searchInput = document.getElementById('searchInput');
   const searchQuery = searchInput ? searchInput.value.trim() : '';
@@ -140,7 +158,7 @@ function createTranscriptionRow(transcription) {
     row.querySelector('.transcription-cell').insertBefore(contextLink, row.querySelector('.transcription-text'));
   }
 
-  row.querySelector('.transcription-text').textContent = getTranscriptionText(transcription);
+  row.querySelector('.transcription-text').textContent = text;
   return row;
 }
 
@@ -323,7 +341,9 @@ function fetchBlotter() {
 function toggleSearchMode(active) {
   isSearchActive = active;
   const searchIndicator = document.getElementById('searchIndicator');
+  const exitSearchBtn = document.getElementById('exitSearchBtn');
   if (searchIndicator) searchIndicator.classList.toggle('d-none', !active);
+  if (exitSearchBtn) exitSearchBtn.classList.toggle('d-none', !active);
 
   if (active && eventSource) {
     eventSource.close();
@@ -489,6 +509,10 @@ $(document).ready(function () {
     const iso = cell.getAttribute('data-timestamp');
     const small = cell.querySelector('.transcription-meta, small');
     if (small) small.textContent = formatTimestampEastern(iso);
+    const row = cell.closest('tr');
+    if (row && cell.getAttribute('data-alert-match') === 'true') {
+      row.classList.add('alert-match');
+    }
   });
 
   if ($('#transcriptionTable').length && !isSearchActive) {
@@ -501,6 +525,11 @@ $(document).ready(function () {
 
   $('#toggleSearchBtn').on('click', function () {
     toggleSearchPanel();
+  });
+
+  $('#exitSearchBtn').on('click', function () {
+    toggleSearchMode(false);
+    window.location.href = '/';
   });
 
   $('#loadBlotterBtn').on('click', fetchBlotter);

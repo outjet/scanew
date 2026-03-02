@@ -29,7 +29,7 @@ from zoneinfo import ZoneInfo
 import json, time
 from .extensions import db
 from redis import Redis
-from .config import RECORDINGS_DIR
+from .config import RECORDINGS_DIR, ALERT_PATTERNS
 
 # TODO: Placeholder function because the original `convert_to_eastern` was in a missing `utils.py` file.
 # This implementation does not perform the timezone conversion.
@@ -38,6 +38,11 @@ def convert_to_eastern(timestamp_str):
         return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
     except (ValueError, TypeError):
         return None
+
+def _matches_alert_pattern(text: str) -> bool:
+    if not text:
+        return False
+    return any(pat.search(text) for pat in ALERT_PATTERNS)
 
 def _resolve_blotter_api_mode(model_name: str, configured_mode: str) -> str:
     """
@@ -89,7 +94,8 @@ def view_transcriptions():
                 'timestamp': timestamp.isoformat() if timestamp else timestamp_str,
                 'formatted_timestamp': timestamp.strftime('%a %d-%b %H:%M:%S') if timestamp else timestamp_str,
                 'transcript': transcription.transcript,
-                'wav_filename': transcription.wav_filename
+                'wav_filename': transcription.wav_filename,
+                'alert_match': _matches_alert_pattern(transcription.transcript),
             })
 
         current_app.logger.debug("Successfully formatted transcriptions")
@@ -107,6 +113,7 @@ def view_transcriptions():
                                search_query=search_query,
                                page_range_start=page_range_start,
                                page_range_end=page_range_end,
+                               alert_patterns=[pat.pattern for pat in ALERT_PATTERNS],
                                stream_url=url_for('dispatch.stream'))
 
     except Exception as e:
@@ -140,7 +147,8 @@ def fetch_new_transcriptions():
                 'timestamp': timestamp.isoformat() if timestamp else transcription.timestamp,
                 'formatted_timestamp': timestamp.strftime('%a %d-%b %H:%M:%S') if timestamp else transcription.timestamp,
                 'transcript': transcription.transcript,
-                'wav_filename': transcription.wav_filename
+                'wav_filename': transcription.wav_filename,
+                'alert_match': _matches_alert_pattern(transcription.transcript),
             })
 
         return jsonify(formatted_transcriptions)
