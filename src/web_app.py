@@ -7,18 +7,25 @@ import logging
 from .routes import dispatch_bp
 from .extensions import db, login_manager
 from dotenv import load_dotenv
-load_dotenv() #Keep this above Config
+import os
+# Explicitly load .env from the project root
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=dotenv_path)
 from .web_config import Config  # <- ADD THIS
 from .models import User
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 def create_app():
     app = Flask(__name__, static_folder="static", template_folder="templates")
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     import sys
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
     app.logger.setLevel(logging.DEBUG)
     app.config.from_object(Config)  # <- USE THE CLASS HERE
+    app.logger.info(f"Loaded GOOGLE_CLIENT_ID: {app.config.get('GOOGLE_CLIENT_ID')}")
+    app.logger.info(f"Loaded GOOGLE_CLIENT_SECRET: {app.config.get('GOOGLE_CLIENT_SECRET')[:5]}...") # Log only first 5 chars for security
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -40,28 +47,29 @@ def create_app():
     def login():
         session['next'] = request.args.get('next') or url_for('dispatch.view_transcriptions')
         redirect_uri = url_for("authorize", _external=True)
+        app.logger.info(f"Redirecting to: {redirect_uri}")
         return google.authorize_redirect(redirect_uri)
 
     @app.route("/authorize")
     def authorize():
-        app.logger.debug("Starting /authorize")
+        app.logger.info("Starting /authorize")
         try:
             token = google.authorize_access_token()
-            app.logger.debug(f"Received token: {token}")
-            
+            app.logger.info(f"Received token: {token}")
+
             if not token:
                 app.logger.error("No token received in authorize_access_token()")
                 return "Authorization failed: No token received.", 400
 
             resp = google.get("https://www.googleapis.com/oauth2/v3/userinfo", token=token)
-            app.logger.debug(f"Google userinfo response: {resp.status_code}")
-            
+            app.logger.info(f"Google userinfo response status: {resp.status_code}")
+
             if resp.status_code != 200:
                 app.logger.error(f"Failed to fetch userinfo: {resp.text}")
                 return "Authorization failed: Could not fetch user info.", 500
 
             user_info = resp.json()
-            app.logger.debug(f"User info: {user_info}")
+            app.logger.info(f"User info: {user_info}")
 
             db_user = User.query.filter_by(google_id=user_info["sub"]).first()
             if not db_user:
@@ -82,7 +90,11 @@ def create_app():
             app.logger.info(f"Logged in user: {db_user.email}")
 
             return redirect(session.get("next", url_for("dispatch.view_transcriptions")))
-        
+
+        except MismatchingStateError as e:
+            app.logger.error(f"Mismatched state error during OAuth: {e}")
+            # It's common to redirect to login and show an error message
+            return redirect(url_for('login'))
         except Exception as e:
             app.logger.exception("Error during OAuth authorization")
             return "Internal Server Error during authorization.", 500
