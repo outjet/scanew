@@ -175,18 +175,20 @@ def blotter():
             + file_prompt
         )
 
-        blotter_model = current_app.config.get('BLOTTER_MODEL', 'gpt-5-mini')
+        blotter_model = current_app.config.get('BLOTTER_MODEL', 'gpt-4o-mini')
         api_mode = current_app.config.get("OPENAI_API_MODE", "chat").lower()
         if api_mode == "responses":
             payload = {
                 "model": blotter_model,
-                "input": combined_text
+                "input": combined_text,
+                "max_output_tokens": 900,
             }
             if blotter_prompt:
                 payload["instructions"] = blotter_prompt
         else:
             payload = {
                 "model": blotter_model,
+                "max_tokens": 900,
                 "messages": [
                     {"role": "system", "content": blotter_prompt},
                     {"role": "user", "content": combined_text}

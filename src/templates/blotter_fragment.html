@@ -1,20 +1,16 @@
 {% for event in events %}
-  <div class="card mb-2">
-    <div class="card-body p-2">
-      <div class="d-flex justify-content-between">
-        <strong>{{ event.time }}</strong>
-        <span>{{ event.nature }}</span>
-      </div>
-      <p class="mb-1">{{ event.summary }}</p>
-      {% if event.unitsDispatched %}
-        <small class="text-muted">
-          Units: {{ event.unitsDispatched | join(', ') }}
-        </small>
-      {% endif %}
-    </div>
-  </div>
+  <article class="blotter-event">
+    <header class="blotter-event-header">
+      <span class="blotter-time">{{ event.time }}</span>
+      <span class="blotter-nature">{{ event.nature }}</span>
+    </header>
+    <p class="mb-1">{{ event.summary }}</p>
+    {% if event.unitsDispatched %}
+      <small class="text-muted">Units: {{ event.unitsDispatched | join(', ') }}</small>
+    {% endif %}
+  </article>
 {% endfor %}
 
 {% if events|length == 0 %}
-  <p>No significant events to report.</p>
+  <p class="mb-0 text-muted">No significant events to report.</p>
 {% endif %}
