@@ -1,4 +1,5 @@
 let currentAudio = null;
+let currentPlayingRow = null;
 let isSearchActive = false;
 let lastProcessedId = 0;
 let eventSource = null;
@@ -81,7 +82,6 @@ function setupSSE(calledFrom = 'unknown') {
   }
 
   if (eventSource) eventSource.close();
-
   eventSource = new EventSource(streamUrl);
 
   eventSource.onopen = function () {
@@ -90,7 +90,6 @@ function setupSSE(calledFrom = 'unknown') {
 
   eventSource.onmessage = function (event) {
     if (!event.data || (!event.data.startsWith('{') && !event.data.startsWith('['))) return;
-
     try {
       const transcription = JSON.parse(event.data);
       processNewTranscription(transcription);
@@ -127,25 +126,27 @@ function createTranscriptionRow(transcription) {
   const row = document.createElement('tr');
   row.setAttribute('data-id', transcription.id);
 
-  let leftColumnHtml = '';
   const audioUrl = buildAudioUrl(transcription);
-  if (audioUrl) {
-    leftColumnHtml += `<span class="audio-icon" onclick="playAudio('${audioUrl}')" title="Play recording"><i class="fas fa-play-circle"></i></span>`;
-  }
+  const timestamp = formatTimestampEastern(transcription.timestamp);
+
+  row.innerHTML = `
+    <td class="transcription-cell" data-timestamp="${transcription.timestamp}" ${audioUrl ? `data-audio-url="${audioUrl}"` : ''}>
+      <small class="transcription-meta">${timestamp}</small>
+      <span class="transcription-text"></span>
+      <div class="play-waveform" aria-hidden="true"></div>
+    </td>
+  `;
 
   const searchInput = document.getElementById('searchInput');
   const searchQuery = searchInput ? searchInput.value.trim() : '';
   if (searchQuery) {
-    leftColumnHtml += `<br><a href="/transcription_context/${transcription.id}" class="context-icon" title="See in context (29 before + 70 after)"><i class="fas fa-recycle"></i></a>`;
+    const contextLink = document.createElement('a');
+    contextLink.href = `/transcription_context/${transcription.id}`;
+    contextLink.className = 'context-icon';
+    contextLink.title = 'See in context (29 before + 70 after)';
+    contextLink.innerHTML = '<i class="fas fa-recycle"></i>';
+    row.querySelector('.transcription-cell').appendChild(contextLink);
   }
-
-  row.innerHTML = `
-    <td>${leftColumnHtml}</td>
-    <td data-timestamp="${transcription.timestamp}">
-      <small>${formatTimestampEastern(transcription.timestamp)}</small><br>
-      <span class="transcription-text"></span>
-    </td>
-  `;
 
   row.querySelector('.transcription-text').textContent = getTranscriptionText(transcription);
   return row;
@@ -158,15 +159,39 @@ function processNewTranscription(transcription) {
   if (!tableBody) return;
 
   const newRow = createTranscriptionRow(transcription);
+  newRow.classList.add('row-new');
   tableBody.insertBefore(newRow, tableBody.firstChild);
+  window.setTimeout(() => newRow.classList.remove('row-new'), 1100);
+
   lastProcessedId = transcription.id;
   playSelectedTone();
 }
 
-function playAudio(url) {
+function playAudio(url, rowToHighlight = null) {
   if (!url) return;
-  const audio = new Audio(url);
-  audio.play().catch((err) => console.warn('Audio playback failed:', err));
+
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+
+  if (currentPlayingRow) {
+    currentPlayingRow.classList.remove('is-playing');
+    currentPlayingRow = null;
+  }
+
+  if (rowToHighlight) {
+    rowToHighlight.classList.add('is-playing');
+    currentPlayingRow = rowToHighlight;
+  }
+
+  currentAudio = new Audio(url);
+  currentAudio.play().catch((err) => console.warn('Audio playback failed:', err));
+  currentAudio.onended = function () {
+    if (currentPlayingRow) currentPlayingRow.classList.remove('is-playing');
+    currentPlayingRow = null;
+    currentAudio = null;
+  };
 }
 
 function initializeTonePicker() {
@@ -186,6 +211,7 @@ function initializeTonePicker() {
 function playSelectedTone() {
   const selectedTone = localStorage.getItem('selectedTone') || '';
   if (!selectedTone || !toneUrls[selectedTone]) return;
+
   const audio = new Audio(toneUrls[selectedTone]);
   audio.play().catch(() => {});
 }
@@ -246,11 +272,11 @@ function fetchBlotter() {
 
   if (loadButton) {
     loadButton.disabled = true;
-    loadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    loadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
   }
   if (refreshButton) {
     refreshButton.disabled = true;
-    refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
   }
 
   fetch(`${blotterUrl}?hours=${encodeURIComponent(hours)}`)
@@ -273,11 +299,11 @@ function fetchBlotter() {
     .finally(() => {
       if (loadButton) {
         loadButton.disabled = false;
-        loadButton.innerHTML = '<i class="fas fa-newspaper"></i> Load Blotter';
+        loadButton.innerHTML = '<i class="fas fa-newspaper"></i>';
       }
       if (refreshButton) {
         refreshButton.disabled = false;
-        refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+        refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i>';
       }
     });
 }
@@ -300,9 +326,9 @@ function getTimeDifference(timestamp) {
   if (isNaN(updateTime.getTime())) return 'unknown';
 
   const diffMs = Date.now() - updateTime.getTime();
-  if (diffMs < 60_000) return 'just now';
+  if (diffMs < 60000) return 'just now';
 
-  const minutes = Math.floor(diffMs / 60_000);
+  const minutes = Math.floor(diffMs / 60000);
   if (minutes < 60) return `${minutes} min ago`;
 
   const hours = Math.floor(minutes / 60);
@@ -427,9 +453,9 @@ $(document).ready(function () {
   isSearchActive = searchQuery !== '';
   toggleSearchMode(isSearchActive);
 
-  document.querySelectorAll('#transcriptionTable td[data-timestamp]').forEach((td) => {
-    const iso = td.getAttribute('data-timestamp');
-    const small = td.querySelector('small');
+  document.querySelectorAll('#transcriptionTable .transcription-cell[data-timestamp], #transcriptionTable td[data-timestamp]').forEach((cell) => {
+    const iso = cell.getAttribute('data-timestamp');
+    const small = cell.querySelector('small');
     if (small) small.textContent = formatTimestampEastern(iso);
   });
 
@@ -470,19 +496,32 @@ $(document).ready(function () {
     window.location.href = '/';
   });
 
+  $(document).on('click', '.transcription-cell', function (event) {
+    if ($(event.target).closest('a').length) return;
+
+    const audioUrl = $(this).data('audio-url');
+    if (!audioUrl) return;
+
+    const row = this.closest('tr');
+    playAudio(audioUrl, row);
+  });
+
   $(document).on('click', '.edit-btn', function () {
     const id = $(this).data('id');
     if (!id) return;
 
-    const text = $(this).closest('tr').find('.transcription-text').text();
-    const audioIconElement = $(this).closest('tr').find('.audio-icon');
+    const row = $(this).closest('tr');
+    const text = row.find('.transcription-text').text();
+    let audioUrl = row.find('.transcription-cell').data('audio-url') || null;
 
-    let audioUrl = null;
-    if (audioIconElement.length) {
-      const onclickAttr = audioIconElement.attr('onclick');
-      if (onclickAttr) {
-        const match = onclickAttr.match(/'(.+?)'/);
-        audioUrl = match ? match[1] : null;
+    if (!audioUrl) {
+      const audioIconElement = row.find('.audio-icon');
+      if (audioIconElement.length) {
+        const onclickAttr = audioIconElement.attr('onclick');
+        if (onclickAttr) {
+          const match = onclickAttr.match(/'(.+?)'/);
+          audioUrl = match ? match[1] : null;
+        }
       }
     }
 
@@ -498,8 +537,16 @@ $(document).ready(function () {
       currentAudio.pause();
       currentAudio = null;
     }
-    $('#playPauseButton i').removeClass('fa-pause').addClass('fa-play');
-    $('#playPauseButton').contents().last()[0].textContent = ' Play';
+    if (currentPlayingRow) {
+      currentPlayingRow.classList.remove('is-playing');
+      currentPlayingRow = null;
+    }
+
+    const btn = $('#playPauseButton');
+    btn.find('i').removeClass('fa-pause').addClass('fa-play');
+    if (btn.contents().last().length && btn.contents().last()[0].nodeType === Node.TEXT_NODE) {
+      btn.contents().last()[0].textContent = ' Play';
+    }
   });
 
   document.addEventListener('visibilitychange', function () {

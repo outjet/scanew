@@ -33,7 +33,7 @@
       <div class="control-card mb-4">
         <form id="searchForm" action="{{ url_for('dispatch.view_transcriptions') }}" method="POST">
           <div class="form-row align-items-center">
-            <div class="col-lg-5 col-md-12 mb-2 mb-lg-0">
+            <div class="col-lg-6 col-md-12 mb-2 mb-lg-0">
               <input
                 type="text"
                 id="searchInput"
@@ -43,14 +43,14 @@
                 value="{{ search_query }}"
               >
             </div>
-            <div class="col-lg-7 col-md-12">
+            <div class="col-lg-6 col-md-12">
               <div class="control-actions">
-                <button class="btn btn-outline-secondary" type="submit">
-                  <i class="fas fa-search"></i> Search
+                <button class="btn btn-sm btn-outline-secondary icon-btn" type="submit" title="Search">
+                  <i class="fas fa-search"></i>
                 </button>
                 {% if search_query %}
-                  <button id="resetButton" class="btn btn-outline-secondary" type="button">
-                    <i class="fas fa-undo"></i> Reset
+                  <button id="resetButton" class="btn btn-sm btn-outline-secondary icon-btn" type="button" title="Reset Search">
+                    <i class="fas fa-undo"></i>
                   </button>
                 {% endif %}
 
@@ -65,11 +65,11 @@
                   </select>
                 </div>
 
-                <button id="loadBlotterBtn" class="btn btn-primary" type="button">
-                  <i class="fas fa-newspaper"></i> Load Blotter
+                <button id="loadBlotterBtn" class="btn btn-sm btn-primary icon-btn" type="button" title="Load Blotter">
+                  <i class="fas fa-newspaper"></i>
                 </button>
-                <button id="unitLocations" class="btn btn-info" type="button">
-                  <i class="fas fa-map-marker-alt"></i> Unit Locations
+                <button id="unitLocations" class="btn btn-sm btn-info icon-btn" type="button" title="Unit Locations">
+                  <i class="fas fa-shield-alt"></i>
                 </button>
               </div>
             </div>
@@ -105,34 +105,28 @@
       </div>
 
       <div class="table-card table-responsive">
-        <table class="table table-striped table-hover mb-0">
+        <table class="table mb-0">
           <thead>
             <tr>
-              <th style="width: 70px;">Audio</th>
-              <th>Transcript</th>
+              <th>Live Transcript Feed</th>
             </tr>
           </thead>
           <tbody id="transcriptionTable">
             {% for transcription in transcriptions %}
               <tr data-id="{{ transcription.id }}">
-                <td>
-                  {% if transcription.wav_filename %}
-                    <span class="audio-icon" onclick="playAudio('/recordings/{{ transcription.wav_filename }}')" title="Play recording">
-                      <i class="fas fa-play-circle"></i>
-                    </span>
-                  {% endif %}
+                <td class="transcription-cell"
+                    data-timestamp="{{ transcription.timestamp }}"
+                    {% if transcription.wav_filename %}data-audio-url="/recordings/{{ transcription.wav_filename }}"{% endif %}>
+                  <small class="transcription-meta">{{ transcription.formatted_timestamp }}</small>
                   {% if search_query %}
-                    <br>
                     <a href="{{ url_for('dispatch.transcription_context', transcription_id=transcription.id) }}"
                        class="context-icon"
                        title="See in context (29 before + 70 after)">
                        <i class="fas fa-recycle"></i>
                     </a>
                   {% endif %}
-                </td>
-                <td data-timestamp="{{ transcription.timestamp }}">
-                  <small>{{ transcription.formatted_timestamp }}</small><br>
                   <span class="transcription-text">{{ transcription.transcript }}</span>
+                  <div class="play-waveform" aria-hidden="true"></div>
                 </td>
               </tr>
             {% endfor %}
