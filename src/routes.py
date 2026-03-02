@@ -234,7 +234,28 @@ def blotter():
             response_data = call_openai_api(payload)
             summary_text = response_data['choices'][0]['message']['content'].strip()
         if not summary_text:
-            raise ValueError(f"Empty response from OpenAI API mode: {api_mode}")
+            current_app.logger.error(
+                f"[BLOTTER] Empty response text using model={blotter_model} mode={api_mode}; "
+                f"raw_response={json.dumps(response_data)[:2000] if isinstance(response_data, dict) else str(response_data)[:2000]}"
+            )
+            fallback_model = current_app.config.get("BLOTTER_FALLBACK_MODEL", "gpt-4o-mini")
+            fallback_payload = {
+                "model": fallback_model,
+                "max_tokens": 900,
+                "messages": [
+                    {"role": "system", "content": blotter_prompt},
+                    {"role": "user", "content": combined_text}
+                ]
+            }
+            current_app.logger.warning(
+                f"[BLOTTER] Retrying with fallback model={fallback_model} via chat completions"
+            )
+            fallback_response_data = call_openai_api(fallback_payload)
+            summary_text = fallback_response_data['choices'][0]['message']['content'].strip()
+            if not summary_text:
+                raise ValueError(
+                    f"Empty response from OpenAI API mode: {api_mode}; fallback model also returned empty text"
+                )
 
         # strip code fences if any
         if summary_text.startswith('```json'):

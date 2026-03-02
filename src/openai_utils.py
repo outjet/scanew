@@ -84,13 +84,29 @@ def extract_response_text(response_data):
     if not response_data:
         return ""
     if isinstance(response_data, dict) and response_data.get("output_text"):
-        return response_data.get("output_text", "")
+        output_text = response_data.get("output_text", "")
+        if isinstance(output_text, str):
+            return output_text
+        if isinstance(output_text, list):
+            return "\n".join(str(part) for part in output_text if part)
     output = response_data.get("output", []) if isinstance(response_data, dict) else []
     for item in output:
-        for content in item.get("content", []) if isinstance(item, dict) else []:
+        if not isinstance(item, dict):
+            continue
+        for content in item.get("content", []):
+            if not isinstance(content, dict):
+                continue
             text = content.get("text")
-            if text:
+            if isinstance(text, str) and text:
                 return text
+            if isinstance(text, dict):
+                value = text.get("value") or text.get("text")
+                if isinstance(value, str) and value:
+                    return value
+            if content.get("type") in {"output_text", "text"}:
+                value = content.get("value")
+                if isinstance(value, str) and value:
+                    return value
     return ""
 
 def get_unit_status_from_openai(dispatch_text):
