@@ -31,13 +31,23 @@ from .extensions import db
 from redis import Redis
 from .config import RECORDINGS_DIR, ALERT_PATTERNS
 
-# TODO: Placeholder function because the original `convert_to_eastern` was in a missing `utils.py` file.
-# This implementation does not perform the timezone conversion.
+EASTERN_TZ = ZoneInfo("America/New_York")
+
 def convert_to_eastern(timestamp_str):
     try:
-        return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        if dt.tzinfo is None:
+            # Treat naive timestamps as UTC to keep behavior deterministic.
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+        return dt.astimezone(EASTERN_TZ)
     except (ValueError, TypeError):
         return None
+
+def _format_timestamp_for_model(timestamp_str: str) -> str:
+    timestamp = convert_to_eastern(timestamp_str)
+    if not timestamp:
+        return timestamp_str
+    return timestamp.strftime("%Y-%m-%d %H:%M:%S ET")
 
 def _matches_alert_pattern(text: str) -> bool:
     if not text:
@@ -171,7 +181,7 @@ def blotter():
         ).order_by(Transcription.timestamp.asc()).all()
 
         combined_text = "\n".join(
-            f"[{t.timestamp}] {t.transcript}" for t in transcripts
+            f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
         )
 
         if not transcripts:
@@ -194,7 +204,8 @@ def blotter():
             file_prompt = ""
 
         blotter_prompt = (
-            f"The following are dispatch transcripts from the last {hours} hours. "
+            f"The following are dispatch transcripts from the last {hours} hours, "
+            "with timestamps already converted to America/New_York (ET). "
             + file_prompt
         )
 
@@ -320,8 +331,7 @@ def daily_blotter(date=None):
 def unit_locations():
     try:
         # Get the current time in US Eastern
-        eastern = ZoneInfo("US/Eastern")
-        one_hour_ago = datetime.now(eastern) - timedelta(hours=1)
+        one_hour_ago = datetime.now(EASTERN_TZ) - timedelta(hours=1)
         one_hour_ago_iso = one_hour_ago.isoformat()
         current_app.logger.debug(f"Timestamp filter (one hour ago): {one_hour_ago_iso}")
 
@@ -332,7 +342,9 @@ def unit_locations():
         # Log the retrieved transcripts
         current_app.logger.debug(f"Retrieved {len(transcripts)} transcripts: {transcripts}")
 
-        combined_text = "\n".join([f"[{t.timestamp}] {t.transcript}" for t in transcripts])
+        combined_text = "\n".join([
+            f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
+        ])
         current_app.logger.debug(f"Combined text for API call: {combined_text}")
 
         unit_data = get_unit_status_from_openai(combined_text)
