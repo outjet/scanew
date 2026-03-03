@@ -23,7 +23,9 @@ recordings/
 # SQLite database
 transcriptions.db
 dispatch/instance/transcriptions.sql
-
+/scanew/transcriptions.db
+transcription.db
+/scanew/transcription.db
 # OS / Editor junk
 .DS_Store
 Thumbs.db
