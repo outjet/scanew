@@ -445,10 +445,10 @@ def event_stream():
             if message and message.get('type') == 'message':
                 yield f"data: {message['data'].decode('utf-8')}\n\n"
 
-            # Send a comment every 15 seconds to keep the connection alive
+            # Send a heartbeat event every 15 seconds so the UI can detect staleness.
             now = time.monotonic()
             if now - last_keepalive > keepalive_interval:
-                yield ": keep-alive\n\n"
+                yield "event: heartbeat\ndata: {\"type\":\"heartbeat\"}\n\n"
                 last_keepalive = now
     except Exception as e:
         current_app.logger.error(f"Error in event stream: {e}", exc_info=True)

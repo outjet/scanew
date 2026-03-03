@@ -1,18 +1,16 @@
 from flask import Flask, jsonify, request, render_template, send_from_directory
 import sqlite3
-from config import SQLITE_DB_PATH
+from config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL
 import threading
 import json
 import os
-from openai import OpenAI
+import requests
 from openai._exceptions import OpenAIError
 from utils import retry_on_exception
 from transcribe import transcribe_chunk
 from pathlib import Path
 import tempfile
 
-# New OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = Flask(__name__)
 
 # Serve static files (wav files)
@@ -84,7 +82,12 @@ def retry_transcript(transcript_id):
         conn.close()
         return jsonify({'error': str(e)}), 500
 
-@retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
+@retry_on_exception(
+    exceptions=(OpenAIError, requests.RequestException),
+    max_attempts=3,
+    initial_delay=1,
+    backoff_factor=2,
+)
 def run_retry_transcription(audio_data: bytes) -> str:
     """Transcribe raw audio bytes using whisper-1 via transcribe_chunk."""
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
@@ -94,7 +97,8 @@ def run_retry_transcription(audio_data: bytes) -> str:
     try:
         text = transcribe_chunk(
             tmp_path,
-            model="whisper-1",
+            model=TRANSCRIPTION_MODEL,
+            provider=TRANSCRIPTION_PROVIDER,
             use_prompt=True,
         )
     finally:

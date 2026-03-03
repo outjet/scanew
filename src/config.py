@@ -30,12 +30,67 @@ FILTERED_WORDS_FILE = BASE_DIR / "filtered_words.txt"
 BROADCASTIFY_URL=str = os.getenv("BROADCASTIFY_URL", "").strip()
 
 OPENAI_API_KEY = str = os.getenv("OPENAI_API_KEY", "").strip()
-if not OPENAI_API_KEY:
-    raise RuntimeError("Missing required environment variable: OPENAI_API_KEY")
 
 BROADCASTIFY_URL = str = os.getenv("BROADCASTIFY_URL", "").strip()
 if not BROADCASTIFY_URL:
     raise RuntimeError("Missing required environment variable: BROADCASTIFY_URL")
+
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "").strip()
+
+TRANSCRIPTION_PROVIDER = os.getenv("TRANSCRIPTION_PROVIDER", "openai").strip().lower()
+if TRANSCRIPTION_PROVIDER == "whisper":
+    TRANSCRIPTION_PROVIDER = "openai"
+if TRANSCRIPTION_PROVIDER not in {"openai", "deepgram"}:
+    raise RuntimeError(
+        "Invalid TRANSCRIPTION_PROVIDER. Expected one of: openai, whisper, deepgram"
+    )
+
+OPENAI_TRANSCRIPTION_MODEL = os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1").strip()
+DEEPGRAM_MODEL = os.getenv("DEEPGRAM_MODEL", "nova-3").strip()
+TRANSCRIPTION_MODEL = os.getenv("TRANSCRIPTION_MODEL", "").strip() or (
+    DEEPGRAM_MODEL if TRANSCRIPTION_PROVIDER == "deepgram" else OPENAI_TRANSCRIPTION_MODEL
+)
+DEEPGRAM_LANGUAGE = os.getenv("DEEPGRAM_LANGUAGE", "en").strip()
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in {"0", "false", "no", "off"}
+
+DEEPGRAM_NUMERALS = _env_bool("DEEPGRAM_NUMERALS", True)
+DEEPGRAM_SMART_FORMAT = _env_bool("DEEPGRAM_SMART_FORMAT", True)
+DEEPGRAM_KEYTERMS_FILE = BASE_DIR / os.getenv("DEEPGRAM_KEYTERMS_FILE", "deepgram_keyterms.txt")
+DEEPGRAM_KEYTERMS_EXTRA = os.getenv("DEEPGRAM_KEYTERMS_EXTRA", "").strip()
+
+def _load_deepgram_keyterms() -> list[str]:
+    terms: list[str] = []
+    if DEEPGRAM_KEYTERMS_FILE.exists():
+        with open(DEEPGRAM_KEYTERMS_FILE, "r", encoding="utf-8") as f:
+            for raw_line in f:
+                term = raw_line.strip()
+                if not term or term.startswith("#"):
+                    continue
+                terms.append(term)
+    if DEEPGRAM_KEYTERMS_EXTRA:
+        terms.extend([t.strip() for t in DEEPGRAM_KEYTERMS_EXTRA.split(",") if t.strip()])
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for term in terms:
+        key = term.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(term)
+    return deduped
+
+DEEPGRAM_KEYTERMS = _load_deepgram_keyterms()
+
+if TRANSCRIPTION_PROVIDER == "openai" and not OPENAI_API_KEY:
+    raise RuntimeError("Missing required environment variable for provider=openai: OPENAI_API_KEY")
+if TRANSCRIPTION_PROVIDER == "deepgram" and not DEEPGRAM_API_KEY:
+    raise RuntimeError("Missing required environment variable for provider=deepgram: DEEPGRAM_API_KEY")
 
 PUSHOVER_TOKEN = str = os.getenv("PUSHOVER_TOKEN", "").strip()
 PUSHOVER_USER = str = os.getenv("PUSHOVER_USER", "").strip()

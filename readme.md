@@ -5,7 +5,7 @@ A Python-based system that:
 * Opens a Broadcastify Emergency Dispatch stream in Chrome
 * Captures system audio (via a loopback or “Stereo Mix” device) in real time
 * Splits each detected speech segment into shorter WAV files whenever silence is detected
-* Uses OpenAI’s Whisper to transcribe each chunk (with automatic retries)
+* Uses a configurable transcription backend (OpenAI Whisper or Deepgram) to transcribe each chunk
 * Filters out low-value transcripts (Broadcastify advertisements)
 * Saves valid transcripts into a local SQLite database
 * Checks each transcript against high-priority regex patterns (from `alert_patterns.txt`)
@@ -48,7 +48,8 @@ python src/main.py
   * **Windows:** Enable “Stereo Mix” and set it as your default recording device.
   * **macOS:** Install BlackHole and create a Multi-Output Device.
   * **Linux:** Use PulseAudio or JACK.
-* **OpenAI API key** (for Whisper transcription)
+* **OpenAI API key** (if using OpenAI transcription)
+* **Deepgram API key** (if using Deepgram transcription)
 * (Optional) **Pushover** account + credentials for push notifications
 
 To list available audio devices:
@@ -92,8 +93,22 @@ dispatch_transcriber/
 Create a `.env` file (or export these manually) using the variables below as a template.
 
 ```ini
-# Whisper
+# Transcription backend
+TRANSCRIPTION_PROVIDER=openai
+TRANSCRIPTION_MODEL=whisper-1
+
+# OpenAI (required when TRANSCRIPTION_PROVIDER=openai)
 OPENAI_API_KEY=sk-xxx
+
+# Deepgram (required when TRANSCRIPTION_PROVIDER=deepgram)
+DEEPGRAM_API_KEY=dg-xxx
+DEEPGRAM_MODEL=nova-3
+DEEPGRAM_LANGUAGE=en
+DEEPGRAM_NUMERALS=true
+DEEPGRAM_SMART_FORMAT=true
+DEEPGRAM_KEYTERMS_FILE=deepgram_keyterms.txt
+# Optional comma-separated extras
+DEEPGRAM_KEYTERMS_EXTRA=Ennis Court,Lakewood
 
 # Broadcastify feed URL
 BROADCASTIFY_URL=https://www.broadcastify.com/listen/feed/12345/thumbnail
@@ -194,8 +209,8 @@ Open `http://localhost:5500` in your browser.
 ### 3. Splitting & Transcription
 
 * Splits segments on additional silence
-* Sends chunks to Whisper API (`model=whisper-1`)
-* Retries up to 3x on failure
+* Sends chunks to the configured transcription API (OpenAI or Deepgram)
+* Retries up to 3x on API failure
 * Concatenates final transcript
 * Runs hallucination and "smell" checks; if triggered, re-transcribes using
   `gpt-4o-mini-transcribe` for better accuracy

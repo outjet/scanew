@@ -3,8 +3,13 @@ let currentPlayingRow = null;
 let isSearchActive = false;
 let lastProcessedId = 0;
 let eventSource = null;
+let lastServerSignalAt = 0;
+let heartbeatMonitorId = null;
+let liveFlashTimeoutId = null;
 
 const SSE_ENABLED = true;
+const STALE_RECONNECT_MS = 20000;
+const STALE_FAILED_MS = 60000;
 const toneOptions = ['', 'Moto', 'Kenwood', 'TRBO', 'MP7', 'Moto TPS', 'MDC-1200'];
 const windowOptions = [1, 2, 4, 8, 12];
 const toneUrls = {
@@ -63,6 +68,39 @@ function updateConnectionStatus(status) {
   }
 }
 
+function flashLiveIndicator() {
+  const statusElement = document.getElementById('sseStatus');
+  if (!statusElement) return;
+  statusElement.classList.add('is-flashing');
+  if (liveFlashTimeoutId) window.clearTimeout(liveFlashTimeoutId);
+  liveFlashTimeoutId = window.setTimeout(() => {
+    statusElement.classList.remove('is-flashing');
+    liveFlashTimeoutId = null;
+  }, 550);
+}
+
+function recordServerSignal() {
+  lastServerSignalAt = Date.now();
+  updateConnectionStatus('connected');
+  flashLiveIndicator();
+}
+
+function startHeartbeatMonitor() {
+  if (heartbeatMonitorId) window.clearInterval(heartbeatMonitorId);
+  heartbeatMonitorId = window.setInterval(() => {
+    if (isSearchActive || !eventSource) return;
+    if (eventSource.readyState !== EventSource.OPEN) return;
+    if (!lastServerSignalAt) return;
+
+    const silenceMs = Date.now() - lastServerSignalAt;
+    if (silenceMs >= STALE_FAILED_MS) {
+      updateConnectionStatus('failed');
+    } else if (silenceMs >= STALE_RECONNECT_MS) {
+      updateConnectionStatus('disconnected');
+    }
+  }, 1000);
+}
+
 function setupSSE(calledFrom = 'unknown') {
   if (!SSE_ENABLED || typeof streamUrl === 'undefined' || !streamUrl) {
     updateConnectionStatus('failed');
@@ -71,9 +109,11 @@ function setupSSE(calledFrom = 'unknown') {
 
   if (eventSource) eventSource.close();
   eventSource = new EventSource(streamUrl);
+  lastServerSignalAt = 0;
+  startHeartbeatMonitor();
 
   eventSource.onopen = function () {
-    updateConnectionStatus('connected');
+    updateConnectionStatus('disconnected');
   };
 
   eventSource.onmessage = function (event) {
@@ -81,11 +121,16 @@ function setupSSE(calledFrom = 'unknown') {
 
     try {
       const transcription = JSON.parse(event.data);
+      recordServerSignal();
       processNewTranscription(transcription);
     } catch (error) {
       console.error(`SSE parse error (${calledFrom}):`, error);
     }
   };
+  
+  eventSource.addEventListener('heartbeat', function () {
+    recordServerSignal();
+  });
 
   eventSource.onerror = function (event) {
     if (event.target.readyState === EventSource.CONNECTING) {
@@ -347,6 +392,11 @@ function toggleSearchMode(active) {
 
   if (active && eventSource) {
     eventSource.close();
+    eventSource = null;
+    if (heartbeatMonitorId) {
+      window.clearInterval(heartbeatMonitorId);
+      heartbeatMonitorId = null;
+    }
     updateConnectionStatus('search_mode');
   } else if (!active && document.getElementById('transcriptionTable')) {
     setupSSE('search-exit');

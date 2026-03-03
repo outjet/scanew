@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 import wave
+import requests
 from utils import log_transcription_to_console
 import re
 from collections import Counter
@@ -10,12 +11,22 @@ from collections import Counter
 import openai
 from openai._exceptions import OpenAIError
 
-from config import OPENAI_API_KEY, DISPATCH_PROMPT
+from config import (
+    OPENAI_API_KEY,
+    DISPATCH_PROMPT,
+    TRANSCRIPTION_PROVIDER,
+    TRANSCRIPTION_MODEL,
+    DEEPGRAM_API_KEY,
+    DEEPGRAM_LANGUAGE,
+    DEEPGRAM_NUMERALS,
+    DEEPGRAM_SMART_FORMAT,
+    DEEPGRAM_KEYTERMS,
+)
 from utils import retry_on_exception
 from splitter import split_on_silence
 
 logger = logging.getLogger(__name__)
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+client = openai.OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Load prompt text files once (project root)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,12 +100,15 @@ def contains_prompt_snippet(text: str, prompt_text: str, char_threshold: int = 2
 
 
 @retry_on_exception(exceptions=(OpenAIError,), max_attempts=3, initial_delay=1, backoff_factor=2)
-def transcribe_chunk(
+def transcribe_chunk_openai(
     chunk_path: Path,
-    model: str = "whisper-1",
+    model: str,
     *,
     use_prompt: bool = True,
 ) -> str:
+    if client is None:
+        raise RuntimeError("OpenAI client is not configured. Set OPENAI_API_KEY.")
+
     duration = get_audio_duration_seconds(chunk_path)
 
     prompt_to_use = None
@@ -122,6 +136,76 @@ def transcribe_chunk(
     return text
 
 
+@retry_on_exception(
+    exceptions=(requests.RequestException,),
+    max_attempts=3,
+    initial_delay=1,
+    backoff_factor=2,
+)
+def transcribe_chunk_deepgram(
+    chunk_path: Path,
+    model: str,
+) -> str:
+    params: list[tuple[str, str]] = [
+        ("model", model),
+        ("language", DEEPGRAM_LANGUAGE),
+        ("numerals", "true" if DEEPGRAM_NUMERALS else "false"),
+        ("smart_format", "true" if DEEPGRAM_SMART_FORMAT else "false"),
+    ]
+    for term in DEEPGRAM_KEYTERMS:
+        params.append(("keyterm", term))
+
+    headers = {
+        "Authorization": f"Token {DEEPGRAM_API_KEY}",
+        "Content-Type": "audio/wav",
+    }
+
+    with open(chunk_path, "rb") as f:
+        response = requests.post(
+            "https://api.deepgram.com/v1/listen",
+            headers=headers,
+            params=params,
+            data=f,
+            timeout=90,
+        )
+    response.raise_for_status()
+    payload = response.json()
+
+    try:
+        text = (
+            payload.get("results", {})
+            .get("channels", [{}])[0]
+            .get("alternatives", [{}])[0]
+            .get("transcript", "")
+            .strip()
+        )
+    except (AttributeError, IndexError, TypeError):
+        text = ""
+
+    logger.debug(f"deepgram/{model} returned: {text!r} for {chunk_path.name}")
+    return text
+
+
+def transcribe_chunk(
+    chunk_path: Path,
+    model: Optional[str] = None,
+    *,
+    provider: Optional[str] = None,
+    use_prompt: bool = True,
+) -> str:
+    resolved_provider = (provider or TRANSCRIPTION_PROVIDER).strip().lower()
+    if resolved_provider == "whisper":
+        resolved_provider = "openai"
+    resolved_model = (model or TRANSCRIPTION_MODEL).strip()
+
+    if resolved_provider == "deepgram":
+        return transcribe_chunk_deepgram(chunk_path, model=resolved_model)
+    if resolved_provider == "openai":
+        return transcribe_chunk_openai(chunk_path, model=resolved_model, use_prompt=use_prompt)
+
+    raise ValueError(f"Unsupported transcription provider: {resolved_provider}")
+
+
 def _alt_transcribe(
     *,
     segment_wav_path: Path,
@@ -143,6 +227,7 @@ def _alt_transcribe(
             text = transcribe_chunk(
                 chunk_path,
                 model="gpt-4o-mini-transcribe",
+                provider="openai",
                 use_prompt=use_prompt,
             )
             if text:
@@ -223,8 +308,14 @@ def transcribe_full_segment(
     temp_chunks_dir: Path,
     min_silence_len: int,
     silence_thresh: int,
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> Optional[str]:
     temp_chunks_dir.mkdir(parents=True, exist_ok=True)
+    active_provider = (provider or TRANSCRIPTION_PROVIDER).strip().lower()
+    if active_provider == "whisper":
+        active_provider = "openai"
+    active_model = (model or TRANSCRIPTION_MODEL).strip()
 
     # Split the audio into chunks
     chunk_files = split_on_silence(
@@ -238,7 +329,7 @@ def transcribe_full_segment(
         logger.debug(f"No nonsilent chunks detected in {segment_wav_path}. Skipping transcription.")
         return None
 
-    # Transcribe each chunk with whisper-1, skipping tiny files
+    # Transcribe each chunk with the configured provider/model, skipping tiny files
     transcripts = []
     for chunk_path in chunk_files:
         duration = get_audio_duration_seconds(chunk_path)
@@ -251,11 +342,21 @@ def transcribe_full_segment(
             continue
 
         try:
-            text = transcribe_chunk(chunk_path, model="whisper-1")
+            text = transcribe_chunk(
+                chunk_path,
+                model=active_model,
+                provider=active_provider,
+            )
             if text:
                 transcripts.append(text)
         except Exception as e:
-            logger.error(f"Failed to transcribe chunk {chunk_path.name} with whisper-1: {e}")
+            logger.error(
+                "Failed to transcribe chunk %s with provider=%s model=%s: %s",
+                chunk_path.name,
+                active_provider,
+                active_model,
+                e,
+            )
             continue
 
     # Clean up chunk files
@@ -274,9 +375,11 @@ def transcribe_full_segment(
     # Hallucination and issue detection
     flagged, phrase, count = is_hallucination(final_transcript)
     too_long = smells_too_long(final_transcript, final_duration)
-    has_prompt = contains_prompt_snippet(final_transcript, DISPATCH_PROMPT) or \
-                 contains_prompt_snippet(final_transcript, SHORT_PROMPT) or \
-                 contains_prompt_snippet(final_transcript, BASIC_PROMPT)
+    has_prompt = False
+    if active_provider == "openai":
+        has_prompt = contains_prompt_snippet(final_transcript, DISPATCH_PROMPT) or \
+                     contains_prompt_snippet(final_transcript, SHORT_PROMPT) or \
+                     contains_prompt_snippet(final_transcript, BASIC_PROMPT)
 
     transcription_issue = flagged or too_long or has_prompt
 
@@ -289,7 +392,7 @@ def transcribe_full_segment(
             return None
 
         # Handle issues for larger files
-        if too_long:
+        if too_long and active_provider == "openai" and active_model == "whisper-1":
             logger.warning(
                 f"Transcript too long ({len(final_transcript.split())} words in {final_duration:.2f}s) "
                 f"for {segment_wav_path.name}. Expected issue. Saving audio and retrying with whisper-1 without prompt.\n"
@@ -327,7 +430,12 @@ def transcribe_full_segment(
                     continue
 
                 try:
-                    text = transcribe_chunk(chunk_path, model="whisper-1", use_prompt=False)
+                    text = transcribe_chunk(
+                        chunk_path,
+                        model="whisper-1",
+                        provider="openai",
+                        use_prompt=False,
+                    )
                     if text:
                         transcripts.append(text)
                 except Exception as e:
@@ -345,7 +453,7 @@ def transcribe_full_segment(
             log_transcription_to_console(final_transcript)
             return final_transcript
 
-        if flagged:
+        if flagged and active_provider == "openai":
             logger.warning(
                 f"Detected repeated phrase '{phrase}' ({count}x) in {segment_wav_path.name}. "
                 f"Retrying with gpt-4o-mini-transcribe.\n"
@@ -353,7 +461,7 @@ def transcribe_full_segment(
             )
             return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
-        if has_prompt:
+        if has_prompt and active_provider == "openai":
             logger.warning(
                 f"Detected at least 24 consecutive chars of the prompt in transcript for {segment_wav_path.name}. "
                 f"Retrying with gpt-4o-mini-transcribe.\n"
@@ -361,7 +469,20 @@ def transcribe_full_segment(
             )
             return reprocess_with_alternate_model(segment_wav_path, temp_chunks_dir, min_silence_len, silence_thresh)
 
+        logger.warning(
+            "Transcription heuristics were triggered for provider=%s model=%s, "
+            "but no alternate retry strategy is configured for this backend.",
+            active_provider,
+            active_model,
+        )
+
     # Final accepted transcript
-    logger.debug(f"Whisper transcript for {segment_wav_path.name!r}: {final_transcript!r}")
+    logger.debug(
+        "%s/%s transcript for %r: %r",
+        active_provider,
+        active_model,
+        segment_wav_path.name,
+        final_transcript,
+    )
     log_transcription_to_console(final_transcript)
     return final_transcript

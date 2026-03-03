@@ -26,7 +26,9 @@ from config import (
     AUDIO_HEARTBEAT_SEC,
     REDIS_URL,
     TRANSCRIPTION_STALL_SECONDS,
-    SILENCE_DB_THRESHOLD
+    SILENCE_DB_THRESHOLD,
+    TRANSCRIPTION_PROVIDER,
+    TRANSCRIPTION_MODEL,
 )
 from redis import Redis
 from stream_handler import start_ffmpeg_stream
@@ -57,6 +59,12 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 timestamp_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 def main():
+    logger.info(
+        "Transcription backend configured: provider=%s model=%s",
+        TRANSCRIPTION_PROVIDER,
+        TRANSCRIPTION_MODEL,
+    )
+
     # 1) Initialize SQLite
     initialize_database()
 

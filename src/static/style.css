@@ -175,7 +175,10 @@
 
 .dispatch-dashboard .status-dot {
   display: inline-block;
-  animation: blink 1.2s steps(1, end) infinite;
+}
+
+.dispatch-dashboard .sse-status.is-flashing .status-dot {
+  animation: blink 0.55s steps(1, end) 1;
 }
 
 .dispatch-dashboard .search-panel {
