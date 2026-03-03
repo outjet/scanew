@@ -1,6 +1,9 @@
 # One keyterm per line. Comments and blank lines are ignored.
+Stall door
 DL
 Clifton
+Name and date of birth
+Westerly
 Lakewood
 117th
 Fairview
@@ -8,6 +11,9 @@ Cleveland
 Medic
 complainant
 checking
+out of
+no wants
+out of the pickup
 Edgewater
 Attention all companies
 Bunts
