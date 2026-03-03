@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, session
+from flask import Flask, redirect, url_for, request, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_session import Session
 from authlib.integrations.flask_client import OAuth
@@ -122,6 +122,10 @@ def create_app():
         logout_user()
         session.pop("next", None)
         return redirect(url_for("login"))
+
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(app.static_folder, "favicon.ico")
 
     return app
 

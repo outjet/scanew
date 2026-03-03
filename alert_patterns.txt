@@ -7,11 +7,13 @@
 \bstep\sit\sup\b
 \bany\savailable\scars\b
 \bany\savailable\sunit\b
+\bclear\sthe\sair\b
 \balakewood\scars\b
 
 # Priority Fire Department Response
 \bengine\s1\sengine\s2\b
 \bengine\s2\sengine\s3\b
+\bemergency\straffic\b
 \bmedic\s123\b
 \bmedic\s1[\s-]?2[\s-]?3\b
 \bmedic\s1\s?2\s?3\b
@@ -34,6 +36,7 @@
 
 # Streets
 \bwagar\b
+\bwager\b
 
 # Addresses or License Plates
 \b1597\b
