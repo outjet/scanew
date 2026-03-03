@@ -43,6 +43,23 @@ def create_app():
 
     app.register_blueprint(dispatch_bp, url_prefix="/")
 
+    @app.context_processor
+    def static_cache_buster():
+        def static_url(filename: str, endpoint: str = "dispatch.static"):
+            static_root = os.path.join(app.root_path, "static")
+            file_path = os.path.join(static_root, filename)
+            version = None
+            try:
+                version = int(os.path.getmtime(file_path))
+            except OSError:
+                version = None
+
+            if version is None:
+                return url_for(endpoint, filename=filename)
+            return url_for(endpoint, filename=filename, v=version)
+
+        return {"static_url": static_url}
+
     @app.route("/login")
     def login():
         session['next'] = request.args.get('next') or url_for('dispatch.view_transcriptions')
