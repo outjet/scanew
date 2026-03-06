@@ -25,10 +25,12 @@ logger = logging.getLogger(__name__)
 
 CLASSIFICATION_PROMPT = """Classify this Lakewood, Ohio police/fire dispatch transcript.
 
-Return only one integer:
-1 = initial dispatch for a new incident, usually includes a location and a request for police or fire service or a reported problem
-2 = supplemental traffic for an existing incident, including status updates, transport, 10-codes, unit chatter, follow-up details, or descriptions after the dispatch
-0 = other radio noise, radio checks, administrative traffic, accidental audio, or non-dispatch content
+Return JSON with exactly one field:
+{"class_code":"0"|"1"|"2"}
+
+"1" = initial dispatch for a new incident, usually includes a location and a request for police or fire service or a reported problem
+"2" = supplemental traffic for an existing incident, including status updates, transport, 10-codes, unit chatter, follow-up details, or descriptions after the dispatch
+"0" = other radio noise, radio checks, administrative traffic, accidental audio, or non-dispatch content
 
 Transcript:
 """
@@ -162,16 +164,16 @@ def classify_transcript_intent(text: str) -> int:
             "topK": 1,
             "maxOutputTokens": 32,
             "responseMimeType": "application/json",
-            "responseSchema": {
-                "type": "OBJECT",
-                "properties": {
-                    "class_code": {
-                        "type": "INTEGER",
-                        "enum": [0, 1, 2],
-                    }
+                "responseSchema": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "class_code": {
+                            "type": "STRING",
+                            "enum": ["0", "1", "2"],
+                        }
+                    },
+                    "required": ["class_code"],
                 },
-                "required": ["class_code"],
-            },
         },
     }
 
@@ -200,6 +202,8 @@ def classify_transcript_intent(text: str) -> int:
         return 0
 
     class_code = parsed.get("class_code")
+    if isinstance(class_code, str) and class_code in {"0", "1", "2"}:
+        class_code = int(class_code)
     if class_code not in {0, 1, 2}:
         logger.warning("Unexpected class_code %r; defaulting to OTHER. raw_payload=%s", class_code, raw_text)
         return 0
