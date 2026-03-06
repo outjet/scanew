@@ -117,8 +117,12 @@ BROADCASTIFY_URL=https://www.broadcastify.com/listen/feed/12345/thumbnail
 PUSHOVER_TOKEN=your_pushover_app_token
 PUSHOVER_USER=your_pushover_user_key
 
-# Vertex classification (optional but recommended for dispatch intent labeling)
-VERTEX_API_KEY=your_vertex_api_key
+# Vertex classification (recommended for dispatch intent labeling)
+# If VERTEX_API_KEY is unset, the app will try Google Secret Manager secret "VERTEX_API_KEY"
+# using ADC and the current GCP project (or GCP_PROJECT_ID / GOOGLE_CLOUD_PROJECT).
+# Example:
+GCP_PROJECT_ID=scanner-423417
+# VERTEX_API_KEY=your_vertex_api_key
 VERTEX_CLASSIFICATION_ENABLED=true
 VERTEX_CLASSIFICATION_MODEL=gemini-1.5-flash-8b
 CLASSIFICATION_MIN_TEXT_LENGTH=50

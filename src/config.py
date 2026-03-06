@@ -6,6 +6,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 import logging
 
+try:
+    from google.cloud import secretmanager
+except ImportError:  # pragma: no cover - optional dependency until installed
+    secretmanager = None
+
+try:
+    import google.auth
+except ImportError:  # pragma: no cover - optional dependency until installed
+    google = None
+
 logger = logging.getLogger(__name__)
 
 # Attempt to load .env from the project root
@@ -58,6 +68,43 @@ def _env_bool(name: str, default: bool) -> bool:
         return default
     return raw.strip().lower() not in {"0", "false", "no", "off"}
 
+
+def _resolve_gcp_project_id() -> str:
+    for env_name in ("GCP_PROJECT_ID", "GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT", "PROJECT_ID"):
+        value = os.getenv(env_name, "").strip()
+        if value:
+            return value
+
+    if google is None:
+        return ""
+
+    try:
+        _, project_id = google.auth.default()
+        return (project_id or "").strip()
+    except Exception as e:
+        logger.debug("Could not resolve GCP project ID from ADC: %s", e)
+        return ""
+
+
+def _load_secret(secret_name: str) -> str:
+    if secretmanager is None:
+        logger.debug("google-cloud-secret-manager is not installed; cannot load %s from Secret Manager.", secret_name)
+        return ""
+
+    project_id = _resolve_gcp_project_id()
+    if not project_id:
+        logger.warning("No GCP project ID available; cannot load %s from Secret Manager.", secret_name)
+        return ""
+
+    try:
+        client = secretmanager.SecretManagerServiceClient()
+        secret_path = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+        response = client.access_secret_version(request={"name": secret_path})
+        return response.payload.data.decode("utf-8").strip()
+    except Exception as e:
+        logger.warning("Failed to load secret %s from Secret Manager: %s", secret_name, e)
+        return ""
+
 DEEPGRAM_NUMERALS = _env_bool("DEEPGRAM_NUMERALS", True)
 DEEPGRAM_SMART_FORMAT = _env_bool("DEEPGRAM_SMART_FORMAT", True)
 DEEPGRAM_KEYTERMS_FILE = BASE_DIR / os.getenv("DEEPGRAM_KEYTERMS_FILE", "deepgram_keyterms.txt")
@@ -105,7 +152,7 @@ TRANSCRIPTION_STALL_SECONDS: int = int(os.getenv("TRANSCRIPTION_STALL_SECONDS", 
 SILENCE_DB_THRESHOLD: float = float(os.getenv("SILENCE_DB_THRESHOLD", "-80"))
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
-VERTEX_API_KEY = os.getenv("VERTEX_API_KEY", "").strip()
+VERTEX_API_KEY = os.getenv("VERTEX_API_KEY", "").strip() or _load_secret("VERTEX_API_KEY")
 VERTEX_CLASSIFICATION_ENABLED = _env_bool("VERTEX_CLASSIFICATION_ENABLED", True)
 VERTEX_CLASSIFICATION_MODEL = os.getenv("VERTEX_CLASSIFICATION_MODEL", "gemini-1.5-flash-8b").strip()
 VERTEX_CLASSIFICATION_TIMEOUT_SEC = float(os.getenv("VERTEX_CLASSIFICATION_TIMEOUT_SEC", "8"))
