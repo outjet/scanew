@@ -123,6 +123,8 @@ PUSHOVER_USER=your_pushover_user_key
 # Example:
 GCP_PROJECT_ID=scanner-423417
 # VERTEX_API_KEY=your_vertex_api_key
+# Optional override if you need a non-default Gemini endpoint
+# VERTEX_EXPRESS_ENDPOINT=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent
 VERTEX_CLASSIFICATION_ENABLED=true
 VERTEX_CLASSIFICATION_MODEL=gemini-1.5-flash-8b
 CLASSIFICATION_MIN_TEXT_LENGTH=50

@@ -172,7 +172,11 @@ def classify_transcript_intent(text: str) -> int:
         json=payload,
         timeout=VERTEX_CLASSIFICATION_TIMEOUT_SEC,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise requests.HTTPError(
+            f"Vertex classification request failed: status={response.status_code} body={response.text[:1000]}",
+            response=response,
+        )
     data = response.json()
     raw_text = _extract_vertex_text(data)
     match = re.search(r"\b([012])\b", raw_text)

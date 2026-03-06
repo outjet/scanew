@@ -159,7 +159,7 @@ VERTEX_CLASSIFICATION_TIMEOUT_SEC = float(os.getenv("VERTEX_CLASSIFICATION_TIMEO
 CLASSIFICATION_MIN_TEXT_LENGTH = int(os.getenv("CLASSIFICATION_MIN_TEXT_LENGTH", "50"))
 VERTEX_EXPRESS_ENDPOINT = os.getenv(
     "VERTEX_EXPRESS_ENDPOINT",
-    f"https://aiplatform.googleapis.com/v1beta1/publishers/google/models/{VERTEX_CLASSIFICATION_MODEL}:generateContent",
+    f"https://generativelanguage.googleapis.com/v1beta/models/{VERTEX_CLASSIFICATION_MODEL}:generateContent",
 ).strip()
 
 RECORDINGS_DIR = Path(os.getenv("RECORDINGS_DIR", "recordings"))

@@ -100,7 +100,11 @@ def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
         json=payload,
         timeout=VERTEX_CLASSIFICATION_TIMEOUT_SEC,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise requests.HTTPError(
+            f"Vertex summary request failed: status={response.status_code} body={response.text[:1000]}",
+            response=response,
+        )
     data = response.json()
     candidates = data.get("candidates") or []
     for candidate in candidates:
