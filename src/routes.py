@@ -27,9 +27,16 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import json, time
+import requests
 from .extensions import db
 from redis import Redis
-from .config import RECORDINGS_DIR, ALERT_PATTERNS
+from .config import (
+    RECORDINGS_DIR,
+    ALERT_PATTERNS,
+    VERTEX_API_KEY,
+    VERTEX_CLASSIFICATION_TIMEOUT_SEC,
+    VERTEX_EXPRESS_ENDPOINT,
+)
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 
@@ -53,6 +60,56 @@ def _matches_alert_pattern(text: str) -> bool:
     if not text:
         return False
     return any(pat.search(text) for pat in ALERT_PATTERNS)
+
+
+def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
+    prompt = (
+        "You are summarizing recent emergency incidents for a public-facing Lakewood, Ohio dispatch digest. "
+        "You will receive only initial dispatch transcripts from the last 90 minutes. "
+        "Write a plain-text report titled 'Recent incidents'. "
+        "List each likely distinct incident as a short bullet using friendly, factual language. "
+        "Include the approximate time and location when present. "
+        "Do not mention internal classification labels. "
+        "If multiple lines appear to describe the same incident, merge them. "
+        "If the feed is unclear, say so briefly. "
+        "Return plain text only."
+    )
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": f"{prompt}\n\nDispatches:\n{combined_text}"
+                    }
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "topP": 0.8,
+            "topK": 20,
+            "maxOutputTokens": 700,
+            "responseMimeType": "text/plain",
+        },
+    }
+    response = requests.post(
+        VERTEX_EXPRESS_ENDPOINT,
+        params={"key": VERTEX_API_KEY},
+        headers={"Content-Type": "application/json"},
+        json=payload,
+        timeout=VERTEX_CLASSIFICATION_TIMEOUT_SEC,
+    )
+    response.raise_for_status()
+    data = response.json()
+    candidates = data.get("candidates") or []
+    for candidate in candidates:
+        content = candidate.get("content") or {}
+        for part in content.get("parts") or []:
+            text = (part.get("text") or "").strip()
+            if text:
+                return text
+    raise ValueError("Vertex returned an empty incidents summary")
 
 def _resolve_blotter_api_mode(model_name: str, configured_mode: str) -> str:
     """
@@ -328,6 +385,50 @@ def daily_blotter(date=None):
     except Exception as e:
         current_app.logger.error(f"Error in daily_blotter route: {e}", exc_info=True)
         abort(500, description="An internal error occurred.")
+
+
+@dispatch_bp.route('/recent_incidents')
+def recent_incidents():
+    try:
+        if not VERTEX_API_KEY:
+            return Response(
+                "Recent incidents\n\nVertex summarization is not configured.\n",
+                mimetype='text/plain',
+                status=503,
+            )
+
+        cutoff = datetime.utcnow() - timedelta(minutes=90)
+        cutoff_iso = cutoff.isoformat()
+        transcripts = Transcription.query.filter(
+            Transcription.timestamp >= cutoff_iso,
+            Transcription.class_code == 1,
+        ).order_by(Transcription.timestamp.asc()).all()
+
+        if not transcripts:
+            return Response(
+                "Recent incidents\n\nNo initial dispatches in the last 90 minutes.\n",
+                mimetype='text/plain',
+            )
+
+        combined_text = "\n".join(
+            f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
+        )
+        summary = _summarize_recent_incidents_with_vertex(combined_text)
+        return Response(f"{summary.rstrip()}\n", mimetype='text/plain')
+    except requests.RequestException as e:
+        current_app.logger.error("Error calling Vertex for recent_incidents: %s", e, exc_info=True)
+        return Response(
+            "Recent incidents\n\nFailed to summarize incidents right now.\n",
+            mimetype='text/plain',
+            status=502,
+        )
+    except Exception as e:
+        current_app.logger.error("Error in recent_incidents: %s", e, exc_info=True)
+        return Response(
+            "Recent incidents\n\nUnexpected error while building incident summary.\n",
+            mimetype='text/plain',
+            status=500,
+        )
 
 @dispatch_bp.route('/unit_locations')
 @login_required
