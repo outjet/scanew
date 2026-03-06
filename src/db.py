@@ -1,7 +1,6 @@
 # src/db.py
 import sqlite3
 import logging
-from pathlib import Path
 
 from config import SQLITE_DB_PATH
 
@@ -14,15 +13,50 @@ CREATE TABLE IF NOT EXISTS transcriptions (
     wav_filename  TEXT,
     transcript    TEXT NOT NULL,
     notified      INTEGER DEFAULT 0,
-    pushover_code INTEGER
+    pushover_code INTEGER,
+    response_code INTEGER,
+    alert         BOOLEAN DEFAULT 0,
+    bestof        BOOLEAN DEFAULT 0,
+    initialdispatch BOOLEAN DEFAULT 0,
+    class         TINYINT
 );
 """
 
+EXPECTED_COLUMNS = {
+    "timestamp": "TEXT NOT NULL",
+    "wav_filename": "TEXT",
+    "transcript": "TEXT NOT NULL",
+    "notified": "INTEGER DEFAULT 0",
+    "pushover_code": "INTEGER",
+    "response_code": "INTEGER",
+    "alert": "BOOLEAN DEFAULT 0",
+    "bestof": "BOOLEAN DEFAULT 0",
+    "initialdispatch": "BOOLEAN DEFAULT 0",
+    "class": "TINYINT",
+}
+
+
+def _get_connection() -> sqlite3.Connection:
+    return sqlite3.connect(str(SQLITE_DB_PATH))
+
+
+def _migrate_transcriptions_table(conn: sqlite3.Connection):
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(transcriptions)")
+    existing_columns = {row[1] for row in cur.fetchall()}
+
+    for column_name, column_def in EXPECTED_COLUMNS.items():
+        if column_name in existing_columns:
+            continue
+        cur.execute(f'ALTER TABLE transcriptions ADD COLUMN "{column_name}" {column_def}')
+        logger.info("Added missing transcriptions column: %s", column_name)
+
 def initialize_database():
-    conn = sqlite3.connect(str(SQLITE_DB_PATH))
+    conn = _get_connection()
     try:
         cur = conn.cursor()
         cur.execute(SCHEMA)
+        _migrate_transcriptions_table(conn)
         conn.commit()
         logger.info(f"Initialized or verified DB at {SQLITE_DB_PATH}")
     except Exception as e:
@@ -37,21 +71,32 @@ def insert_transcription(
     transcript: str,
     notified: bool = False,
     pushover_code: int = None,
-    response_code: int = None
+    response_code: int = None,
+    alert: bool = False,
+    bestof: bool = False,
 ):
     """
     Inserts one row into the transcriptions table.
     """
-    conn = sqlite3.connect(str(SQLITE_DB_PATH))  # ← this must return a connection object only
+    conn = _get_connection()
     try:
         cur = conn.cursor()
         cur.execute(
             """
             INSERT INTO transcriptions
-            (timestamp, wav_filename, transcript, notified, pushover_code, response_code)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (timestamp, wav_filename, transcript, notified, pushover_code, response_code, alert, bestof)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (timestamp_iso, wav_filename, transcript, int(notified), pushover_code, response_code)
+            (
+                timestamp_iso,
+                wav_filename,
+                transcript,
+                int(notified),
+                pushover_code,
+                response_code,
+                int(alert),
+                int(bestof),
+            )
         )
         conn.commit()
         row_id = cur.lastrowid
@@ -62,3 +107,33 @@ def insert_transcription(
     finally:
         conn.close()
     return row_id
+
+
+def update_transcription_classification(row_id: int, class_code: int):
+    conn = _get_connection()
+    try:
+        conn.execute(
+            'UPDATE transcriptions SET "class" = ?, initialdispatch = ? WHERE id = ?',
+            (class_code, int(class_code == 1), row_id),
+        )
+        conn.commit()
+    except Exception as e:
+        logger.error("Error updating classification for row %s: %s", row_id, e)
+        raise
+    finally:
+        conn.close()
+
+
+def update_transcription_response_code(row_id: int, response_code: int):
+    conn = _get_connection()
+    try:
+        conn.execute(
+            "UPDATE transcriptions SET response_code = ? WHERE id = ?",
+            (response_code, row_id),
+        )
+        conn.commit()
+    except Exception as e:
+        logger.error("Error updating response code for row %s: %s", row_id, e)
+        raise
+    finally:
+        conn.close()

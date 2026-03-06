@@ -347,6 +347,19 @@
   color: rgba(255, 88, 88, 0.55) !important;
 }
 
+.dispatch-dashboard #transcriptionTable tr.initial-dispatch {
+  box-shadow: inset 4px 0 0 #ffd24a;
+  background: rgba(255, 210, 74, 0.08);
+}
+
+.dispatch-dashboard #transcriptionTable tr.initial-dispatch .transcription-text {
+  color: rgba(255, 245, 166, 0.96);
+}
+
+.dispatch-dashboard #transcriptionTable tr.initial-dispatch .transcription-meta {
+  color: rgba(255, 210, 74, 0.7) !important;
+}
+
 .dispatch-dashboard .context-icon {
   float: right;
   color: rgba(0, 255, 136, 0.65);

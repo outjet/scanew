@@ -182,15 +182,18 @@ function createTranscriptionRow(transcription) {
   const timestamp = formatTimestampEastern(transcription.timestamp);
   const text = getTranscriptionText(transcription);
   const alertMatch = Boolean(transcription.alert_match) || matchesAlertPatternText(text);
+  const classCode = transcription.class_code ?? transcription.classCode ?? '';
+  const initialDispatch = Boolean(transcription.initialdispatch);
 
   row.innerHTML = `
-    <td class="transcription-cell" data-timestamp="${transcription.timestamp}" data-alert-match="${alertMatch ? 'true' : 'false'}" ${audioUrl ? `data-audio-url="${audioUrl}"` : ''}>
+    <td class="transcription-cell" data-timestamp="${transcription.timestamp}" data-alert-match="${alertMatch ? 'true' : 'false'}" data-class-code="${classCode}" data-initialdispatch="${initialDispatch ? 'true' : 'false'}" ${audioUrl ? `data-audio-url="${audioUrl}"` : ''}>
       <small class="transcription-meta">${timestamp}</small>
       <span class="transcription-text"></span>
       ${buildWaveformHtml()}
     </td>
   `;
   if (alertMatch) row.classList.add('alert-match');
+  if (initialDispatch) row.classList.add('initial-dispatch');
 
   const searchInput = document.getElementById('searchInput');
   const searchQuery = searchInput ? searchInput.value.trim() : '';
@@ -208,7 +211,13 @@ function createTranscriptionRow(transcription) {
 }
 
 function processNewTranscription(transcription) {
-  if (!transcription || !transcription.id || transcription.id <= lastProcessedId) return;
+  if (!transcription || !transcription.id) return;
+
+  if (transcription.type === 'classification_update') {
+    applyClassificationUpdate(transcription);
+    return;
+  }
+  if (transcription.id <= lastProcessedId) return;
 
   const tableBody = document.getElementById('transcriptionTable');
   if (!tableBody) return;
@@ -220,6 +229,21 @@ function processNewTranscription(transcription) {
 
   lastProcessedId = transcription.id;
   playSelectedTone();
+}
+
+function applyClassificationUpdate(transcription) {
+  const row = document.querySelector(`tr[data-id="${transcription.id}"]`);
+  if (!row) return;
+
+  const cell = row.querySelector('.transcription-cell');
+  if (!cell) return;
+
+  const classCode = transcription.class_code ?? transcription.classCode ?? '';
+  const initialDispatch = Boolean(transcription.initialdispatch);
+
+  cell.setAttribute('data-class-code', String(classCode));
+  cell.setAttribute('data-initialdispatch', initialDispatch ? 'true' : 'false');
+  row.classList.toggle('initial-dispatch', initialDispatch);
 }
 
 function playAudio(url, rowToHighlight = null) {
@@ -562,6 +586,9 @@ $(document).ready(function () {
     const row = cell.closest('tr');
     if (row && cell.getAttribute('data-alert-match') === 'true') {
       row.classList.add('alert-match');
+    }
+    if (row && cell.getAttribute('data-initialdispatch') === 'true') {
+      row.classList.add('initial-dispatch');
     }
   });
 

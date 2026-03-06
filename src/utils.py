@@ -7,12 +7,31 @@ from colorama import Fore, Style, init as colorama_init
 import datetime
 import re
 import sys
-from config import ALERT_PATTERNS
+from config import (
+    ALERT_PATTERNS,
+    CLASSIFICATION_MIN_TEXT_LENGTH,
+    VERTEX_API_KEY,
+    VERTEX_CLASSIFICATION_ENABLED,
+    VERTEX_CLASSIFICATION_TIMEOUT_SEC,
+    VERTEX_EXPRESS_ENDPOINT,
+)
 import json
 import paramiko
 import os
 
+from db import update_transcription_response_code
+
 logger = logging.getLogger(__name__)
+
+CLASSIFICATION_PROMPT = """Classify this Lakewood, Ohio police/fire dispatch transcript.
+
+Return only one integer:
+1 = initial dispatch for a new incident, usually includes a location and a request for police or fire service or a reported problem
+2 = supplemental traffic for an existing incident, including status updates, transport, 10-codes, unit chatter, follow-up details, or descriptions after the dispatch
+0 = other radio noise, radio checks, administrative traffic, accidental audio, or non-dispatch content
+
+Transcript:
+"""
 
 def retry_on_exception(
     *,
@@ -73,7 +92,7 @@ def log_transcription_to_console(text: str, source: str = "Dispatch"):
 
     print(output)
 
-def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: int, conn):
+def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: int):
     # The destination URL is now configurable via environment variable
     post_url = os.getenv("TRANSCRIPTION_POST_URL", "https://lkwd.agency/transcription")
     
@@ -96,22 +115,81 @@ def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: i
             logger.debug(f"POSTING to {post_url}: {data}")
             response = requests.post(post_url, headers=headers, json=data, timeout=10)
             response.raise_for_status()
-            conn.execute("UPDATE transcriptions SET response_code = ? WHERE id = ?", (response.status_code, row_id))
-            conn.commit()
-           #logger.info(f"Posted transcript ({row_id}) OK: {response.status_code}")
+            update_transcription_response_code(row_id, response.status_code)
             return response.status_code
         except requests.exceptions.RequestException as e:
             logger.error(f"Post failed (attempt {attempt + 1}): {e}")
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Response content: {e.response.content}")
                 if e.response.status_code:
-                    conn.execute("UPDATE transcriptions SET response_code = ? WHERE id = ?", (e.response.status_code, row_id))
-                    conn.commit()
+                    update_transcription_response_code(row_id, e.response.status_code)
             if attempt < max_retries - 1:
                 time.sleep(delay)
                 delay *= 2
     logger.error("Final failure after retries.")
     return 0
+
+
+@retry_on_exception(
+    exceptions=(requests.RequestException, ValueError),
+    max_attempts=3,
+    initial_delay=0.5,
+    backoff_factor=2,
+)
+def classify_transcript_intent(text: str) -> int:
+    if len(text or "") <= CLASSIFICATION_MIN_TEXT_LENGTH:
+        return 0
+    if not VERTEX_CLASSIFICATION_ENABLED:
+        return 0
+    if not VERTEX_API_KEY:
+        logger.warning("VERTEX_API_KEY is not configured; defaulting classification to OTHER.")
+        return 0
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": f"{CLASSIFICATION_PROMPT}{text}"
+                    }
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0,
+            "topP": 0.1,
+            "topK": 1,
+            "maxOutputTokens": 4,
+            "responseMimeType": "text/plain",
+        },
+    }
+
+    response = requests.post(
+        VERTEX_EXPRESS_ENDPOINT,
+        params={"key": VERTEX_API_KEY},
+        headers={"Content-Type": "application/json"},
+        json=payload,
+        timeout=VERTEX_CLASSIFICATION_TIMEOUT_SEC,
+    )
+    response.raise_for_status()
+    data = response.json()
+    raw_text = _extract_vertex_text(data)
+    match = re.search(r"\b([012])\b", raw_text)
+    if not match:
+        raise ValueError(f"Unexpected classification payload: {raw_text!r}")
+    return int(match.group(1))
+
+
+def _extract_vertex_text(data: dict) -> str:
+    candidates = data.get("candidates") or []
+    for candidate in candidates:
+        content = candidate.get("content") or {}
+        for part in content.get("parts") or []:
+            text = (part.get("text") or "").strip()
+            if text:
+                return text
+    return ""
 
 def copy_to_raspberry_pi(local_file_path, remote_file_name, max_retries=3):
     """

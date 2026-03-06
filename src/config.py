@@ -105,6 +105,16 @@ TRANSCRIPTION_STALL_SECONDS: int = int(os.getenv("TRANSCRIPTION_STALL_SECONDS", 
 SILENCE_DB_THRESHOLD: float = float(os.getenv("SILENCE_DB_THRESHOLD", "-80"))
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
+VERTEX_API_KEY = os.getenv("VERTEX_API_KEY", "").strip()
+VERTEX_CLASSIFICATION_ENABLED = _env_bool("VERTEX_CLASSIFICATION_ENABLED", True)
+VERTEX_CLASSIFICATION_MODEL = os.getenv("VERTEX_CLASSIFICATION_MODEL", "gemini-1.5-flash-8b").strip()
+VERTEX_CLASSIFICATION_TIMEOUT_SEC = float(os.getenv("VERTEX_CLASSIFICATION_TIMEOUT_SEC", "8"))
+CLASSIFICATION_MIN_TEXT_LENGTH = int(os.getenv("CLASSIFICATION_MIN_TEXT_LENGTH", "50"))
+VERTEX_EXPRESS_ENDPOINT = os.getenv(
+    "VERTEX_EXPRESS_ENDPOINT",
+    f"https://aiplatform.googleapis.com/v1beta1/publishers/google/models/{VERTEX_CLASSIFICATION_MODEL}:generateContent",
+).strip()
+
 RECORDINGS_DIR = Path(os.getenv("RECORDINGS_DIR", "recordings"))
 RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
 

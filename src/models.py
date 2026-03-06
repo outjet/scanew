@@ -16,6 +16,8 @@ class Transcription(db.Model):
     response_code = db.Column(db.Integer)
     alert = db.Column(db.Boolean)
     bestof = db.Column(db.Boolean)
+    initialdispatch = db.Column(db.Boolean)
+    class_code = db.Column("class", db.Integer)
 
 class DailyBlotter(db.Model):
     __tablename__ = 'daily_blotter'

@@ -8,12 +8,10 @@ import json
 import tempfile
 import shutil
 import pathlib
-import sqlite3
 from datetime import datetime, timezone
 from queue import Queue
 
 from config import (
-    SQLITE_DB_PATH,
     LOGGING_FORMAT,
     SAMPLE_RATE,
     CHANNELS,
@@ -35,9 +33,9 @@ from stream_handler import start_ffmpeg_stream
 from audio import AudioRecorder
 from transcribe import transcribe_full_segment
 from filters import filter_transcript
-from db import initialize_database, insert_transcription
+from db import initialize_database, insert_transcription, update_transcription_classification
 from notifier import send_pushover, matches_alert_pattern
-from utils import post_transcription_with_retry, copy_to_raspberry_pi
+from utils import classify_transcript_intent, post_transcription_with_retry, copy_to_raspberry_pi
 
 # ---------------------------
 # Basic Logging Configuration
@@ -70,6 +68,34 @@ def main():
 
     # 2) Create a queue for audio segments (paths to temp WAVs)
     segment_queue: Queue = Queue()
+    classification_queue: Queue = Queue()
+
+    def publish_transcription_update(payload: dict):
+        try:
+            redis_client = Redis.from_url(REDIS_URL)
+            redis_client.publish("sse_channel", json.dumps(payload))
+        except Exception as e:
+            logger.warning("Failed to publish transcription update to Redis: %s", e)
+
+    def classification_worker():
+        while True:
+            row_id, timestamp_iso, wav_filename, transcript = classification_queue.get()
+            try:
+                class_code = classify_transcript_intent(transcript)
+                update_transcription_classification(row_id, class_code)
+                payload = {
+                    "type": "classification_update",
+                    "id": row_id,
+                    "timestamp": timestamp_iso,
+                    "wav_filename": wav_filename,
+                    "class_code": class_code,
+                    "initialdispatch": class_code == 1,
+                }
+                publish_transcription_update(payload)
+            except Exception:
+                logger.exception("Failed to classify transcription row %s", row_id)
+            finally:
+                classification_queue.task_done()
 
     def start_pipeline():
         ffmpeg_proc = start_ffmpeg_stream()
@@ -147,6 +173,7 @@ def main():
                     )
 
     threading.Thread(target=monitor_pipeline, daemon=True, name="StreamWatchdog").start()
+    threading.Thread(target=classification_worker, daemon=True, name="Classifier").start()
 
     # 5) Main loop: whenever there's a new segment path, process it
     while True:
@@ -200,39 +227,40 @@ def main():
 
             timestamp_iso = datetime.now(timezone.utc).isoformat()
             alert_match = matches_alert_pattern(filtered)
-            with sqlite3.connect(str(SQLITE_DB_PATH)) as conn:
-                row_id = insert_transcription(
-                    timestamp_iso=timestamp_iso,
-                    wav_filename=final_wav_filename,
-                    transcript=filtered,
-                    notified=False,
-                    pushover_code=None,
-                    response_code=None
-                )
-                with state_lock:
-                    current_recorder = state.get("recorder")
-                if current_recorder:
-                    current_recorder.mark_transcription()
-                if final_wav_filename:
-                    file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
-                    if POST_TRANSCRIPTIONS:
-                        post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id, conn)
+            row_id = insert_transcription(
+                timestamp_iso=timestamp_iso,
+                wav_filename=final_wav_filename,
+                transcript=filtered,
+                notified=False,
+                pushover_code=None,
+                response_code=None,
+                alert=alert_match,
+                bestof=False,
+            )
+            with state_lock:
+                current_recorder = state.get("recorder")
+            if current_recorder:
+                current_recorder.mark_transcription()
+            if final_wav_filename:
+                file_url = f"https://lkwd.agency/recordings/{final_wav_filename}"
+                if POST_TRANSCRIPTIONS:
+                    post_transcription_with_retry(timestamp_iso, file_url, filtered, row_id)
 
-                try:
-                    redis_client = Redis.from_url(REDIS_URL)
-                    payload = {
-                        "id": row_id,
-                        "timestamp": timestamp_iso,
-                        "wav_filename": final_wav_filename,
-                        "transcript": filtered,
-                        "alert_match": alert_match,
-                        "formatted_timestamp": datetime.now().strftime("%a %d-%b %H:%M:%S"),
-                        "text": filtered,
-                        "url": f"/recordings/{final_wav_filename}" if final_wav_filename else None,
-                    }
-                    redis_client.publish("sse_channel", json.dumps(payload))
-                except Exception as e:
-                    logger.warning("Failed to publish transcription to Redis: %s", e)
+            payload = {
+                "type": "transcription",
+                "id": row_id,
+                "timestamp": timestamp_iso,
+                "wav_filename": final_wav_filename,
+                "transcript": filtered,
+                "alert_match": alert_match,
+                "formatted_timestamp": datetime.now().strftime("%a %d-%b %H:%M:%S"),
+                "text": filtered,
+                "url": f"/recordings/{final_wav_filename}" if final_wav_filename else None,
+                "class_code": None,
+                "initialdispatch": False,
+            }
+            publish_transcription_update(payload)
+            classification_queue.put((row_id, timestamp_iso, final_wav_filename, filtered))
 
             if alert_match:
                 msg = filtered[:100] + "..." if len(filtered) > 100 else filtered

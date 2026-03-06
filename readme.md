@@ -117,6 +117,13 @@ BROADCASTIFY_URL=https://www.broadcastify.com/listen/feed/12345/thumbnail
 PUSHOVER_TOKEN=your_pushover_app_token
 PUSHOVER_USER=your_pushover_user_key
 
+# Vertex classification (optional but recommended for dispatch intent labeling)
+VERTEX_API_KEY=your_vertex_api_key
+VERTEX_CLASSIFICATION_ENABLED=true
+VERTEX_CLASSIFICATION_MODEL=gemini-1.5-flash-8b
+CLASSIFICATION_MIN_TEXT_LENGTH=50
+VERTEX_CLASSIFICATION_TIMEOUT_SEC=8
+
 # Voice Activity Detection
 THRESHOLD_DB=-50
 LOOKBACK_MS=1000

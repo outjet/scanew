@@ -93,10 +93,12 @@
           </thead>
           <tbody id="transcriptionTable">
             {% for transcription in transcriptions %}
-              <tr data-id="{{ transcription.id }}" {% if transcription.alert_match %}class="alert-match"{% endif %}>
+              <tr data-id="{{ transcription.id }}" class="{% if transcription.alert_match %}alert-match {% endif %}{% if transcription.initialdispatch %}initial-dispatch{% endif %}">
                 <td class="transcription-cell"
                     data-timestamp="{{ transcription.timestamp }}"
                     data-alert-match="{{ 'true' if transcription.alert_match else 'false' }}"
+                    data-class-code="{{ transcription.class_code if transcription.class_code is not none else '' }}"
+                    data-initialdispatch="{{ 'true' if transcription.initialdispatch else 'false' }}"
                     {% if transcription.wav_filename %}data-audio-url="/recordings/{{ transcription.wav_filename }}"{% endif %}>
                   <small class="transcription-meta">{{ transcription.formatted_timestamp }}</small>
                   {% if search_query %}

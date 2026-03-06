@@ -106,6 +106,8 @@ def view_transcriptions():
                 'transcript': transcription.transcript,
                 'wav_filename': transcription.wav_filename,
                 'alert_match': _matches_alert_pattern(transcription.transcript),
+                'class_code': transcription.class_code,
+                'initialdispatch': bool(transcription.initialdispatch),
             })
 
         current_app.logger.debug("Successfully formatted transcriptions")
@@ -159,6 +161,8 @@ def fetch_new_transcriptions():
                 'transcript': transcription.transcript,
                 'wav_filename': transcription.wav_filename,
                 'alert_match': _matches_alert_pattern(transcription.transcript),
+                'class_code': transcription.class_code,
+                'initialdispatch': bool(transcription.initialdispatch),
             })
 
         return jsonify(formatted_transcriptions)
@@ -396,13 +400,16 @@ def add_transcription():
 
         # Format the transcription to send to Redis
         formatted_transcription = {
+            'type': 'transcription',
             'id': new_transcription.id,
             'timestamp': timestamp_dt.isoformat(),
             'wav_filename': wav_filename,
             'transcript': transcript,
             'formatted_timestamp': timestamp_dt.strftime('%a %d-%b %H:%M:%S'),
             'text': transcript,
-            'url': f"/recordings/{wav_filename}" if wav_filename else None
+            'url': f"/recordings/{wav_filename}" if wav_filename else None,
+            'class_code': new_transcription.class_code,
+            'initialdispatch': bool(new_transcription.initialdispatch),
         }
 
         # Publish the new transcription to Redis
