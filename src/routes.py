@@ -64,15 +64,17 @@ def _matches_alert_pattern(text: str) -> bool:
 
 def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
     prompt = (
-        "You are summarizing recent emergency incidents for a public-facing Lakewood, Ohio dispatch digest. "
+        "You are summarizing recent emergency incidents for a Lakewood, Ohio dispatch dashboard. "
         "You will receive only initial dispatch transcripts from the last 90 minutes. "
-        "Write a plain-text report titled 'Recent incidents'. "
-        "List each likely distinct incident as a short bullet using friendly, factual language. "
-        "Include the approximate time and location when present. "
-        "Do not mention internal classification labels. "
-        "If multiple lines appear to describe the same incident, merge them. "
-        "If the feed is unclear, say so briefly. "
-        "Return plain text only."
+        "Merge lines that clearly refer to the same incident. "
+        "Return JSON only with this shape: "
+        "{\"title\":\"Recent incidents\",\"generated_at\":\"ISO-8601 timestamp or empty string\",\"incidents\":["
+        "{\"timestamp\":\"best available incident timestamp\",\"nature\":\"police blotter style call nature\","
+        "\"location\":\"best available location or empty string\",\"summary\":\"brief factual summary\"}"
+        "]}. "
+        "Use concise police blotter style for nature, such as 'Suspicious Person', 'Domestic Disturbance', "
+        "'Vehicle Accident', 'Theft Report', or 'Structure Fire'. "
+        "Do not include markdown fences or commentary outside the JSON."
     )
     payload = {
         "contents": [
@@ -90,7 +92,7 @@ def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
             "topP": 0.8,
             "topK": 20,
             "maxOutputTokens": 700,
-            "responseMimeType": "text/plain",
+            "responseMimeType": "application/json",
         },
     }
     response = requests.post(
@@ -395,11 +397,12 @@ def daily_blotter(date=None):
 def recent_incidents():
     try:
         if not VERTEX_API_KEY:
-            return Response(
-                "Recent incidents\n\nVertex summarization is not configured.\n",
-                mimetype='text/plain',
-                status=503,
-            )
+            return jsonify({
+                "title": "Recent incidents",
+                "generated_at": "",
+                "incidents": [],
+                "error": "Vertex summarization is not configured.",
+            }), 503
 
         cutoff = datetime.utcnow() - timedelta(minutes=90)
         cutoff_iso = cutoff.isoformat()
@@ -409,30 +412,41 @@ def recent_incidents():
         ).order_by(Transcription.timestamp.asc()).all()
 
         if not transcripts:
-            return Response(
-                "Recent incidents\n\nNo initial dispatches in the last 90 minutes.\n",
-                mimetype='text/plain',
-            )
+            return jsonify({
+                "title": "Recent incidents",
+                "generated_at": datetime.utcnow().isoformat(),
+                "incidents": [],
+            })
 
         combined_text = "\n".join(
             f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
         )
         summary = _summarize_recent_incidents_with_vertex(combined_text)
-        return Response(f"{summary.rstrip()}\n", mimetype='text/plain')
+        if summary.startswith("```"):
+            summary = summary.replace("```json", "").replace("```", "").strip()
+        summary_data = json.loads(summary)
+        if not isinstance(summary_data, dict):
+            raise ValueError("Recent incidents payload was not a JSON object")
+        summary_data.setdefault("title", "Recent incidents")
+        summary_data.setdefault("generated_at", datetime.utcnow().isoformat())
+        summary_data.setdefault("incidents", [])
+        return jsonify(summary_data)
     except requests.RequestException as e:
         current_app.logger.error("Error calling Vertex for recent_incidents: %s", e, exc_info=True)
-        return Response(
-            "Recent incidents\n\nFailed to summarize incidents right now.\n",
-            mimetype='text/plain',
-            status=502,
-        )
+        return jsonify({
+            "title": "Recent incidents",
+            "generated_at": "",
+            "incidents": [],
+            "error": "Failed to summarize incidents right now.",
+        }), 502
     except Exception as e:
         current_app.logger.error("Error in recent_incidents: %s", e, exc_info=True)
-        return Response(
-            "Recent incidents\n\nUnexpected error while building incident summary.\n",
-            mimetype='text/plain',
-            status=500,
-        )
+        return jsonify({
+            "title": "Recent incidents",
+            "generated_at": "",
+            "incidents": [],
+            "error": "Unexpected error while building incident summary.",
+        }), 500
 
 @dispatch_bp.route('/unit_locations')
 @login_required
