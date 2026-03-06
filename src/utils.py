@@ -131,7 +131,7 @@ def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: i
 
 
 @retry_on_exception(
-    exceptions=(requests.RequestException, ValueError),
+    exceptions=(requests.RequestException,),
     max_attempts=3,
     initial_delay=0.5,
     backoff_factor=2,
@@ -160,8 +160,18 @@ def classify_transcript_intent(text: str) -> int:
             "temperature": 0,
             "topP": 0.1,
             "topK": 1,
-            "maxOutputTokens": 4,
-            "responseMimeType": "text/plain",
+            "maxOutputTokens": 32,
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "class_code": {
+                        "type": "INTEGER",
+                        "enum": [0, 1, 2],
+                    }
+                },
+                "required": ["class_code"],
+            },
         },
     }
 
@@ -179,10 +189,21 @@ def classify_transcript_intent(text: str) -> int:
         )
     data = response.json()
     raw_text = _extract_vertex_text(data)
-    match = re.search(r"\b([012])\b", raw_text)
-    if not match:
-        raise ValueError(f"Unexpected classification payload: {raw_text!r}")
-    return int(match.group(1))
+    if not raw_text:
+        logger.warning("Empty classification payload; defaulting to OTHER. raw_response=%s", json.dumps(data)[:1000])
+        return 0
+
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        logger.warning("Malformed classification payload %r; defaulting to OTHER. raw_response=%s", raw_text, json.dumps(data)[:1000])
+        return 0
+
+    class_code = parsed.get("class_code")
+    if class_code not in {0, 1, 2}:
+        logger.warning("Unexpected class_code %r; defaulting to OTHER. raw_payload=%s", class_code, raw_text)
+        return 0
+    return class_code
 
 
 def _extract_vertex_text(data: dict) -> str:
