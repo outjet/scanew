@@ -18,6 +18,10 @@ class Transcription(db.Model):
     bestof = db.Column(db.Boolean)
     initialdispatch = db.Column(db.Boolean)
     class_code = db.Column("class", db.Integer)
+    classification_model = db.Column(db.String)
+    classification_prompt_tokens = db.Column(db.Integer)
+    classification_candidate_tokens = db.Column(db.Integer)
+    classification_total_tokens = db.Column(db.Integer)
 
 class DailyBlotter(db.Model):
     __tablename__ = 'daily_blotter'

@@ -33,9 +33,18 @@ from stream_handler import start_ffmpeg_stream
 from audio import AudioRecorder
 from transcribe import transcribe_full_segment
 from filters import filter_transcript
-from db import initialize_database, insert_transcription, update_transcription_classification
+from db import (
+    initialize_database,
+    insert_transcription,
+    update_transcription_classification,
+    update_transcription_classification_usage,
+)
 from notifier import send_pushover, matches_alert_pattern
-from utils import classify_transcript_intent, post_transcription_with_retry, copy_to_raspberry_pi
+from utils import (
+    classify_transcript_intent_with_metadata,
+    post_transcription_with_retry,
+    copy_to_raspberry_pi,
+)
 
 # ---------------------------
 # Basic Logging Configuration
@@ -81,8 +90,15 @@ def main():
         while True:
             row_id, timestamp_iso, wav_filename, transcript = classification_queue.get()
             try:
-                class_code = classify_transcript_intent(transcript)
+                class_code, usage_metadata = classify_transcript_intent_with_metadata(transcript)
                 update_transcription_classification(row_id, class_code)
+                update_transcription_classification_usage(
+                    row_id,
+                    model=usage_metadata.get("model"),
+                    prompt_tokens=usage_metadata.get("prompt_tokens"),
+                    candidate_tokens=usage_metadata.get("candidate_tokens"),
+                    total_tokens=usage_metadata.get("total_tokens"),
+                )
                 payload = {
                     "type": "classification_update",
                     "id": row_id,

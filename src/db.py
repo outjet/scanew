@@ -18,7 +18,11 @@ CREATE TABLE IF NOT EXISTS transcriptions (
     alert         BOOLEAN DEFAULT 0,
     bestof        BOOLEAN DEFAULT 0,
     initialdispatch BOOLEAN DEFAULT 0,
-    class         TINYINT
+    class         TINYINT,
+    classification_model TEXT,
+    classification_prompt_tokens INTEGER,
+    classification_candidate_tokens INTEGER,
+    classification_total_tokens INTEGER
 );
 """
 
@@ -33,6 +37,10 @@ EXPECTED_COLUMNS = {
     "bestof": "BOOLEAN DEFAULT 0",
     "initialdispatch": "BOOLEAN DEFAULT 0",
     "class": "TINYINT",
+    "classification_model": "TEXT",
+    "classification_prompt_tokens": "INTEGER",
+    "classification_candidate_tokens": "INTEGER",
+    "classification_total_tokens": "INTEGER",
 }
 
 
@@ -119,6 +127,35 @@ def update_transcription_classification(row_id: int, class_code: int):
         conn.commit()
     except Exception as e:
         logger.error("Error updating classification for row %s: %s", row_id, e)
+        raise
+    finally:
+        conn.close()
+
+
+def update_transcription_classification_usage(
+    row_id: int,
+    *,
+    model: str | None,
+    prompt_tokens: int | None,
+    candidate_tokens: int | None,
+    total_tokens: int | None,
+):
+    conn = _get_connection()
+    try:
+        conn.execute(
+            """
+            UPDATE transcriptions
+            SET classification_model = ?,
+                classification_prompt_tokens = ?,
+                classification_candidate_tokens = ?,
+                classification_total_tokens = ?
+            WHERE id = ?
+            """,
+            (model, prompt_tokens, candidate_tokens, total_tokens, row_id),
+        )
+        conn.commit()
+    except Exception as e:
+        logger.error("Error updating classification usage for row %s: %s", row_id, e)
         raise
     finally:
         conn.close()

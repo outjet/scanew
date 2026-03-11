@@ -12,6 +12,7 @@ from config import (
     CLASSIFICATION_MIN_TEXT_LENGTH,
     VERTEX_API_KEY,
     VERTEX_CLASSIFICATION_ENABLED,
+    VERTEX_CLASSIFICATION_MODEL,
     VERTEX_CLASSIFICATION_TIMEOUT_SEC,
     VERTEX_EXPRESS_ENDPOINT,
 )
@@ -132,20 +133,25 @@ def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: i
     return 0
 
 
+def classify_transcript_intent(text: str) -> int:
+    class_code, _ = classify_transcript_intent_with_metadata(text)
+    return class_code
+
+
 @retry_on_exception(
     exceptions=(requests.RequestException,),
     max_attempts=3,
     initial_delay=0.5,
     backoff_factor=2,
 )
-def classify_transcript_intent(text: str) -> int:
+def classify_transcript_intent_with_metadata(text: str) -> tuple[int, dict]:
     if len(text or "") <= CLASSIFICATION_MIN_TEXT_LENGTH:
-        return 0
+        return 0, _empty_classification_metadata()
     if not VERTEX_CLASSIFICATION_ENABLED:
-        return 0
+        return 0, _empty_classification_metadata()
     if not VERTEX_API_KEY:
         logger.warning("VERTEX_API_KEY is not configured; defaulting classification to OTHER.")
-        return 0
+        return 0, _empty_classification_metadata()
 
     payload = {
         "contents": [
@@ -190,24 +196,25 @@ def classify_transcript_intent(text: str) -> int:
             response=response,
         )
     data = response.json()
+    usage_metadata = _extract_vertex_usage_metadata(data)
     raw_text = _extract_vertex_text(data)
     if not raw_text:
         logger.warning("Empty classification payload; defaulting to OTHER. raw_response=%s", json.dumps(data)[:1000])
-        return 0
+        return 0, usage_metadata
 
     try:
         parsed = json.loads(raw_text)
     except json.JSONDecodeError:
         logger.warning("Malformed classification payload %r; defaulting to OTHER. raw_response=%s", raw_text, json.dumps(data)[:1000])
-        return 0
+        return 0, usage_metadata
 
     class_code = parsed.get("class_code")
     if isinstance(class_code, str) and class_code in {"0", "1", "2"}:
         class_code = int(class_code)
     if class_code not in {0, 1, 2}:
         logger.warning("Unexpected class_code %r; defaulting to OTHER. raw_payload=%s", class_code, raw_text)
-        return 0
-    return class_code
+        return 0, usage_metadata
+    return class_code, usage_metadata
 
 
 def _extract_vertex_text(data: dict) -> str:
@@ -219,6 +226,25 @@ def _extract_vertex_text(data: dict) -> str:
             if text:
                 return text
     return ""
+
+
+def _extract_vertex_usage_metadata(data: dict) -> dict:
+    usage = data.get("usageMetadata") or {}
+    return {
+        "model": VERTEX_CLASSIFICATION_MODEL,
+        "prompt_tokens": usage.get("promptTokenCount"),
+        "candidate_tokens": usage.get("candidatesTokenCount"),
+        "total_tokens": usage.get("totalTokenCount"),
+    }
+
+
+def _empty_classification_metadata() -> dict:
+    return {
+        "model": VERTEX_CLASSIFICATION_MODEL,
+        "prompt_tokens": None,
+        "candidate_tokens": None,
+        "total_tokens": None,
+    }
 
 def copy_to_raspberry_pi(local_file_path, remote_file_name, max_retries=3):
     """
