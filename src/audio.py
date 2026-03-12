@@ -60,6 +60,8 @@ class AudioRecorder(threading.Thread):
         try:
             while not self._stop_event.is_set():
                 frames = self._record_one_segment()
+                if frames is None:
+                    break
                 if frames:
                     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                     temp_wav_path = RECORDINGS_DIR / f"temp_{timestamp}.wav"

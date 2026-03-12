@@ -132,14 +132,16 @@ def main():
         return ffmpeg_proc, recorder
 
     def stop_pipeline(ffmpeg_proc, recorder):
+        if recorder:
+            recorder.stop()
         if ffmpeg_proc:
             ffmpeg_proc.terminate()
             try:
                 ffmpeg_proc.wait(timeout=5)
             except Exception:
                 ffmpeg_proc.kill()
-        if recorder:
-            recorder.stop()
+        if recorder and recorder.is_alive():
+            recorder.join(timeout=2)
 
     # 3) Start FFmpeg to capture the audio stream
     ffmpeg_process, audio_recorder = start_pipeline()

@@ -3,6 +3,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_session import Session
 from authlib.integrations.flask_client import OAuth
 from authlib.integrations.base_client.errors import MismatchingStateError
+from datetime import datetime, timezone
 import logging
 from .routes import dispatch_bp
 from .extensions import db, login_manager
@@ -13,6 +14,7 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path=dotenv_path)
 from .web_config import Config  # <- ADD THIS
 from .models import User
+from .notifier import send_pushover
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 def create_app():
@@ -42,6 +44,16 @@ def create_app():
     )
 
     app.register_blueprint(dispatch_bp, url_prefix="/")
+
+    with app.app_context():
+        db.create_all()
+
+        inspector = db.inspect(db.engine)
+        user_columns = {column["name"] for column in inspector.get_columns("users")}
+        if "lastlogindate" not in user_columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN lastlogindate TIMESTAMP"))
+            db.session.commit()
+            app.logger.info("Added users.lastlogindate column")
 
     @app.context_processor
     def static_cache_buster():
@@ -89,18 +101,30 @@ def create_app():
             app.logger.info(f"User info: {user_info}")
 
             db_user = User.query.filter_by(google_id=user_info["sub"]).first()
+            login_timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
             if not db_user:
                 db_user = User(
                     google_id=user_info["sub"],
                     name=user_info["name"],
                     email=user_info["email"],
                     profile_pic=user_info.get("picture"),
+                    lastlogindate=login_timestamp,
                     approved=True,
                     roles="user"
                 )
                 db.session.add(db_user)
                 db.session.commit()
                 app.logger.info(f"Created new user: {db_user.email}")
+                pushover_code = send_pushover(
+                    title="New User",
+                    message=f"New User: {db_user.google_id} {db_user.email}",
+                    force=True,
+                )
+                if pushover_code != 200:
+                    app.logger.warning("New user Pushover alert returned status %s", pushover_code)
+            else:
+                db_user.lastlogindate = login_timestamp
+                db.session.commit()
 
             session.permanent = True
             login_user(db_user, remember=True)

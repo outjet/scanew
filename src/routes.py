@@ -117,6 +117,25 @@ def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
                 return text
     raise ValueError("Vertex returned an empty incidents summary")
 
+
+def _parse_recent_incidents_summary(summary_text: str) -> dict:
+    cleaned_summary = (summary_text or "").strip()
+    if cleaned_summary.startswith("```"):
+        cleaned_summary = cleaned_summary.replace("```json", "").replace("```", "").strip()
+
+    summary_data = json.loads(cleaned_summary)
+    if not isinstance(summary_data, dict):
+        raise ValueError("Recent incidents payload was not a JSON object")
+
+    incidents = summary_data.get("incidents")
+    if not isinstance(incidents, list):
+        summary_data["incidents"] = []
+
+    summary_data.setdefault("title", "Recent incidents")
+    summary_data.setdefault("generated_at", datetime.utcnow().isoformat())
+    summary_data.setdefault("incidents", [])
+    return summary_data
+
 def _resolve_blotter_api_mode(model_name: str, configured_mode: str) -> str:
     """
     Choose the OpenAI API surface for blotter generation.
@@ -422,14 +441,20 @@ def recent_incidents():
             f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
         )
         summary = _summarize_recent_incidents_with_vertex(combined_text)
-        if summary.startswith("```"):
-            summary = summary.replace("```json", "").replace("```", "").strip()
-        summary_data = json.loads(summary)
-        if not isinstance(summary_data, dict):
-            raise ValueError("Recent incidents payload was not a JSON object")
-        summary_data.setdefault("title", "Recent incidents")
-        summary_data.setdefault("generated_at", datetime.utcnow().isoformat())
-        summary_data.setdefault("incidents", [])
+        try:
+            summary_data = _parse_recent_incidents_summary(summary)
+        except (json.JSONDecodeError, ValueError) as parse_error:
+            current_app.logger.error(
+                "Invalid recent_incidents summary payload: %s; snippet=%r",
+                parse_error,
+                (summary or "")[:500],
+            )
+            return jsonify({
+                "title": "Recent incidents",
+                "generated_at": datetime.utcnow().isoformat(),
+                "incidents": [],
+                "error": "Incident summary was unavailable due to malformed model output.",
+            }), 502
         return jsonify(summary_data)
     except requests.RequestException as e:
         current_app.logger.error("Error calling Vertex for recent_incidents: %s", e, exc_info=True)

@@ -40,6 +40,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String, nullable=False, unique=True)
     profile_pic = db.Column(db.String)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    lastlogindate = db.Column(db.DateTime)
     approved = db.Column(db.Boolean, default=False)
     roles = db.Column(db.String, nullable=False, default="user")
 
