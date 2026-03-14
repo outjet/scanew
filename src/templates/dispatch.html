@@ -16,6 +16,11 @@
       <header class="dash-toolbar">
         <div class="dash-title">LAKEWOOD DISPATCH</div>
         <div class="dash-controls" role="toolbar" aria-label="Dispatch controls">
+          {% if current_user.is_authenticated and current_user.has_role('admin') %}
+          <a href="{{ url_for('dispatch.manage_users') }}" class="icon-btn" title="User Access">
+            <i class="fas fa-user-shield"></i>
+          </a>
+          {% endif %}
           <button id="toggleSearchBtn" class="icon-btn" type="button" title="Search">
             <i class="fas fa-search"></i>
           </button>

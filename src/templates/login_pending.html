@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Approval Required</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <link rel="icon" href="{{ static_url('favicon.ico') }}">
+</head>
+<body class="bg-dark text-light">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary text-light">
+          <div class="card-body p-4">
+            <h1 class="h4 mb-3">Approval Required</h1>
+            <p class="mb-3">
+              <strong>{{ email }}</strong> has been registered, but access is still pending approval.
+            </p>
+            <p class="mb-0">
+              An admin can approve this account from the user access screen after they sign in.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 from flask import (
     Blueprint, render_template, request, jsonify,
     current_app, abort, Response, stream_with_context, url_for,
-    send_from_directory
+    send_from_directory, redirect
 )
 from flask_login import login_required, current_user
 dispatch_bp = Blueprint(
@@ -13,7 +13,7 @@ dispatch_bp = Blueprint(
     static_folder='static',
     static_url_path='/static'
 )
-from .models import Transcription, DailyBlotter
+from .models import Transcription, DailyBlotter, User, UserLogonAudit
 # TODO: The following imports are for modules that were not found in the 'dispatch' directory.
 # from utils import role_required, sanitize_input, convert_to_eastern
 # from tasks import generate_daily_blotter
@@ -39,6 +39,25 @@ from .config import (
 )
 
 EASTERN_TZ = ZoneInfo("America/New_York")
+
+
+def _user_can_manage_access(user) -> bool:
+    return bool(
+        user.is_authenticated
+        and user.has_role('admin')
+    )
+
+
+def _user_can_access_dispatch(user) -> bool:
+    return bool(
+        user.is_authenticated
+        and user.has_role('dispatch')
+    )
+
+
+def _require_dispatch_access():
+    if not _user_can_access_dispatch(current_user):
+        abort(403)
 
 def convert_to_eastern(timestamp_str):
     try:
@@ -150,10 +169,57 @@ def _resolve_blotter_api_mode(model_name: str, configured_mode: str) -> str:
         return "responses"
     return mode
 
+
+@dispatch_bp.route('/admin/users')
+@login_required
+def manage_users():
+    if not _user_can_manage_access(current_user):
+        abort(403)
+
+    pending_users = User.query.filter_by(approved=False).order_by(User.created_at.desc()).all()
+    recent_logins = (
+        UserLogonAudit.query
+        .order_by(UserLogonAudit.logon_timestamp.desc())
+        .limit(100)
+        .all()
+    )
+    return render_template(
+        'admin_users.html',
+        pending_users=pending_users,
+        recent_logins=recent_logins,
+    )
+
+
+@dispatch_bp.route('/admin/users/<int:user_id>/approve', methods=['POST'])
+@login_required
+def approve_user(user_id: int):
+    if not _user_can_manage_access(current_user):
+        abort(403)
+
+    user = User.query.get_or_404(user_id)
+    user.approved = True
+    for role in ('user', 'dispatch'):
+        if not user.has_role(role):
+            user.add_role(role)
+    db.session.commit()
+    current_app.logger.info("User approved by %s: %s", current_user.email, user.email)
+    return redirect(url_for('dispatch.manage_users'))
+
+
+@dispatch_bp.route('/account/pending')
+@login_required
+def account_pending():
+    if current_user.has_role('dispatch'):
+        return redirect(url_for('dispatch.view_transcriptions'))
+    if current_user.has_role('admin'):
+        return redirect(url_for('dispatch.manage_users'))
+    return render_template('account_pending.html')
+
 @dispatch_bp.route('/', methods=['GET', 'POST'])
 @login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
 def view_transcriptions():
+    _require_dispatch_access()
     try:
         current_app.logger.debug("Entered the /dispatch route")
 
@@ -218,6 +284,7 @@ def view_transcriptions():
 @login_required
 # @role_required('dispatch', 'user') # TODO: Commented out due to missing `utils.py`
 def fetch_new_transcriptions():
+    _require_dispatch_access()
     try:
         last_timestamp = request.args.get('last_timestamp')
         query = Transcription.query
@@ -256,6 +323,7 @@ def fetch_new_transcriptions():
 @login_required
 # @role_required('admin','user')
 def blotter():
+    _require_dispatch_access()
     try:
         hours = int(request.args.get('hours', 2))
         start_time = datetime.utcnow() - timedelta(hours=hours)
@@ -389,6 +457,7 @@ def blotter():
 @login_required
 # @role_required('admin') # TODO: Commented out due to missing `utils.py`
 def daily_blotter(date=None):
+    _require_dispatch_access()
     try:
         if date is None:
             # Get the most recent blotter
@@ -477,6 +546,7 @@ def recent_incidents():
 @login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
 def unit_locations():
+    _require_dispatch_access()
     try:
         # Get the current time in US Eastern
         one_hour_ago = datetime.now(EASTERN_TZ) - timedelta(hours=1)
@@ -618,6 +688,7 @@ def recordings(filename):
 @login_required
 # @role_required('dispatch', 'admin') # TODO: Commented out due to missing `utils.py`
 def transcription_context(transcription_id):
+    _require_dispatch_access()
     try:
         # Get the target transcription
         target_transcription = Transcription.query.get(transcription_id)
@@ -669,6 +740,7 @@ def transcription_context(transcription_id):
 @login_required
 # @role_required('admin') # TODO: Commented out due to missing `utils.py`
 def edit_transcription():
+    _require_dispatch_access()
     try:
         data = request.get_json()
         current_app.logger.debug(f"Received edit request: {data}")

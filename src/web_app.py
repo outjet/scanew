@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, session, send_from_directory
+from flask import Flask, redirect, url_for, request, session, send_from_directory, render_template
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_session import Session
 from authlib.integrations.flask_client import OAuth
@@ -13,7 +13,7 @@ import os
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path=dotenv_path)
 from .web_config import Config  # <- ADD THIS
-from .models import User
+from .models import User, UserLogonAudit
 from .notifier import send_pushover
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -54,6 +54,30 @@ def create_app():
             db.session.execute(db.text("ALTER TABLE users ADD COLUMN lastlogindate TIMESTAMP"))
             db.session.commit()
             app.logger.info("Added users.lastlogindate column")
+        db.session.execute(
+            db.text(
+                "UPDATE users SET lastlogindate = created_at "
+                "WHERE lastlogindate IS NULL AND created_at IS NOT NULL"
+            )
+        )
+        db.session.commit()
+
+    def record_logon_audit(user: User, success: bool):
+        if not user:
+            return
+
+        forwarded_for = request.headers.get("X-Forwarded-For", "")
+        ip_address = forwarded_for.split(",")[0].strip() if forwarded_for else (request.remote_addr or "unknown")
+        user_agent = request.headers.get("User-Agent", "unknown")
+        db.session.add(
+            UserLogonAudit(
+                user_id=user.id,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                success=success,
+            )
+        )
+        db.session.commit()
 
     @app.context_processor
     def static_cache_buster():
@@ -102,14 +126,15 @@ def create_app():
 
             db_user = User.query.filter_by(google_id=user_info["sub"]).first()
             login_timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
+            email = user_info["email"].strip().lower()
             if not db_user:
                 db_user = User(
                     google_id=user_info["sub"],
                     name=user_info["name"],
-                    email=user_info["email"],
+                    email=email,
                     profile_pic=user_info.get("picture"),
                     lastlogindate=login_timestamp,
-                    approved=True,
+                    approved=False,
                     roles="user"
                 )
                 db.session.add(db_user)
@@ -123,14 +148,32 @@ def create_app():
                 if pushover_code != 200:
                     app.logger.warning("New user Pushover alert returned status %s", pushover_code)
             else:
+                db_user.name = user_info["name"]
+                db_user.email = email
+                db_user.profile_pic = user_info.get("picture")
                 db_user.lastlogindate = login_timestamp
                 db.session.commit()
 
+            if not db_user.approved:
+                record_logon_audit(db_user, success=False)
+                app.logger.info("Blocked login for unapproved user: %s", db_user.email)
+                logout_user()
+                session.clear()
+                return render_template("login_pending.html", email=db_user.email), 403
+
+            record_logon_audit(db_user, success=True)
             session.permanent = True
             login_user(db_user, remember=True)
             app.logger.info(f"Logged in user: {db_user.email}")
 
-            return redirect(session.get("next", url_for("dispatch.view_transcriptions")))
+            default_target = (
+                url_for("dispatch.view_transcriptions")
+                if db_user.has_role("dispatch")
+                else url_for("dispatch.manage_users")
+                if db_user.has_role("admin")
+                else url_for("dispatch.account_pending")
+            )
+            return redirect(session.get("next", default_target))
 
         except MismatchingStateError as e:
             app.logger.error(f"Mismatched state error during OAuth: {e}")
