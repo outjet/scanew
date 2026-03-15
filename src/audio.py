@@ -11,7 +11,10 @@ import wave
 from pathlib import Path
 from typing import IO
 
-from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR, AUDIO_HEARTBEAT_SEC
+try:
+    from .config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR, AUDIO_HEARTBEAT_SEC
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import THRESHOLD_DB, LOOKBACK_MS, SAMPLE_RATE, CHANNELS, RECORDINGS_DIR, AUDIO_HEARTBEAT_SEC
 
 logger = logging.getLogger(__name__)
 

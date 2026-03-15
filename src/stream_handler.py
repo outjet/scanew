@@ -4,7 +4,10 @@ import subprocess
 import logging
 import threading
 
-from config import BROADCASTIFY_URL, SAMPLE_RATE, CHANNELS
+try:
+    from .config import BROADCASTIFY_URL, SAMPLE_RATE, CHANNELS
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import BROADCASTIFY_URL, SAMPLE_RATE, CHANNELS
 
 logger = logging.getLogger(__name__)
 

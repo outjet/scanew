@@ -1,15 +1,21 @@
 from flask import Flask, jsonify, request, render_template, send_from_directory
 import sqlite3
-from config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL
 import threading
 import json
 import os
 import requests
 from openai._exceptions import OpenAIError
-from utils import retry_on_exception
-from transcribe import transcribe_chunk
 from pathlib import Path
 import tempfile
+
+try:
+    from .config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL
+    from .utils import retry_on_exception
+    from .transcribe import transcribe_chunk
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL
+    from utils import retry_on_exception
+    from transcribe import transcribe_chunk
 
 app = Flask(__name__)
 

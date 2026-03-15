@@ -3,7 +3,10 @@ import re
 import logging
 from typing import Optional
 
-from config import FILTERED_WORDS
+try:
+    from .config import FILTERED_WORDS
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import FILTERED_WORDS
 
 logger = logging.getLogger(__name__)
 

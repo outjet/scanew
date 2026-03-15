@@ -11,40 +11,75 @@ import pathlib
 from datetime import datetime, timezone
 from queue import Queue
 
-from config import (
-    LOGGING_FORMAT,
-    SAMPLE_RATE,
-    CHANNELS,
-    MIN_SILENCE_LEN,
-    THRESHOLD_DB,
-    LOOKBACK_MS,
-    RECORDINGS_DIR,
-    POST_TRANSCRIPTIONS,
-    AUDIO_STALL_SECONDS,
-    AUDIO_HEARTBEAT_SEC,
-    REDIS_URL,
-    TRANSCRIPTION_STALL_SECONDS,
-    SILENCE_DB_THRESHOLD,
-    TRANSCRIPTION_PROVIDER,
-    TRANSCRIPTION_MODEL,
-)
 from redis import Redis
-from stream_handler import start_ffmpeg_stream
-from audio import AudioRecorder
-from transcribe import transcribe_full_segment
-from filters import filter_transcript
-from db import (
-    initialize_database,
-    insert_transcription,
-    update_transcription_classification,
-    update_transcription_classification_usage,
-)
-from notifier import send_pushover, matches_alert_pattern
-from utils import (
-    classify_transcript_intent_with_metadata,
-    post_transcription_with_retry,
-    copy_to_raspberry_pi,
-)
+try:
+    from .config import (
+        LOGGING_FORMAT,
+        SAMPLE_RATE,
+        CHANNELS,
+        MIN_SILENCE_LEN,
+        THRESHOLD_DB,
+        LOOKBACK_MS,
+        RECORDINGS_DIR,
+        POST_TRANSCRIPTIONS,
+        AUDIO_STALL_SECONDS,
+        AUDIO_HEARTBEAT_SEC,
+        REDIS_URL,
+        TRANSCRIPTION_STALL_SECONDS,
+        SILENCE_DB_THRESHOLD,
+        TRANSCRIPTION_PROVIDER,
+        TRANSCRIPTION_MODEL,
+    )
+    from .stream_handler import start_ffmpeg_stream
+    from .audio import AudioRecorder
+    from .transcribe import transcribe_full_segment
+    from .filters import filter_transcript
+    from .db import (
+        initialize_database,
+        insert_transcription,
+        update_transcription_classification,
+        update_transcription_classification_usage,
+    )
+    from .notifier import send_pushover, matches_alert_pattern
+    from .utils import (
+        classify_transcript_intent_with_metadata,
+        post_transcription_with_retry,
+        copy_to_raspberry_pi,
+    )
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import (
+        LOGGING_FORMAT,
+        SAMPLE_RATE,
+        CHANNELS,
+        MIN_SILENCE_LEN,
+        THRESHOLD_DB,
+        LOOKBACK_MS,
+        RECORDINGS_DIR,
+        POST_TRANSCRIPTIONS,
+        AUDIO_STALL_SECONDS,
+        AUDIO_HEARTBEAT_SEC,
+        REDIS_URL,
+        TRANSCRIPTION_STALL_SECONDS,
+        SILENCE_DB_THRESHOLD,
+        TRANSCRIPTION_PROVIDER,
+        TRANSCRIPTION_MODEL,
+    )
+    from stream_handler import start_ffmpeg_stream
+    from audio import AudioRecorder
+    from transcribe import transcribe_full_segment
+    from filters import filter_transcript
+    from db import (
+        initialize_database,
+        insert_transcription,
+        update_transcription_classification,
+        update_transcription_classification_usage,
+    )
+    from notifier import send_pushover, matches_alert_pattern
+    from utils import (
+        classify_transcript_intent_with_metadata,
+        post_transcription_with_retry,
+        copy_to_raspberry_pi,
+    )
 
 # ---------------------------
 # Basic Logging Configuration

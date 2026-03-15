@@ -7,20 +7,32 @@ from colorama import Fore, Style, init as colorama_init
 import datetime
 import re
 import sys
-from config import (
-    ALERT_PATTERNS,
-    CLASSIFICATION_MIN_TEXT_LENGTH,
-    VERTEX_API_KEY,
-    VERTEX_CLASSIFICATION_ENABLED,
-    VERTEX_CLASSIFICATION_MODEL,
-    VERTEX_CLASSIFICATION_TIMEOUT_SEC,
-    VERTEX_EXPRESS_ENDPOINT,
-)
 import json
 import paramiko
 import os
 
-from db import update_transcription_response_code
+try:
+    from .config import (
+        ALERT_PATTERNS,
+        CLASSIFICATION_MIN_TEXT_LENGTH,
+        VERTEX_API_KEY,
+        VERTEX_CLASSIFICATION_ENABLED,
+        VERTEX_CLASSIFICATION_MODEL,
+        VERTEX_CLASSIFICATION_TIMEOUT_SEC,
+        VERTEX_EXPRESS_ENDPOINT,
+    )
+    from .db import update_transcription_response_code
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import (
+        ALERT_PATTERNS,
+        CLASSIFICATION_MIN_TEXT_LENGTH,
+        VERTEX_API_KEY,
+        VERTEX_CLASSIFICATION_ENABLED,
+        VERTEX_CLASSIFICATION_MODEL,
+        VERTEX_CLASSIFICATION_TIMEOUT_SEC,
+        VERTEX_EXPRESS_ENDPOINT,
+    )
+    from db import update_transcription_response_code
 
 logger = logging.getLogger(__name__)
 

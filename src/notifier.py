@@ -5,7 +5,10 @@ import logging
 from datetime import datetime, timezone
 import re
 
-from config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS
+try:
+    from .config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS
 
 logger = logging.getLogger(__name__)
 _last_notification_time: datetime = None

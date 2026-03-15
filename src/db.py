@@ -2,7 +2,10 @@
 import sqlite3
 import logging
 
-from config import SQLITE_DB_PATH
+try:
+    from .config import SQLITE_DB_PATH
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from config import SQLITE_DB_PATH
 
 logger = logging.getLogger(__name__)
 

@@ -4,26 +4,40 @@ from pathlib import Path
 from typing import Optional
 import wave
 import requests
-from utils import log_transcription_to_console
 import re
 from collections import Counter
 
 import openai
 from openai._exceptions import OpenAIError
 
-from config import (
-    OPENAI_API_KEY,
-    DISPATCH_PROMPT,
-    TRANSCRIPTION_PROVIDER,
-    TRANSCRIPTION_MODEL,
-    DEEPGRAM_API_KEY,
-    DEEPGRAM_LANGUAGE,
-    DEEPGRAM_NUMERALS,
-    DEEPGRAM_SMART_FORMAT,
-    DEEPGRAM_KEYTERMS,
-)
-from utils import retry_on_exception
-from splitter import split_on_silence
+try:
+    from .utils import log_transcription_to_console, retry_on_exception
+    from .config import (
+        OPENAI_API_KEY,
+        DISPATCH_PROMPT,
+        TRANSCRIPTION_PROVIDER,
+        TRANSCRIPTION_MODEL,
+        DEEPGRAM_API_KEY,
+        DEEPGRAM_LANGUAGE,
+        DEEPGRAM_NUMERALS,
+        DEEPGRAM_SMART_FORMAT,
+        DEEPGRAM_KEYTERMS,
+    )
+    from .splitter import split_on_silence
+except ImportError:  # pragma: no cover - allows running as a top-level script module
+    from utils import log_transcription_to_console, retry_on_exception
+    from config import (
+        OPENAI_API_KEY,
+        DISPATCH_PROMPT,
+        TRANSCRIPTION_PROVIDER,
+        TRANSCRIPTION_MODEL,
+        DEEPGRAM_API_KEY,
+        DEEPGRAM_LANGUAGE,
+        DEEPGRAM_NUMERALS,
+        DEEPGRAM_SMART_FORMAT,
+        DEEPGRAM_KEYTERMS,
+    )
+    from splitter import split_on_silence
 
 logger = logging.getLogger(__name__)
 client = openai.OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
