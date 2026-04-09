@@ -1,7 +1,7 @@
 import argparse
 import datetime as dt
-import re
 import sqlite3
+from collections import defaultdict
 from pathlib import Path
 
 try:
@@ -10,20 +10,19 @@ except ImportError:  # pragma: no cover - allows running as a top-level script m
     from config import RECORDINGS_DIR, SQLITE_DB_PATH
 
 
-FILENAME_DATE_RE = re.compile(r"^(?P<day>\d{4}-\d{2}-\d{2})_")
-
-
-def _extract_day_from_name(filename: str) -> str | None:
-    match = FILENAME_DATE_RE.match(Path(filename).name)
-    if not match:
-        return None
-    return match.group("day")
+DEFAULT_BATCH_SIZE = 1000
+DEFAULT_PROGRESS_EVERY = 1000
 
 
 def _infer_day_for_file(path: Path) -> str:
-    day = _extract_day_from_name(path.name)
-    if day:
-        return day
+    stem = path.stem
+    if len(stem) >= 10:
+        candidate = stem[:10]
+        try:
+            dt.date.fromisoformat(candidate)
+            return candidate
+        except ValueError:
+            pass
     modified = dt.datetime.fromtimestamp(path.stat().st_mtime)
     return modified.strftime("%Y-%m-%d")
 
@@ -34,19 +33,109 @@ def _iter_top_level_wavs(recordings_dir: Path):
             yield path
 
 
-def organize_recordings_by_day(*, apply: bool = False) -> tuple[int, int]:
-    """
-    Moves top-level WAV files into YYYY-MM-DD subfolders and updates wav_filename
-    in the SQLite DB so rows continue to point to the moved files.
-    """
-    recordings_dir = RECORDINGS_DIR
-    db_path = SQLITE_DB_PATH
+def _iter_dated_wavs(recordings_dir: Path):
+    for day_dir in recordings_dir.iterdir():
+        if not day_dir.is_dir():
+            continue
+        try:
+            dt.date.fromisoformat(day_dir.name)
+        except ValueError:
+            continue
+        for path in day_dir.iterdir():
+            if path.is_file() and path.suffix.lower() == ".wav":
+                yield path
 
-    if not recordings_dir.is_dir():
-        raise FileNotFoundError(f"Directory not found: {recordings_dir}")
-    if not db_path.exists():
-        raise FileNotFoundError(f"Database not found: {db_path}")
 
+def _build_moved_file_index(recordings_dir: Path) -> dict[str, str]:
+    candidates: dict[str, list[str]] = defaultdict(list)
+    for path in _iter_dated_wavs(recordings_dir):
+        relative = path.relative_to(recordings_dir).as_posix()
+        candidates[path.name].append(relative)
+
+    unique: dict[str, str] = {}
+    for basename, matches in candidates.items():
+        if len(matches) == 1:
+            unique[basename] = matches[0]
+    return unique
+
+
+def _fetch_bare_db_filenames(conn: sqlite3.Connection) -> list[str]:
+    cursor = conn.execute(
+        """
+        SELECT DISTINCT wav_filename
+        FROM transcriptions
+        WHERE wav_filename IS NOT NULL
+          AND wav_filename != ''
+          AND instr(wav_filename, '/') = 0
+        """
+    )
+    return [row[0] for row in cursor.fetchall()]
+
+
+def _chunked(items, size: int):
+    for index in range(0, len(items), size):
+        yield items[index:index + size]
+
+
+def _print_preview(title: str, pairs: list[tuple[str, str]], *, limit: int = 20):
+    print(f"{title}: {len(pairs)}")
+    for old_name, new_name in pairs[:limit]:
+        print(f"{old_name} -> {new_name}")
+    if len(pairs) > limit:
+        print(f"... and {len(pairs) - limit} more")
+
+
+def _reconcile_existing_dated_files(
+    conn: sqlite3.Connection,
+    recordings_dir: Path,
+    *,
+    apply: bool,
+    batch_size: int,
+    progress_every: int,
+) -> int:
+    moved_index = _build_moved_file_index(recordings_dir)
+    if not moved_index:
+        print("Reconcile candidates: 0")
+        return 0
+
+    bare_names = _fetch_bare_db_filenames(conn)
+    reconcile_pairs = [
+        (bare_name, moved_index[bare_name])
+        for bare_name in bare_names
+        if bare_name in moved_index
+    ]
+
+    _print_preview("Reconcile candidates", reconcile_pairs)
+    if not reconcile_pairs:
+        return 0
+    if not apply:
+        return 0
+
+    updated_rows = 0
+    processed = 0
+    for chunk in _chunked(reconcile_pairs, batch_size):
+        before_changes = conn.total_changes
+        with conn:
+            conn.executemany(
+                """
+                UPDATE transcriptions
+                SET wav_filename = ?
+                WHERE wav_filename = ?
+                """,
+                [(new_name, old_name) for old_name, new_name in chunk],
+            )
+        changes = conn.total_changes - before_changes
+        updated_rows += changes
+        processed += len(chunk)
+        if processed % progress_every == 0 or processed == len(reconcile_pairs):
+            print(
+                f"Reconciled {processed}/{len(reconcile_pairs)} filenames "
+                f"across {updated_rows} transcription rows."
+            )
+    return updated_rows
+
+
+def _plan_top_level_moves(recordings_dir: Path) -> list[tuple[Path, Path, str, str]]:
     planned_moves: list[tuple[Path, Path, str, str]] = []
     for source in _iter_top_level_wavs(recordings_dir):
         day = _infer_day_for_file(source)
@@ -55,31 +144,28 @@ def organize_recordings_by_day(*, apply: bool = False) -> tuple[int, int]:
         if source == target:
             continue
         planned_moves.append((source, target, source.name, relative_target.as_posix()))
+    return planned_moves
 
-    if not planned_moves:
-        print("No top-level WAV files need migration.")
-        return 0, 0
 
-    print(f"Planned file moves: {len(planned_moves)}")
-    for source, target, old_name, new_name in planned_moves[:20]:
-        print(f"{old_name} -> {new_name}")
-    if len(planned_moves) > 20:
-        print(f"... and {len(planned_moves) - 20} more")
+def _apply_top_level_moves(
+    conn: sqlite3.Connection,
+    planned_moves: list[tuple[Path, Path, str, str]],
+    *,
+    batch_size: int,
+    progress_every: int,
+) -> tuple[int, int]:
+    moved_files = 0
+    updated_rows = 0
 
-    if not apply:
-        print("Dry run only. Re-run with --apply to move files and update the DB.")
-        return len(planned_moves), 0
-
-    conn = sqlite3.connect(str(db_path))
-    try:
-        updated_rows = 0
+    for chunk in _chunked(planned_moves, batch_size):
+        before_changes = conn.total_changes
         with conn:
-            for source, target, old_name, new_name in planned_moves:
+            for source, target, old_name, new_name in chunk:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 if target.exists():
                     raise FileExistsError(f"Refusing to overwrite existing file: {target}")
                 source.rename(target)
-                cursor = conn.execute(
+                conn.execute(
                     """
                     UPDATE transcriptions
                     SET wav_filename = ?
@@ -87,25 +173,102 @@ def organize_recordings_by_day(*, apply: bool = False) -> tuple[int, int]:
                     """,
                     (new_name, old_name),
                 )
-                updated_rows += cursor.rowcount
-        print(f"Moved {len(planned_moves)} files.")
-        print(f"Updated {updated_rows} transcription rows.")
-        return len(planned_moves), updated_rows
+                moved_files += 1
+        updated_rows += conn.total_changes - before_changes
+
+        if moved_files % progress_every == 0 or moved_files == len(planned_moves):
+            print(
+                f"Moved {moved_files}/{len(planned_moves)} files "
+                f"and updated {updated_rows} transcription rows."
+            )
+
+    return moved_files, updated_rows
+
+
+def organize_recordings_by_day(
+    *,
+    apply: bool = False,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+    progress_every: int = DEFAULT_PROGRESS_EVERY,
+) -> tuple[int, int, int]:
+    """
+    Reconciles DB rows for files already in YYYY-MM-DD folders, then moves any
+    remaining top-level WAV files into YYYY-MM-DD subfolders and updates
+    wav_filename in SQLite to the new relative path.
+    """
+    recordings_dir = RECORDINGS_DIR
+    db_path = SQLITE_DB_PATH
+
+    if not recordings_dir.is_dir():
+        raise FileNotFoundError(f"Directory not found: {recordings_dir}")
+    if not db_path.exists():
+        raise FileNotFoundError(f"Database not found: {db_path}")
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive")
+    if progress_every <= 0:
+        raise ValueError("progress_every must be positive")
+
+    conn = sqlite3.connect(str(db_path), timeout=30)
+    try:
+        reconciled_rows = _reconcile_existing_dated_files(
+            conn,
+            recordings_dir,
+            apply=apply,
+            batch_size=batch_size,
+            progress_every=progress_every,
+        )
+
+        planned_moves = _plan_top_level_moves(recordings_dir)
+        move_pairs = [(old_name, new_name) for _, _, old_name, new_name in planned_moves]
+        _print_preview("Planned file moves", move_pairs)
+
+        if not apply:
+            print("Dry run only. Re-run with --apply to reconcile paths, move files, and update the DB.")
+            return len(planned_moves), 0, 0
+
+        moved_files, updated_rows = _apply_top_level_moves(
+            conn,
+            planned_moves,
+            batch_size=batch_size,
+            progress_every=progress_every,
+        )
+        print(
+            "Done. "
+            f"Reconciled {reconciled_rows} rows, moved {moved_files} files, "
+            f"and updated {updated_rows} rows during moves."
+        )
+        return len(planned_moves), reconciled_rows, updated_rows
     finally:
         conn.close()
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Move top-level recordings into YYYY-MM-DD folders and update wav_filename paths in SQLite."
+        description="Reconcile moved recordings, then move top-level WAV files into YYYY-MM-DD folders and update wav_filename paths in SQLite."
     )
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="Apply file moves and DB updates. Without this flag, the script only prints a dry run.",
+        help="Apply DB/path reconciliation and file moves. Without this flag, the script only prints a dry run.",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=f"How many filenames to process per transaction. Default: {DEFAULT_BATCH_SIZE}.",
+    )
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=DEFAULT_PROGRESS_EVERY,
+        help=f"How often to print progress updates. Default: {DEFAULT_PROGRESS_EVERY}.",
     )
     args = parser.parse_args()
-    organize_recordings_by_day(apply=args.apply)
+    organize_recordings_by_day(
+        apply=args.apply,
+        batch_size=args.batch_size,
+        progress_every=args.progress_every,
+    )
 
 
 if __name__ == "__main__":
