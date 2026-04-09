@@ -265,10 +265,13 @@ def main():
                     pass
                 continue
 
-            # 9) Move the temp WAV into a final timestamped filename
-            final_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            final_wav_filename = f"{final_stamp}.wav"
-            final_wav_path = RECORDINGS_DIR / final_wav_filename
+            # 9) Move the temp WAV into a day-based folder with a unique timestamped filename.
+            final_dt = datetime.now()
+            day_folder = final_dt.strftime("%Y-%m-%d")
+            final_stamp = final_dt.strftime("%Y-%m-%d_%H-%M-%S_%f")
+            final_wav_filename = f"{day_folder}/{final_stamp}.wav"
+            final_wav_path = RECORDINGS_DIR / day_folder / f"{final_stamp}.wav"
+            final_wav_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(segment_path), str(final_wav_path))
             logger.debug(f"Saved WAV as: {final_wav_filename}")
 

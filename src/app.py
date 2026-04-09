@@ -9,21 +9,20 @@ from pathlib import Path
 import tempfile
 
 try:
-    from .config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL
+    from .config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL, RECORDINGS_DIR
     from .utils import retry_on_exception
     from .transcribe import transcribe_chunk
 except ImportError:  # pragma: no cover - allows running as a top-level script module
-    from config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL
+    from config import SQLITE_DB_PATH, TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MODEL, RECORDINGS_DIR
     from utils import retry_on_exception
     from transcribe import transcribe_chunk
 
 app = Flask(__name__)
 
 # Serve static files (wav files)
-@app.route('/wav/<filename>')
+@app.route('/wav/<path:filename>')
 def serve_wav(filename):
-    directory = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'recordings'))
-    return send_from_directory(directory, filename)
+    return send_from_directory(str(RECORDINGS_DIR), filename)
 
 # Index page
 @app.route('/')
@@ -73,7 +72,7 @@ def retry_transcript(transcript_id):
         return jsonify({'error': 'Transcript not found'}), 404
 
     wav_filename = row['wav_filename']
-    wav_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'recordings', wav_filename))
+    wav_path = RECORDINGS_DIR / wav_filename
     try:
         with open(wav_path, 'rb') as f:
             audio_data = f.read()
