@@ -1,6 +1,7 @@
 import argparse
 import datetime as dt
 import sqlite3
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -153,11 +154,21 @@ def _apply_top_level_moves(
     *,
     batch_size: int,
     progress_every: int,
+    sleep_seconds: float,
+    max_files: int | None,
 ) -> tuple[int, int]:
     moved_files = 0
     updated_rows = 0
 
     for chunk in _chunked(planned_moves, batch_size):
+        if max_files is not None and moved_files >= max_files:
+            break
+        if max_files is not None:
+            remaining = max_files - moved_files
+            if remaining <= 0:
+                break
+            chunk = chunk[:remaining]
+
         before_changes = conn.total_changes
         with conn:
             for source, target, old_name, new_name in chunk:
@@ -181,6 +192,8 @@ def _apply_top_level_moves(
                 f"Moved {moved_files}/{len(planned_moves)} files "
                 f"and updated {updated_rows} transcription rows."
             )
+        if sleep_seconds > 0 and (max_files is None or moved_files < max_files):
+            time.sleep(sleep_seconds)
 
     return moved_files, updated_rows
 
@@ -190,6 +203,8 @@ def organize_recordings_by_day(
     apply: bool = False,
     batch_size: int = DEFAULT_BATCH_SIZE,
     progress_every: int = DEFAULT_PROGRESS_EVERY,
+    sleep_seconds: float = 0.0,
+    max_files: int | None = None,
 ) -> tuple[int, int, int]:
     """
     Reconciles DB rows for files already in YYYY-MM-DD folders, then moves any
@@ -207,6 +222,10 @@ def organize_recordings_by_day(
         raise ValueError("batch_size must be positive")
     if progress_every <= 0:
         raise ValueError("progress_every must be positive")
+    if sleep_seconds < 0:
+        raise ValueError("sleep_seconds must be non-negative")
+    if max_files is not None and max_files <= 0:
+        raise ValueError("max_files must be positive when provided")
 
     conn = sqlite3.connect(str(db_path), timeout=30)
     try:
@@ -231,6 +250,8 @@ def organize_recordings_by_day(
             planned_moves,
             batch_size=batch_size,
             progress_every=progress_every,
+            sleep_seconds=sleep_seconds,
+            max_files=max_files,
         )
         print(
             "Done. "
@@ -263,11 +284,24 @@ def main():
         default=DEFAULT_PROGRESS_EVERY,
         help=f"How often to print progress updates. Default: {DEFAULT_PROGRESS_EVERY}.",
     )
+    parser.add_argument(
+        "--sleep-seconds",
+        type=float,
+        default=0.0,
+        help="How long to sleep after each batch commit. Default: 0.",
+    )
+    parser.add_argument(
+        "--max-files",
+        type=int,
+        help="Optional cap on how many top-level WAV files to move in this run.",
+    )
     args = parser.parse_args()
     organize_recordings_by_day(
         apply=args.apply,
         batch_size=args.batch_size,
         progress_every=args.progress_every,
+        sleep_seconds=args.sleep_seconds,
+        max_files=args.max_files,
     )
 
 
