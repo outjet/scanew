@@ -136,9 +136,13 @@ def _reconcile_existing_dated_files(
     return updated_rows
 
 
-def _plan_top_level_moves(recordings_dir: Path) -> list[tuple[Path, Path, str, str]]:
+def _plan_top_level_moves(
+    recordings_dir: Path, *, max_files: int | None = None
+) -> list[tuple[Path, Path, str, str]]:
     planned_moves: list[tuple[Path, Path, str, str]] = []
     for source in _iter_top_level_wavs(recordings_dir):
+        if max_files is not None and len(planned_moves) >= max_files:
+            break
         day = _infer_day_for_file(source)
         relative_target = Path(day) / source.name
         target = recordings_dir / relative_target
@@ -205,6 +209,7 @@ def organize_recordings_by_day(
     progress_every: int = DEFAULT_PROGRESS_EVERY,
     sleep_seconds: float = 0.0,
     max_files: int | None = None,
+    skip_reconcile: bool = False,
 ) -> tuple[int, int, int]:
     """
     Reconciles DB rows for files already in YYYY-MM-DD folders, then moves any
@@ -229,15 +234,18 @@ def organize_recordings_by_day(
 
     conn = sqlite3.connect(str(db_path), timeout=30)
     try:
-        reconciled_rows = _reconcile_existing_dated_files(
-            conn,
-            recordings_dir,
-            apply=apply,
-            batch_size=batch_size,
-            progress_every=progress_every,
-        )
+        if skip_reconcile:
+            reconciled_rows = 0
+        else:
+            reconciled_rows = _reconcile_existing_dated_files(
+                conn,
+                recordings_dir,
+                apply=apply,
+                batch_size=batch_size,
+                progress_every=progress_every,
+            )
 
-        planned_moves = _plan_top_level_moves(recordings_dir)
+        planned_moves = _plan_top_level_moves(recordings_dir, max_files=max_files)
         move_pairs = [(old_name, new_name) for _, _, old_name, new_name in planned_moves]
         _print_preview("Planned file moves", move_pairs)
 
@@ -295,6 +303,14 @@ def main():
         type=int,
         help="Optional cap on how many top-level WAV files to move in this run.",
     )
+    parser.add_argument(
+        "--skip-reconcile",
+        action="store_true",
+        help=(
+            "Skip the reconciliation pass that scans already-dated subdirectories. "
+            "Use this for incremental runs once the initial reconciliation is complete."
+        ),
+    )
     args = parser.parse_args()
     organize_recordings_by_day(
         apply=args.apply,
@@ -302,6 +318,7 @@ def main():
         progress_every=args.progress_every,
         sleep_seconds=args.sleep_seconds,
         max_files=args.max_files,
+        skip_reconcile=args.skip_reconcile,
     )
 
 
