@@ -3,7 +3,7 @@
   --panel: #03150c;
   --panel-soft: #041a0f;
   --text: rgba(0, 255, 136, 0.85);
-  --muted: rgba(0, 255, 136, 0.35);
+  --muted: rgba(0, 255, 136, 0.85);
   --border: rgba(0, 255, 136, 0.15);
   --border-soft: rgba(0, 255, 136, 0.08);
   --bright: #00ff88;
@@ -132,7 +132,7 @@
 .dispatch-dashboard .toolbar-meta {
   display: flex;
   gap: 14px;
-  color: var(--muted);
+  /* color: var(--muted); */
   font-size: 10px;
   margin: 6px 0;
 }
@@ -219,7 +219,7 @@
 .dispatch-dashboard .search-indicator {
   margin-top: 6px;
   font-size: 10px;
-  color: var(--muted);
+  /* color: var(--muted); */
 }
 
 .dispatch-dashboard .blotter-panel {
@@ -237,7 +237,7 @@
 }
 
 .dispatch-dashboard #timeRangeDisplay {
-  color: var(--muted);
+  /* color: var(--muted); */
   font-size: 10px;
 }
 
@@ -263,7 +263,7 @@
 .dispatch-dashboard .blotter-nature,
 .dispatch-dashboard .text-muted,
 .dispatch-dashboard small {
-  color: var(--muted) !important;
+  /* color: var(--muted) !important; */
 }
 
 .dispatch-dashboard .table-card {

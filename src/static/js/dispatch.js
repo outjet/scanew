@@ -12,6 +12,7 @@ const STALE_RECONNECT_MS = 20000;
 const STALE_FAILED_MS = 60000;
 const toneOptions = ['', 'Moto', 'Kenwood', 'TRBO', 'MP7', 'Moto TPS', 'MDC-1200'];
 const windowOptions = [1, 2, 4, 8, 12];
+const autoPlayOptions = ['OFF', 'ON'];
 const toneUrls = {
   Moto: '/static/tones/Moto Talk Permit.mp3',
   Kenwood: '/static/tones/Kenwwod_Talk_Permit.mp3',
@@ -229,6 +230,23 @@ function processNewTranscription(transcription) {
 
   lastProcessedId = transcription.id;
   playSelectedTone();
+
+  const autoPlayMode = localStorage.getItem('autoPlayMode') || 'OFF';
+  if (autoPlayMode === 'ON') {
+    const text = getTranscriptionText(transcription);
+    const alertMatch = Boolean(transcription.alert_match) || matchesAlertPatternText(text);
+    const initialDispatch = Boolean(transcription.initialdispatch);
+
+    if (alertMatch || initialDispatch) {
+      const audioUrl = buildAudioUrl(transcription);
+      if (audioUrl) {
+        const delay = (localStorage.getItem('selectedTone') || '') ? 1200 : 0;
+        setTimeout(() => {
+          playAudio(audioUrl, newRow);
+        }, delay);
+      }
+    }
+  }
 }
 
 function applyClassificationUpdate(transcription) {
@@ -244,6 +262,17 @@ function applyClassificationUpdate(transcription) {
   cell.setAttribute('data-class-code', String(classCode));
   cell.setAttribute('data-initialdispatch', initialDispatch ? 'true' : 'false');
   row.classList.toggle('initial-dispatch', initialDispatch);
+
+  const autoPlayMode = localStorage.getItem('autoPlayMode') || 'OFF';
+  if (autoPlayMode === 'ON' && initialDispatch) {
+    const wasAlertMatch = cell.getAttribute('data-alert-match') === 'true';
+    if (!wasAlertMatch) {
+      const audioUrl = cell.getAttribute('data-audio-url');
+      if (audioUrl) {
+        playAudio(audioUrl, row);
+      }
+    }
+  }
 }
 
 function playAudio(url, rowToHighlight = null) {
@@ -285,6 +314,21 @@ function updateWindowLabel() {
   if (!windowValue) return;
   const hours = parseInt(localStorage.getItem('blotterHours') || '2', 10);
   windowValue.textContent = `WINDOW: ${hours}H`;
+}
+
+function updateAutoPlayLabel() {
+  const autoPlayValue = document.getElementById('autoPlayValue');
+  if (!autoPlayValue) return;
+  const mode = localStorage.getItem('autoPlayMode') || 'OFF';
+  autoPlayValue.textContent = `AUTO-PLAY: ${mode}`;
+}
+
+function cycleAutoPlay() {
+  const current = localStorage.getItem('autoPlayMode') || 'OFF';
+  const idx = autoPlayOptions.indexOf(current);
+  const next = autoPlayOptions[(idx + 1) % autoPlayOptions.length];
+  localStorage.setItem('autoPlayMode', next);
+  updateAutoPlayLabel();
 }
 
 function cycleTone() {
@@ -570,9 +614,13 @@ $(document).ready(function () {
   if (!localStorage.getItem('selectedTone')) {
     localStorage.setItem('selectedTone', '');
   }
+  if (!localStorage.getItem('autoPlayMode')) {
+    localStorage.setItem('autoPlayMode', 'OFF');
+  }
 
   updateToneLabel();
   updateWindowLabel();
+  updateAutoPlayLabel();
 
   const searchInput = $('#searchInput');
   const searchQuery = searchInput.length ? (searchInput.val() || '').trim() : '';
@@ -614,6 +662,7 @@ $(document).ready(function () {
 
   $('#toneCycleBtn').on('click', cycleTone);
   $('#windowCycleBtn').on('click', cycleWindow);
+  $('#autoPlayCycleBtn').on('click', cycleAutoPlay);
 
   $('#closeBlotterBtn').on('click', function () {
     const blotterSection = document.getElementById('blotterSection');

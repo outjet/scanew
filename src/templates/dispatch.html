@@ -39,6 +39,9 @@
           <button id="windowCycleBtn" class="icon-btn" type="button" title="Blotter Window">
             <i class="fas fa-clock"></i>
           </button>
+          <button id="autoPlayCycleBtn" class="icon-btn" type="button" title="Auto-Play Priority Audio">
+            <i class="fas fa-play-circle"></i>
+          </button>
         </div>
         <div id="sseStatus" class="sse-status">
           <span class="status-dot">●</span> LIVE
@@ -48,6 +51,7 @@
       <div class="toolbar-meta">
         <span id="toneValue">TONE: NONE</span>
         <span id="windowValue">WINDOW: 2H</span>
+        <span id="autoPlayValue">AUTO-PLAY: OFF</span>
       </div>
 
       <form id="searchForm" action="{{ url_for('dispatch.view_transcriptions') }}" method="POST" class="search-panel {% if not search_query %}is-collapsed{% endif %}">
