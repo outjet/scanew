@@ -93,7 +93,9 @@ def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
         "]}. "
         "Use concise police blotter style for nature, such as 'Suspicious Person', 'Domestic Disturbance', "
         "'Vehicle Accident', 'Theft Report', or 'Structure Fire'. "
-        "Do not include markdown fences or commentary outside the JSON."
+        "In the narrative, hte personality should be like a roommate who's been listening to the scanner, updating his buddies on what's happening outside."
+        "For instance, instead of saying 'Female locked out of apartment; Engine 3 dispatched for assistance', you might say 'some lady locked herself out of her apartment. Engine 3's on it'. Instead of 'a car accident', you might say 'somebody wrecked their car'. "
+        "Do not include markdown fences or commentary outside the JSON. "
     )
     payload = {
         "contents": [
