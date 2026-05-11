@@ -80,22 +80,71 @@ def _matches_alert_pattern(text: str) -> bool:
         return False
     return any(pat.search(text) for pat in ALERT_PATTERNS)
 
-
 def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
-    prompt = (
-        "You are summarizing recent emergency incidents for a Lakewood, Ohio dispatch dashboard. "
-        "You will receive only initial dispatch transcripts from the last 90 minutes. "
-        "Merge lines that clearly refer to the same incident. "
-        "Return JSON only with this shape: "
-        "{\"title\":\"Recent incidents\",\"generated_at\":\"ISO-8601 timestamp or empty string\",\"incidents\":["
-        "{\"timestamp\":\"best available incident timestamp\",\"nature\":\"police blotter style call nature\","
-        "\"location\":\"best available location or empty string\",\"summary\":\"brief factual summary\"}"
-        "]}. "
-        "Use concise police blotter style for nature, such as 'Suspicious Person', 'Domestic Disturbance', "
-        "'Vehicle Accident', 'Theft Report', or 'Structure Fire'. "
-        "In the narrative, the personality should be like a roommate who's been listening to the scanner, yelling across the room to his buddies about what he just overheard on the scanner."
-        "Do not include markdown fences or commentary outside the JSON. "
-    )
+    prompt = """
+You are summarizing recent emergency incidents for a Lakewood, Ohio dispatch dashboard.
+
+You will receive only initial dispatch transcripts from the last 90 minutes.
+
+Important rules:
+
+- Merge lines that clearly refer to the same incident.
+- Return JSON ONLY.
+- Never invent units, addresses, timestamps, or details.
+- If units are not explicitly dispatched in the transcript, return an empty array.
+- Units are usually only explicitly listed on fire/EMS dispatches.
+- Police incidents often mention unit numbers conversationally and these should NOT automatically be treated as dispatched units.
+- Only include units that are clearly part of the dispatch assignment.
+
+Address guidance:
+- Valid Lakewood street numbers are usually:
+  - 11700-18500
+  - 1000-2500
+- Prefer addresses that fit these ranges.
+- If a number does not fit those ranges, be cautious about treating it as an address.
+
+Unit guidance:
+- Common unit formats include:
+  - Engine 1
+  - Engine 2
+  - Medic 1
+  - Truck 1
+  - Car 2
+  - Rescue 1
+- Preserve the spoken naming style from the transcript.
+- Do not infer missing units.
+
+Return this exact JSON shape:
+
+{
+  "title": "Recent incidents",
+  "generated_at": "",
+  "incidents": [
+    {
+      "timestamp": "",
+      "nature": "",
+      "location": "",
+      "summary": "",
+      "units": []
+    }
+  ]
+}
+
+Nature values should be concise police blotter style such as:
+- Suspicious Person
+- Domestic Disturbance
+- Vehicle Accident
+- Theft Report
+- Structure Fire
+- Fire Alarm
+- Fall Injury
+- Medical Emergency
+
+The summary should sound like a dispatcher casually explaining the call to another dispatcher.
+
+Do not include markdown fences or commentary.
+"""
+
     payload = {
         "contents": [
             {
@@ -108,13 +157,14 @@ def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
             }
         ],
         "generationConfig": {
-            "temperature": 0.2,
+            "temperature": 0.1,
             "topP": 0.8,
             "topK": 20,
-            "maxOutputTokens": 700,
+            "maxOutputTokens": 900,
             "responseMimeType": "application/json",
         },
     }
+
     response = requests.post(
         VERTEX_EXPRESS_ENDPOINT,
         params={"key": VERTEX_API_KEY},
@@ -122,21 +172,29 @@ def _summarize_recent_incidents_with_vertex(combined_text: str) -> str:
         json=payload,
         timeout=VERTEX_CLASSIFICATION_TIMEOUT_SEC,
     )
+
     if not response.ok:
         raise requests.HTTPError(
-            f"Vertex summary request failed: status={response.status_code} body={response.text[:1000]}",
+            f"Vertex summary request failed: "
+            f"status={response.status_code} "
+            f"body={response.text[:1000]}",
             response=response,
         )
+
     data = response.json()
+
     candidates = data.get("candidates") or []
+
     for candidate in candidates:
         content = candidate.get("content") or {}
+
         for part in content.get("parts") or []:
             text = (part.get("text") or "").strip()
+
             if text:
                 return text
-    raise ValueError("Vertex returned an empty incidents summary")
 
+    raise ValueError("Vertex returned an empty incidents summary")
 
 def _parse_recent_incidents_summary(summary_text: str) -> dict:
     cleaned_summary = (summary_text or "").strip()
