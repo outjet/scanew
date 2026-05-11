@@ -34,6 +34,7 @@ try:
     from .audio import AudioRecorder
     from .transcribe import transcribe_full_segment
     from .filters import filter_transcript
+    from .transcript_normalizer import normalize as normalize_transcript
     from .db import (
         initialize_database,
         insert_transcription,
@@ -68,6 +69,7 @@ except ImportError:  # pragma: no cover - allows running as a top-level script m
     from audio import AudioRecorder
     from transcribe import transcribe_full_segment
     from filters import filter_transcript
+    from transcript_normalizer import normalize as normalize_transcript
     from db import (
         initialize_database,
         insert_transcription,
@@ -255,6 +257,8 @@ def main():
                 except Exception:
                     pass
                 continue
+
+            transcript = normalize_transcript(transcript)
 
             filtered = filter_transcript(transcript)
             if not filtered:
