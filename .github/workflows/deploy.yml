@@ -24,4 +24,5 @@ jobs:
               cd ~/scanew &&
               git pull origin main &&
               pip install -r requirements.txt --quiet &&
-              sudo systemctl restart scanew scanew-web`
+              sudo systemctl restart scanew scanew-web
+            "
