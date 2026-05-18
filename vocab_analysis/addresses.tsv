@@ -1,0 +1,2374 @@
+address	count	context
+14312 Detroit	162	valid
+14306 Detroit	158	valid
+12400 Madison	129	valid
+13900 Detroit	114	valid
+1341 Marlowe	108	valid
+14300 Detroit	105	valid
+12506 Edgewater	98	valid
+11820 Edgewater	77	valid
+12900 Lake	67	valid
+14701 Detroit	64	valid
+13315 Detroit	57	valid
+1346 Cove	55	valid
+12511 Clifton	54	valid
+14401 Detroit	54	valid
+1277 Cove	52	valid
+13330 Detroit	51	valid
+1381 Bunts	48	valid
+11701 Detroit	48	valid
+11839 Edgewater	47	valid
+12700 Lake	42	valid
+12019 Lake	41	valid
+11850 Edgewater	41	valid
+11839 Clifton	39	valid
+12650 Detroit	38	valid
+1600 West	32	valid
+11855 Edgewater	32	valid
+14532 Lake	31	valid
+12500 Edgewater	28	valid
+11849 Clifton	26	valid
+2400 Madison	26	valid
+4300 Detroit	26	suspect
+1480 Warren	25	valid
+8900 Detroit	25	suspect
+117 Franklin	25	intersection-117th
+1430 West	23	valid
+117 Madison	23	intersection-117th
+15425 Detroit	22	valid
+12009 Clifton	22	valid
+14755 Athens	21	valid
+18645 Detroit	21	valid
+14861 Detroit	21	valid
+15601 Madison	21	valid
+14600 Detroit	20	valid
+11837 Edgewater	20	valid
+14567 Madison	20	valid
+11811 Lake	20	valid
+18915 Detroit	20	valid
+1450 Coutant	19	valid
+400 Madison	19	suspect
+12000 Edgewater	19	valid
+14601 Detroit	19	valid
+000 Edgewater	19	suspect
+16407 Detroit	19	valid
+13302 Detroit	19	valid
+13215 Detroit	19	valid
+12943 Clifton	19	valid
+1365 Clarence	19	valid
+1570 Ridgewood	18	valid
+1375 West Clifton	18	valid
+14013 Detroit	18	valid
+12540 Edgewater	17	valid
+14806 Detroit	17	valid
+14819 Clifton	17	valid
+15027 Detroit	17	valid
+14815 Madison	17	valid
+2700 Lake	17	suspect
+11849 Edgewater	16	valid
+18616 Detroit	16	valid
+12050 Lake	16	valid
+1369 Bunts	16	valid
+12112 Madison	16	valid
+11720 Edgewater	16	valid
+1342 Beach Parkway	16	valid
+4312 Detroit	16	suspect
+12520 Edgewater	16	valid
+117 Detroit	16	intersection-117th
+17540 Madison	15	valid
+11706 Clifton	15	valid
+18900 Detroit	15	valid
+14718 Madison	15	valid
+1370 Sloan	15	valid
+12405 Franklin	15	valid
+1635 Alameda	15	valid
+15424 Detroit	15	valid
+11868 Clifton	15	valid
+1242 Cove	14	valid
+14740 Lakewood Heights	14	valid
+12015 Clifton	14	valid
+2900 Lake	14	suspect
+17600 Detroit	14	valid
+2117 Glenbury	14	valid
+1337 Kenilworth	13	valid
+16900 Detroit	13	valid
+300 Detroit	13	suspect
+1392 Webb	13	valid
+14725 Detroit	13	valid
+14800 Madison	13	valid
+2506 Edgewater	13	suspect
+14530 Clifton	13	valid
+15207 Madison	13	valid
+15311 Detroit	13	valid
+12550 Lake	12	valid
+1345 Bunts	12	valid
+15412 Detroit	12	valid
+15322 Detroit	12	valid
+1510 Newman	12	valid
+1624 Lakeland	12	valid
+2012 Toyota	12	valid
+14115 Detroit	12	valid
+13511 Detroit	12	valid
+12047 Lake	12	valid
+1631 Newman	11	valid
+14814 Clifton	11	valid
+14300 Madison	11	valid
+15527 Madison	11	valid
+1475 Warren	11	valid
+1292 Cove	11	valid
+2017 Toyota	11	valid
+1511 Warren	11	valid
+1343 Beach Parkway	11	valid
+16803 Detroit	11	valid
+11732 Lake	11	valid
+16414 Madison	11	valid
+13201 Madison	11	valid
+12000 Building	11	valid
+180 Brown	10	suspect
+1568 Waterbury	10	valid
+2017 Ford	10	valid
+1622 Lakewood	10	valid
+160 Brown	10	suspect
+17920 Detroit	10	valid
+150 Brown	10	suspect
+12030 Lake	10	valid
+15010 Madison	10	valid
+18605 Detroit	10	valid
+16408 Madison	10	valid
+100 Detroit	10	suspect
+1385 Manor Park	10	valid
+1432 Cordova	10	valid
+1415 Wyandotte	10	valid
+11800 Edgewater	10	valid
+16000 Detroit	10	valid
+11701 Clifton	10	valid
+2013 Ford	10	valid
+1536 Alameda	10	valid
+2038 Lincoln	10	valid
+2117 Glenberry	10	valid
+13202 Hazelwood	10	valid
+12020 Lake	10	valid
+12951 Harlan	9	valid
+12120 Madison	9	valid
+2013 Chevy	9	valid
+1425 Clifton Place	9	valid
+14523 Madison	9	valid
+11900 Edgewater	9	valid
+14100 Detroit	9	valid
+13531 Detroit	9	valid
+11821 Detroit	9	valid
+1314 West	9	valid
+12915 Clover	9	valid
+2061 Carabel	9	valid
+13029 Madison	9	valid
+17103 Detroit	9	valid
+14521 Clifton	9	valid
+13437 Madison	9	valid
+2014 Toyota	9	valid
+2216 Eldred	8	valid
+4600 Detroit	8	suspect
+15615 Madison	8	valid
+1443 Newman	8	valid
+1900 Detroit	8	valid
+1527 West Clifton	8	valid
+12506 Edgewater Lakeshore	8	valid
+14306 Detroit Apartment	8	valid
+12075 Lake	8	valid
+1269 Clifton Prado	8	valid
+1850 Edgewater	8	valid
+15314 Madison	8	valid
+2139 Glenberry	8	valid
+11850 South Lane	8	valid
+12060 Lake	8	valid
+2008 Chevy	8	valid
+13751 Madison	8	valid
+4401 Detroit	8	suspect
+14530 Madison	8	valid
+2011 Toyota	8	valid
+1293 Hall	8	valid
+1514 Hopkins	8	valid
+1255 West Clifton	8	valid
+2211 Arthur	8	valid
+1438 Hopkins	8	valid
+1279 Andrews	8	valid
+1245 Hathaway	8	valid
+2010 Ford	8	valid
+13437 Clifton	8	valid
+1294 Cove	8	valid
+13535 Detroit	8	valid
+1322 Sloan	8	valid
+2016 Chevy	8	valid
+16601 Madison	8	valid
+1557 Newman	8	valid
+14227 Delaware	8	valid
+2026 Chevy Silverado	8	valid
+2015 Chevy	7	valid
+13315 Detroit Room	7	valid
+14513 Athens	7	valid
+135 Brown	7	suspect
+2021 Honda	7	valid
+2015 Lark	7	valid
+2062 Robin	7	valid
+140 Brown	7	suspect
+1385 Riverside	7	valid
+11904 Detroit	7	valid
+2013 Hyundai	7	valid
+000 Detroit	7	suspect
+1450 Belle	7	valid
+11851 Detroit	7	valid
+1492 Ridgewood	7	valid
+13200 Madison	7	valid
+17315 Madison	7	valid
+1381 Bunts Road	7	valid
+12039 Edgewater	7	valid
+14615 Detroit	7	valid
+2019 Lake	7	valid
+13728 Madison	7	valid
+1438 Winchester	7	valid
+1634 Winchester	7	valid
+14300 Detroit Apartment	7	valid
+1556 Newman	7	valid
+1347 Belle	7	valid
+2230 Lincoln	7	valid
+117 Clifton	7	intersection-117th
+15610 Madison	7	valid
+1600 Newman	7	valid
+1272 Warren	7	valid
+2020 Chevy	7	valid
+2112 Northland	7	valid
+1361 Phelps	7	valid
+1580 Lauderdale	7	valid
+1481 St	7	valid
+16915 Detroit	7	valid
+1508 Lauderdale	7	valid
+1363 Bunts	7	valid
+1323 Lakewood	7	valid
+1447 Ridgewood	7	valid
+11922 Madison	7	valid
+1298 Edwards	7	valid
+11790 Madison	7	valid
+1352 Kenilworth	7	valid
+1670 Lauderdale	7	valid
+12102 Madison	7	valid
+15730 Madison	7	valid
+2009 Morrison	7	valid
+16934 Detroit	7	valid
+1538 West	7	valid
+13900 Detroit Room	6	valid
+18120 Sloan	6	valid
+175 Brown	6	suspect
+15324 Clifton	6	valid
+14710 Lake	6	valid
+1820 Edgewater	6	valid
+1691 Robinwood	6	valid
+2117 Halstead	6	valid
+2010 Toyota	6	valid
+1274 Idlewood	6	valid
+170 Brown	6	suspect
+2006 Toyota	6	valid
+11843 Edgewater	6	valid
+1450 West	6	valid
+1325 Lakeland	6	valid
+190 Brown	6	suspect
+1800 Edgewater	6	valid
+1374 West	6	valid
+2013 Kia	6	valid
+1341 Marlow	6	valid
+12002 Lake	6	valid
+2050 Brown	6	valid
+1311 Bonnyview	6	valid
+1227 Cranford	6	valid
+1900 Edgewater	6	valid
+1513 Waterbury	6	valid
+5500 Detroit	6	suspect
+1614 Lakewood	6	valid
+1615 Newman	6	valid
+14321 Detroit	6	valid
+1229 Cranford	6	valid
+12215 Clifton	6	valid
+1232 Hall	6	valid
+2200 Lewis	6	valid
+14032 Lakewood Heights	6	valid
+2002 Clarence	6	valid
+1384 Beach	6	valid
+11825 Lake	6	valid
+2016 Ford	6	valid
+2198 Lewis	6	valid
+12500 Detroit	6	valid
+12231 Clifton	6	valid
+13100 Madison	6	valid
+1633 Hopkins	6	valid
+15325 Lake	6	valid
+1375 Bunts	6	valid
+2023 Nissan	6	valid
+3900 Detroit	6	suspect
+2013 Honda	6	valid
+1549 Rockway	6	valid
+11709 Madison	6	valid
+1656 Wagar	6	valid
+18414 Detroit	6	valid
+2113 Brown	6	valid
+13229 Madison	6	valid
+12203 Clifton	6	valid
+4306 Detroit	6	suspect
+1519 Lakeland	6	valid
+1253 Granger	6	valid
+15501 Detroit	6	valid
+2075 Clarence	6	valid
+1341 Lakeland	6	valid
+11711 Lake	6	valid
+16910 Detroit	6	valid
+2148 Northland	6	valid
+13123 Detroit	6	valid
+12806 Madison	6	valid
+13000 Athens	6	valid
+1659 Rosewood	6	valid
+1414 Elber	6	valid
+1591 Riverside	6	valid
+1421 Waterbury	6	valid
+2010 Honda	6	valid
+1312 Sloan	6	valid
+12701 Plover	6	valid
+2014 Ford	6	valid
+4100 Detroit	6	suspect
+1441 Alameda	6	valid
+13439 Clifton	6	valid
+2023 Robin	6	valid
+1289 Brockley	6	valid
+2022 Lincoln	6	valid
+2650 Detroit	6	suspect
+11823 Detroit	6	valid
+117 South Of	6	intersection-117th
+15118 Detroit	6	valid
+12227 Clifton	6	valid
+2026 Chevy Traverse	6	valid
+11843 Lake	6	valid
+2148 Waterbury	5	valid
+1466 Winchester	5	valid
+1450 Parkwood	5	valid
+273 Traffic	5	suspect
+2005 Honda	5	valid
+1480 Warren Road	5	valid
+12900 Lake Apartment	5	valid
+1559 Lakeland	5	valid
+1344 Beach	5	valid
+12220 Madison	5	valid
+1382 Cove	5	valid
+11906 Madison	5	valid
+2018 Honda	5	valid
+1545 Coutant	5	valid
+18515 Detroit	5	valid
+2024 Kia	5	valid
+13340 Madison	5	valid
+13306 Detroit	5	valid
+2015 Ford	5	valid
+14837 Detroit	5	valid
+2026 Honda	5	valid
+2011 Chevy	5	valid
+1610 Ridgewood	5	valid
+2022 Toyota	5	valid
+1470 Victoria	5	valid
+1045 Parkside	5	valid
+11801 Clifton	5	valid
+15500 Detroit	5	valid
+1522 West Clifton	5	valid
+1498 West	5	valid
+12021 Edgewater	5	valid
+13395 Madison	5	valid
+11900 Detroit	5	valid
+2024 Ford	5	valid
+11835 Clifton	5	valid
+1687 Robinwood	5	valid
+14808 Lake	5	valid
+2024 Volkswagen	5	valid
+12505 Edgewater	5	valid
+2020 Hyundai	5	valid
+1391 Warren	5	valid
+2058 Robin	5	valid
+2020 Kia	5	valid
+2012 Ford	5	valid
+11822 Detroit	5	valid
+16802 Delaware	5	valid
+1285 Hall	5	valid
+13740 Madison	5	valid
+11709 Lake	5	valid
+1615 Warren	5	valid
+1502 Lakeland	5	valid
+1481 Wyandotte	5	valid
+14100 Franklin	5	valid
+1630 West	5	valid
+12543 Clifton	5	valid
+1349 Marlowe	5	valid
+2012 Nissan	5	valid
+17625 Detroit	5	valid
+1414 Grace	5	valid
+18101 Clifton Road	5	valid
+1518 Woodward	5	valid
+1625 Alameda	5	valid
+2033 Chesterland	5	valid
+12540 Edgewater Marine	5	valid
+11738 Lake	5	valid
+2200 Atkins	5	valid
+18514 Detroit	5	valid
+1170 French	5	valid
+18725 Detroit	5	valid
+12200 Madison	5	valid
+1636 Elmwood	5	valid
+1251 Marlowe	5	valid
+15914 Lakewood Heights	5	valid
+13405 Madison	5	valid
+1418 Wyandotte	5	valid
+13520 Elber Lane	5	valid
+2367 Woodward	5	valid
+1226 Ramona	5	valid
+18915 Detroit Extension	5	valid
+2011 Ford	5	valid
+18101 Detroit	5	valid
+1511 Warren Road	5	valid
+13705 Madison	5	valid
+1388 Riverside	5	valid
+1321 Matthews	5	valid
+1303 Cove	5	valid
+2275 Warren	5	valid
+2020 Honda	5	valid
+1374 Geel	5	valid
+1701 Detroit	5	valid
+2014 Chevy	5	valid
+12525 Lake	5	valid
+1615 Waterbury	5	valid
+14221 Madison	5	valid
+1612 Newman	5	valid
+12202 Clifton	5	valid
+14235 Madison	5	valid
+13389 Madison	5	valid
+100 And	5	suspect
+2026 Kia	5	valid
+20375 Center Ridge	5	suspect
+17526 Madison	5	valid
+13315 Detroit Ennis	5	valid
+14600 Detroit Lakewood	5	valid
+1405 Hopkins	5	valid
+2026 Silverado	5	valid
+1655 Elmwood	4	valid
+1332 West	4	valid
+2216 Eldridge	4	valid
+1436 Alameda	4	valid
+17433 Edgewater	4	valid
+2002 Honda	4	valid
+15115 Lake	4	valid
+2014 Honda	4	valid
+1359 Albert	4	valid
+2010 Chevy	4	valid
+11713 Lake	4	valid
+230 Brown	4	suspect
+130 Brown	4	suspect
+4227 Delaware	4	suspect
+2018 Dodge	4	valid
+12925 Clifton	4	valid
+1497 Winton	4	valid
+2011 Bunts	4	valid
+2065 Atkins	4	valid
+12905 Madison	4	valid
+1425 Waterbury	4	valid
+2014 Ram	4	valid
+11801 Lake	4	valid
+270 Traffic	4	suspect
+160 Black	4	suspect
+2010 Nissan	4	valid
+1483 Newman	4	valid
+1326 Thoreau	4	valid
+135 Black	4	suspect
+1675 Roosevelt	4	valid
+18240 Detroit	4	valid
+2008 Honda	4	valid
+2025 Kia	4	valid
+1308 Ramona	4	valid
+1441 Newman	4	valid
+1475 Winchester	4	valid
+2016 Honda	4	valid
+2015 Nissan	4	valid
+2023 Toyota	4	valid
+2015 Robin	4	valid
+8500 Detroit	4	suspect
+2007 Honda	4	valid
+1503 Cohasset	4	valid
+14805 Clifton	4	valid
+1577 Newman	4	valid
+2015 Chrysler	4	valid
+1309 Westlake	4	valid
+14534 Madison	4	valid
+2207 Glenbury	4	valid
+2015 Toyota	4	valid
+2013 Toyota	4	valid
+1540 Newman	4	valid
+12507 Franklin	4	valid
+1275 Clifton Prado	4	valid
+15111 Detroit	4	valid
+1383 Bonnevue	4	valid
+2149 Brown Road	4	valid
+11805 North Lane	4	valid
+1447 Lewis	4	valid
+15707 Detroit	4	valid
+12206 Clifton	4	valid
+11733 Edgewater	4	valid
+2016 Nissan	4	valid
+1468 Coutant	4	valid
+1594 Alameda	4	valid
+2018 Subaru	4	valid
+2008 Ford	4	valid
+1685 Lincoln	4	valid
+1423 Riverside	4	valid
+14312 Detroit Apartment	4	valid
+13880 Edgewater	4	valid
+11829 Clifton	4	valid
+17533 Madison	4	valid
+2013 Dodge	4	valid
+2095 Northland	4	valid
+1548 West	4	valid
+14412 Detroit	4	valid
+1515 Westwood	4	valid
+2003 Chevy	4	valid
+17105 Madison	4	valid
+17525 Madison	4	valid
+1489 Wyandotte	4	valid
+2019 Woodward	4	valid
+1422 Rio	4	valid
+2019 Jeep	4	valid
+1472 Cordova	4	valid
+1357 Riverside	4	valid
+3500 Detroit	4	suspect
+1543 Orchard Grove	4	valid
+14900 Lakewood Heights	4	valid
+3330 Detroit	4	suspect
+2132 Lewis	4	valid
+1266 Cove	4	valid
+2017 Kia	4	valid
+13396 Madison	4	valid
+11821 Davis Court	4	valid
+18204 Detroit	4	valid
+12053 Lake	4	valid
+1471 Arthur	4	valid
+12402 Madison	4	valid
+2104 Lark	4	valid
+1381 Bunce	4	valid
+1341 Marlo	4	valid
+12601 Lake	4	valid
+1269 Manor Park	4	valid
+1699 Valley Parkway	4	valid
+1345 Beach	4	valid
+1561 Alameda	4	valid
+17531 Madison	4	valid
+1510 Hopkins	4	valid
+143 Detroit	4	suspect
+2018 Chevy	4	valid
+11710 Nelson Court	4	valid
+17102 Detroit	4	valid
+15319 Detroit	4	valid
+1423 Lauderdale	4	valid
+8200 Sloan	4	suspect
+13230 Detroit	4	valid
+1436 Arthur	4	valid
+12901 Detroit	4	valid
+123 Lake	4	suspect
+1584 Lincoln	4	valid
+2160 Atkins	4	valid
+2019 Hyundai	4	valid
+1441 Woodward	4	valid
+12029 Clifton	4	valid
+1527 Wyandotte	4	valid
+17436 Clifton	4	valid
+1352 West Clifton	4	valid
+1652 Lincoln	4	valid
+11715 Nelson Court	4	valid
+1427 Wyandotte	4	valid
+18520 Detroit	4	valid
+12958 Clifton	4	valid
+1487 Ridgewood	4	valid
+850 Beach Road	4	suspect
+845 Beach Road	4	suspect
+1446 Lakewood	4	valid
+14027 Madison	4	valid
+2034 Reveley	4	valid
+14623 Bays	4	valid
+1584 Larchmont	4	valid
+17545 Madison	4	valid
+1421 Marlowe	4	valid
+1618 Lakewood	4	valid
+16204 Detroit	4	valid
+2020 Jeep	4	valid
+13363 Madison	4	valid
+2009 Chevy	4	valid
+1225 Andrews	4	valid
+2233 Bunts	4	valid
+1336 Heard	4	valid
+1464 Roycroft	4	valid
+2012 Chevy	4	valid
+1441 Rockway	4	valid
+18206 Detroit	4	valid
+1230 Arlington	4	valid
+14239 Detroit	4	valid
+1379 Bunts	4	valid
+11840 Southline	4	valid
+16725 Lake	4	valid
+1327 Bonnevue	4	valid
+2500 Edgewater	4	valid
+13436 Clifton	4	valid
+1595 Winchester	4	valid
+13303 Madison	4	valid
+12530 Lake	4	valid
+1382 Beach	4	valid
+1360 Belle	4	valid
+1470 Warren	4	valid
+1426 Newman	4	valid
+306 Detroit	4	suspect
+1551 Lakeland	4	valid
+1327 Arlington	4	valid
+1839 Clifton	4	valid
+1548 Lakewood	4	valid
+15422 Detroit	4	valid
+273 Go	4	suspect
+1523 Waterbury	4	valid
+2018 Belle	4	valid
+12962 Clifton	4	valid
+17798 Detroit	4	valid
+1382 Bunts	4	valid
+1184 Summit	4	valid
+1310 Edwards	4	valid
+1689 Bunts	4	valid
+1554 Olivewood	4	valid
+2080 Quail	4	valid
+2214 Chesterland	4	valid
+125 Edgewater	4	suspect
+1433 Riverside	4	valid
+1254 Bunts	4	valid
+1338 Beach	4	valid
+1586 Coutant Unit	4	valid
+1437 Northland	4	valid
+17513 Detroit	4	valid
+1641 Grace	4	valid
+1855 Edgewater	4	valid
+12031 Edgewater	4	valid
+17033 Madison	4	valid
+17843 Clifton	4	valid
+1431 Wyandotte	4	valid
+17310 Madison	4	valid
+14300 Detroit Unit	4	valid
+11729 Detroit	4	valid
+2073 Mars	4	valid
+14555 Madison	4	valid
+1433 Graber	4	valid
+2103 Wyandotte	4	valid
+15631 Madison	4	valid
+1622 Winchester	4	valid
+1418 West Clifton	4	valid
+2017 Hyundai	4	valid
+16165 Hilliard	4	valid
+1835 Clifton	4	valid
+1634 Wyandotte	4	valid
+1519 Woodward	4	valid
+2017 Subaru	4	valid
+1849 Clifton	4	valid
+1444 Westwood	4	valid
+16808 Delaware	4	valid
+2036 Wyandotte	4	valid
+1431 Northland	4	valid
+12511 Clifton Number	4	valid
+13919 Detroit	4	valid
+12010 Lake	4	valid
+1406 West Clifton	4	valid
+12019 Lakewood	3	valid
+2024 Honda Accord	3	valid
+1236 Brockley	3	valid
+14802 Clifton	3	valid
+1063 Cove	3	valid
+15800 Detroit	3	valid
+2139 Glenbury	3	valid
+2221 Eldred	3	valid
+2190 Waterbury	3	valid
+1272 Brockley	3	valid
+1500 Hopkins	3	valid
+306 Medic	3	suspect
+16819 Fisher	3	valid
+1212 Bunts	3	valid
+15620 Madison	3	valid
+1333 Sloan	3	valid
+2116 Warren	3	valid
+1425 Elmwood	3	valid
+1030 Roy Drive	3	valid
+260 Brown	3	suspect
+185 Brown	3	suspect
+1281 Ramona	3	valid
+2011 Subaru	3	valid
+1496 Alameda	3	valid
+2022 Ford	3	valid
+2025 Nissan	3	valid
+4800 Madison	3	suspect
+11839 Edgewater Apartment	3	valid
+2024 Nissan	3	valid
+1496 West	3	valid
+1604 Alameda	3	valid
+16707 Seneca	3	valid
+1427 Rio	3	valid
+2268 Emily	3	valid
+1527 West	3	valid
+1677 Bunts	3	valid
+14873 Detroit	3	valid
+1701 Arthur	3	valid
+11864 Clifton	3	valid
+1502 West	3	valid
+2020 Nissan	3	valid
+1599 Westwood	3	valid
+2000 Mars	3	valid
+2036 Lakeland	3	valid
+12405 Detroit	3	valid
+2016 Kia	3	valid
+15607 Detroit	3	valid
+1360 West Clifton	3	valid
+1621 Lakewood	3	valid
+14701 Detroit Suite	3	valid
+1354 Park Row	3	valid
+1506 West	3	valid
+2165 Bunts	3	valid
+2156 Bunts	3	valid
+1377 Ethel	3	valid
+1389 Granger	3	valid
+600 Detroit Unit	3	suspect
+12700 Lake Avenue	3	valid
+1043 Forest Cliff	3	valid
+2033 Atkins	3	valid
+1400 Detroit	3	valid
+1292 Cove Number	3	valid
+2079 Clarence	3	valid
+2050 Lake	3	valid
+1415 Clarence	3	valid
+2016 Toyota	3	valid
+2012 Jeep	3	valid
+2195 Woodward	3	valid
+1393 Geale	3	valid
+14909 Clifton	3	valid
+401 Detroit	3	suspect
+2010 Lincoln	3	valid
+11841 Lake	3	valid
+165 Hilliard	3	suspect
+2009 Toyota	3	valid
+1311 Bonnevue	3	valid
+2022 Chevy	3	valid
+2005 Chevy	3	valid
+17615 Detroit	3	valid
+1491 Lincoln	3	valid
+2016 Jeep	3	valid
+1663 Victoria	3	valid
+2181 Northland	3	valid
+1473 Victoria	3	valid
+12907 Clifton	3	valid
+1555 Hilliard	3	valid
+2139 Olive	3	valid
+4701 Detroit	3	suspect
+506 Edgewater	3	suspect
+1440 Wyandotte	3	valid
+12629 Detroit	3	valid
+2025 Atkins	3	valid
+1577 Chesterland	3	valid
+2205 Mars	3	valid
+1511 Coutant	3	valid
+2012 Buick	3	valid
+13361 Madison	3	valid
+12943 Clifton Apartment	3	valid
+1198 Cook	3	valid
+1291 Granger	3	valid
+13452 Clifton	3	valid
+14322 Madison	3	valid
+1494 Westwood	3	valid
+145 Black	3	suspect
+11820 Lake	3	valid
+2005 Lincoln	3	valid
+14900 Detroit	3	valid
+1346 Cole	3	valid
+2020 Toyota	3	valid
+2024 Chevy	3	valid
+2089 Robin	3	valid
+1462 Lakeland	3	valid
+1443 Spring Garden	3	valid
+2038 Robin	3	valid
+16101 Madison	3	valid
+100 Madison	3	suspect
+2137 Brown	3	valid
+1365 Clearance	3	valid
+1291 Idlewood	3	valid
+14409 Delaware	3	valid
+4300 Madison	3	suspect
+1297 Idlewood	3	valid
+18607 Detroit	3	valid
+2245 Arthur	3	valid
+2011 Ford Escape	3	valid
+14977 Delaware	3	valid
+2020 Mazda	3	valid
+15413 Lakewood Heights	3	valid
+1361 Cove	3	valid
+13322 Madison	3	valid
+16209 Madison	3	valid
+1419 Roycroft	3	valid
+2009 Honda	3	valid
+900 Detroit	3	suspect
+17500 Madison	3	valid
+1185 Warren	3	valid
+1026 Medic	3	valid
+1583 Orchard Grove	3	valid
+1555 Grace	3	valid
+1369 Park Row	3	valid
+2012 Chrysler	3	valid
+1218 Gladys	3	valid
+1377 Belle	3	valid
+1285 Cove	3	valid
+1169 French	3	valid
+1366 Edwards	3	valid
+117 North	3	intersection-117th
+1565 Waterbury	3	valid
+150 Black	3	suspect
+17609 Detroit	3	valid
+1331 Cranford	3	valid
+1560 Coutant	3	valid
+1720 Edgewater	3	valid
+14937 Lakewood Heights	3	valid
+1621 Newman	3	valid
+2054 Lewis	3	valid
+1553 Newman	3	valid
+117 South	3	intersection-117th
+13601 Detroit	3	valid
+15514 Madison	3	valid
+14223 Athens	3	valid
+13975 Lake	3	valid
+16711 Lake	3	valid
+16918 Detroit	3	valid
+14901 Lake	3	valid
+12810 Detroit	3	valid
+2128 Lakeland	3	valid
+1685 Arthur	3	valid
+2030 Robin	3	valid
+1635 Orchard Grove	3	valid
+1298 Ethel	3	valid
+1494 Orchard Grove	3	valid
+1285 Gladys	3	valid
+1341 Marlowe Unit	3	valid
+2018 Ford	3	valid
+1247 Marlowe	3	valid
+1380 Clarence	3	valid
+16512 Detroit	3	valid
+2023 Chevy	3	valid
+17844 Cannon	3	valid
+1209 Clifton	3	valid
+2026 Mars	3	valid
+2076 Elmwood	3	valid
+1485 Blossom Park	3	valid
+2114 Clarence	3	valid
+1627 Winchester	3	valid
+2900 Detroit	3	suspect
+1534 Winchester	3	valid
+2016 Mazda	3	valid
+1356 Marlowe	3	valid
+13383 Madison	3	valid
+14782 Athens	3	valid
+17514 Detroit	3	valid
+165 Brown	3	suspect
+18516 Detroit	3	valid
+924 Medic	3	suspect
+1582 Newman	3	valid
+2017 Nissan	3	valid
+511 Medic	3	suspect
+2014 Elmwood	3	valid
+1534 Roycroft	3	valid
+1388 Lakewood	3	valid
+2014 Hyundai	3	valid
+2550 Lake	3	suspect
+2109 Elmwood	3	valid
+1664 Lauderdale	3	valid
+1635 Olivewood	3	valid
+1215 West Clifton	3	valid
+12221 Clifton	3	valid
+2021 Lakeland	3	valid
+16207 Detroit	3	valid
+12065 Edgewater	3	valid
+19342 Laurel Avenue	3	suspect
+1521 Wagar	3	valid
+1635 Hopkins	3	valid
+1501 Roycroft	3	valid
+1625 Newman	3	valid
+14235 Garfield	3	valid
+2035 Chesterland	3	valid
+1613 Hopkins	3	valid
+2124 Quail	3	valid
+1264 Webb	3	valid
+2200 Madison	3	valid
+2015 Jeep	3	valid
+56135 Brown	3	suspect
+1564 Ridgewood	3	valid
+2004 Chevy	3	valid
+1571 Olivewood	3	valid
+1327 Edwards	3	valid
+2078 Robin	3	valid
+12804 Madison	3	valid
+15709 Lake	3	valid
+14914 Edgewater	3	valid
+2019 Toyota	3	valid
+2035 Morrison	3	valid
+1618 Woodward	3	valid
+12906 Madison	3	valid
+15608 Lake	3	valid
+2022 Jeep	3	valid
+2006 Ford	3	valid
+13458 Clifton	3	valid
+1619 Clarence	3	valid
+1338 Heard	3	valid
+1409 Owego	3	valid
+11728 Detroit	3	valid
+1553 Northland	3	valid
+1175 Andrews	3	valid
+2024 Tesla	3	valid
+1335 Brockley	3	valid
+1257 French	3	valid
+13439 Clifton Emerson	3	valid
+12550 Lake Meridian	3	valid
+1558 Ridgewood	3	valid
+14822 Madison	3	valid
+2043 Ferndale	3	valid
+14108 Lakewood Heights	3	valid
+13368 Madison	3	valid
+1499 Northland	3	valid
+1526 Bunts	3	valid
+16401 Delaware	3	valid
+1460 Lauderdale	3	valid
+13480 Clifton	3	valid
+1362 Beach	3	valid
+1270 Lakeland	3	valid
+2014 Kia	3	valid
+2012 Honda	3	valid
+17445 Northwood	3	valid
+1555 Hopkins	3	valid
+17469 Clifton	3	valid
+1611 Orchard Grove	3	valid
+1221 Warren	3	valid
+1507 Winchester	3	valid
+1520 West	3	valid
+1586 Clarence	3	valid
+16901 Lake Avenue	3	valid
+1501 Elmwood	3	valid
+1374 Cove	3	valid
+12920 Berea	3	valid
+1502 Winchester	3	valid
+1667 Elmwood	3	valid
+1379 Bonnevue	3	valid
+1800 Lake	3	valid
+1277 Thoreau	3	valid
+2147 Eldred	3	valid
+1459 Ridgewood	3	valid
+117 Lake	3	intersection-117th
+1531 Coutant	3	valid
+1541 Westwood	3	valid
+17813 Shaw	3	valid
+1340 Kenilworth	3	valid
+1538 Lauderdale	3	valid
+17473 Norton	3	valid
+1478 Winchester	3	valid
+1346 Kenilworth	3	valid
+4400 Detroit	3	suspect
+1374 Geale	3	valid
+15735 Clifton	3	valid
+2074 Carabel	3	valid
+1380 Webb Road	3	valid
+1500 Woodward	3	valid
+2083 Lark	3	valid
+1558 Northland	3	valid
+1616 West	3	valid
+13809 Clifton	3	valid
+2100 Lakeside	3	valid
+1331 Lakewood	3	valid
+2017 Honda	3	valid
+2053 Caravelle	3	valid
+1545 Elmwood	3	valid
+1192 Westlake	3	valid
+15314 Detroit	3	valid
+1655 Woodward	3	valid
+1357 Beach	3	valid
+1445 Woodward	3	valid
+1550 Lakeland	3	valid
+1621 Belle	3	valid
+1516 Lauderdale	3	valid
+1472 Coutant	3	valid
+2085 Halsted	3	valid
+1633 St	3	valid
+1466 Woodward	3	valid
+17439 Northwood	3	valid
+14877 Detroit	3	valid
+1214 Hall	3	valid
+1495 Roycroft	3	valid
+13509 Detroit	3	valid
+1570 Rosewood	3	valid
+15721 Madison	3	valid
+16300 Hilliard	3	valid
+1661 Victoria	3	valid
+2285 Warren	3	valid
+2256 Emily	3	valid
+1539 Coutant	3	valid
+1586 Coutant	3	valid
+2036 Quail	3	valid
+1206 West Clifton	3	valid
+2201 Bunts	3	valid
+1650 Woodward	3	valid
+600 Detroit	3	suspect
+18626 Detroit	3	valid
+12504 Detroit	3	valid
+2023 Mercedes	3	valid
+1439 Newman	3	valid
+1325 Sloan	3	valid
+1212 Donald	3	valid
+1567 Ridgewood	3	valid
+13882 Clifton	3	valid
+11871 Lake	3	valid
+2054 Robin	3	valid
+2047 Ferndale	3	valid
+11725 Clifton	3	valid
+11815 South Lane	3	valid
+5425 Detroit	3	suspect
+2023 Hyundai	3	valid
+1849 Edgewater	3	valid
+13114 Detroit	3	valid
+1277 Cove Number	3	valid
+2170 Niagara	3	valid
+2017 Waterbury	3	valid
+1384 Giel	3	valid
+1247 Brockley	3	valid
+1581 Cohassett	3	valid
+12026 Clifton	3	valid
+1221 Brockley	3	valid
+2019 Honda	3	valid
+1383 Bonnie View	3	valid
+1425 Rockway	3	valid
+1411 Roycroft	3	valid
+2193 Lincoln	3	valid
+11825 Detroit Number	3	valid
+107 At	3	suspect
+18097 Clifton Road	3	valid
+117 North Of	3	intersection-117th
+2919 Clifton	3	suspect
+2026 Kia Sportage	3	valid
+17413 Woodford	3	valid
+1532 Parkwood	3	valid
+1488 Cordova	3	valid
+15007 Madison	3	valid
+2152 Lewis	3	valid
+2025 Chevy	3	valid
+4100 Franklin	3	suspect
+16819 Madison	3	valid
+15704 Lakewood Heights	3	valid
+2511 Clifton	3	suspect
+1229 Manor Park	3	valid
+12405 Franklin Boulevard	3	valid
+1333 Cove	3	valid
+16719 Detroit	3	valid
+12518 Clifton	3	valid
+18895 Detroit	3	valid
+1811 Lake	3	valid
+2147 Riverside	3	valid
+17460 Clifton Road	3	valid
+14013 Clifton	3	valid
+14401 Detroit To	3	valid
+650 Detroit	3	suspect
+13509 Merl	3	valid
+1321 Arlington	3	valid
+2135 Riverside	3	valid
+14521 Madison	3	valid
+1839 Edgewater	3	valid
+277 Cove	3	suspect
+341 Marlowe	3	suspect
+1570 Larchmont	3	valid
+11855 Lake	3	valid
+1681 Waterbury	3	valid
+1625 Lakewood Avenue	3	valid
+2018 Ford Fusion	3	valid
+1323 Lakeland	3	valid
+3123 Detroit	3	suspect
+2015 Subaru	3	valid
+12500 Berea	3	valid
+14311 Madison	3	valid
+1459 Arthur	3	valid
+1250 Virginia	3	valid
+1418 Lincoln	3	valid
+2207 Chesterland	3	valid
+11812 Clifton	3	valid
+1284 Manor Park	3	valid
+1470 West	2	valid
+240 Brown	2	suspect
+1384 Lakeland	2	valid
+2019 Gray Honda	2	valid
+2186 Lincoln	2	valid
+1256 Webb	2	valid
+1264 Cranford	2	valid
+1486 Coutant	2	valid
+198 Brown	2	suspect
+2209 Atkinson	2	valid
+2119 Belle	2	valid
+11725 Lake	2	valid
+190 Black	2	suspect
+13300 Bramley	2	valid
+2005 Ford	2	valid
+1521 Lincoln	2	valid
+17480 Clifton	2	valid
+2020 Ford	2	valid
+6300 Hilliard	2	suspect
+11849 Edgeworth	2	valid
+1341 Milo	2	valid
+1589 Rockway	2	valid
+2235 Northland	2	valid
+17841 Cannon	2	valid
+1378 Lakewood	2	valid
+1630 Wagar	2	valid
+2009 Riverside	2	valid
+1441 Robinwood	2	valid
+1490 Coutant	2	valid
+1275 Cove	2	valid
+1445 Lakewood	2	valid
+1475 Woodward	2	valid
+2031 Robin	2	valid
+2019 Ford	2	valid
+1906 Madison	2	valid
+1251 Summit	2	valid
+15309 Madison	2	valid
+2017 Buick	2	valid
+2012 Ford Escape	2	valid
+003 Adam	2	suspect
+52135 Brown	2	suspect
+1443 Lakewood	2	valid
+1592 Winton	2	valid
+14814 Clifton Apartment	2	valid
+265 Black	2	suspect
+15404 Madison	2	valid
+12975 Emerson	2	valid
+2024 Ford Station	2	valid
+1509 Northland	2	valid
+18400 Detroit	2	valid
+11840 Lake	2	valid
+2195 Lincoln	2	valid
+172 Brown	2	suspect
+2037 Warren	2	valid
+1249 Manor Park	2	valid
+1481 Clifton Place	2	valid
+2135 Olive	2	valid
+1491 Coutant	2	valid
+8400 Detroit	2	suspect
+2125 Concord	2	valid
+1384 Heard	2	valid
+1560 West	2	valid
+1079 Parkside	2	valid
+1487 Waterbury	2	valid
+100 Edgewater	2	suspect
+2015 Hyundai	2	valid
+175 Black	2	suspect
+1256 Edwards	2	valid
+1599 Lincoln	2	valid
+1678 Roosevelt	2	valid
+158 Brown	2	suspect
+180 Black	2	suspect
+12204 Madison	2	valid
+1315 Bonnevue	2	valid
+1495 Riverside	2	valid
+2026 Jeep	2	valid
+1295 Eden	2	valid
+17443 Clifton	2	valid
+2003 Honda	2	valid
+2018 Jeep	2	valid
+15320 Detroit	2	valid
+2040 Robin	2	valid
+2104 Wisconsin	2	valid
+2369 Northland	2	valid
+2021 Carabel	2	valid
+1239 Donald	2	valid
+17475 Lakewood	2	valid
+13216 Detroit	2	valid
+24311 East Oakland	2	suspect
+2081 Waterbury	2	valid
+2018 Chevy Sedan	2	valid
+13030 Madison	2	valid
+1451 Clifton Place	2	valid
+1498 Winchester	2	valid
+1605 Lakewood	2	valid
+1326 Phelps	2	valid
+1637 Cordova	2	valid
+18500 Detroit	2	valid
+1606 West	2	valid
+14612 Clifton	2	valid
+15644 Madison	2	valid
+1577 Hopkins	2	valid
+1386 Hall	2	valid
+1485 Cordova	2	valid
+11926 Madison	2	valid
+1584 Cordova	2	valid
+1335 Cranford	2	valid
+1389 Gale	2	valid
+14314 Lakewood Heights	2	valid
+1595 Ridgewood	2	valid
+1623 Clearance	2	valid
+56170 Brown	2	suspect
+1373 Lakeland	2	valid
+2005 Nissan	2	valid
+14717 Detroit	2	valid
+14327 Madison	2	valid
+15316 Clifton	2	valid
+1628 West	2	valid
+2013 Volvo	2	valid
+300 Brown	2	suspect
+1330 Webb	2	valid
+1195 Echo	2	valid
+2026 Buick Enclave	2	valid
+1348 Bonnevue	2	valid
+14205 Madison	2	valid
+1290 West	2	valid
+21850 Edgewater	2	suspect
+21849 Clifton	2	suspect
+2015 Lakeland	2	valid
+2035 Wiscona	2	valid
+122 Madison	2	suspect
+13506 Lake	2	valid
+13415 Detroit	2	valid
+17503 Narragansett	2	valid
+1290 Virginia	2	valid
+2907 Clifton	2	suspect
+2149 Brown	2	valid
+12541 Lake Avenue	2	valid
+2015 Atkins	2	valid
+1535 Hopkins	2	valid
+2051 Quail	2	valid
+249 Traffic	2	suspect
+2190 Bunts Road	2	valid
+17873 Lake Road	2	valid
+1309 Cranford	2	valid
+17012 Madison	2	valid
+12976 Clifton	2	valid
+12408 Madison	2	valid
+1272 Idawood	2	valid
+1232 Warren	2	valid
+16811 Madison	2	valid
+1515 Coutant	2	valid
+15400 Edgewater	2	valid
+185 Black	2	suspect
+2010 Cadillac	2	valid
+2016 Audi	2	valid
+1619 Hopkins	2	valid
+2007 Honda Accord	2	valid
+1671 Lincoln	2	valid
+800 Detroit	2	suspect
+2016 Jeep Station	2	valid
+1547 Mars	2	valid
+14018 Detroit	2	valid
+2009 Bunts	2	valid
+12405 Franklin Apartment	2	valid
+2006 Buick	2	valid
+2010 Mazda	2	valid
+14421 Delaware	2	valid
+17614 Riverway	2	valid
+17459 Lake	2	valid
+11830 Lake	2	valid
+2125 Carabel	2	valid
+1437 Grace	2	valid
+1660 Winton	2	valid
+1434 Graver	2	valid
+1434 Graber	2	valid
+1181 Virginia	2	valid
+12700 Lake Apartment	2	valid
+1225 Cranford	2	valid
+5027 Detroit	2	suspect
+14213 Detroit	2	valid
+2088 Lakeland	2	valid
+1640 Hopkins	2	valid
+1456 Alameda	2	valid
+12520 Arliss	2	valid
+2190 Bunts	2	valid
+1595 Woodward	2	valid
+12501 Plover	2	valid
+1466 Lakeland	2	valid
+1358 Cove	2	valid
+2236 Brown Road	2	valid
+1516 Cordova	2	valid
+820 Edgewater	2	suspect
+1643 Cohasset	2	valid
+119 Lake	2	suspect
+12943 Clifton Union	2	valid
+1433 Marth	2	valid
+1380 Riverside	2	valid
+328 Lunch List	2	suspect
+2216 Alger	2	valid
+1564 Coutant	2	valid
+2007 Chrysler	2	valid
+19607 Detroit	2	suspect
+870 Beach Road	2	suspect
+1440 Robinwood	2	valid
+1171 Virginia	2	valid
+2015 Richland	2	valid
+2150 Mars	2	valid
+1381 Bonce	2	valid
+2011 Lark	2	valid
+1311 Matthews	2	valid
+11819 North Lane	2	valid
+2110 Waterbury	2	valid
+2046 Waterbury	2	valid
+1370 Sloan Harborview	2	valid
+1270 Cove	2	valid
+13200 Madison Mahall	2	valid
+1427 Robinwood	2	valid
+2195 Warren	2	valid
+1691 Robinwood Apartment	2	valid
+14401 Madison	2	valid
+2129 Waterbury	2	valid
+600 Berea	2	suspect
+14625 Madison	2	valid
+18890 Timber Lane	2	valid
+13512 Elber Lane	2	valid
+1423 Ridgewood	2	valid
+1335 Edwards	2	valid
+1653 Northland	2	valid
+12511 Clifton Apartment	2	valid
+1625 Riverside	2	valid
+15210 Madison	2	valid
+15637 Madison	2	valid
+1554 Orchard Grove	2	valid
+14547 Madison	2	valid
+1589 Hopkins	2	valid
+1360 Bonnevue	2	valid
+12040 Lake	2	valid
+1587 Winchester	2	valid
+17907 Lake	2	valid
+1632 Lakewood	2	valid
+1464 Alameda	2	valid
+1353 Matthews	2	valid
+2014 Chrysler	2	valid
+13460 Lake	2	valid
+1388 Beach	2	valid
+11733 Clifton	2	valid
+125 Brown	2	suspect
+14217 Athens	2	valid
+1575 Lewis	2	valid
+2246 Northland	2	valid
+2239 Northland	2	valid
+101 Madison	2	suspect
+2014 Black Ford	2	valid
+13428 Merle	2	valid
+329 Madison	2	suspect
+1619 Chesterland	2	valid
+1298 Virginia	2	valid
+1212 Virginia	2	valid
+1048 Summit	2	valid
+13401 Detroit	2	valid
+15622 Lakewood Heights	2	valid
+1356 Hall	2	valid
+1301 Herd	2	valid
+1370 Sloanville Harborview	2	valid
+14650 Detroit	2	valid
+1582 Rosewood	2	valid
+1301 Matthews	2	valid
+2011 Quail	2	valid
+11810 Lake	2	valid
+1515 Rosewood	2	valid
+2010 Black Ford	2	valid
+1150 Linda Street	2	valid
+105 Brown	2	suspect
+1485 Northland	2	valid
+1513 Westwood	2	valid
+2002 Richland	2	valid
+2004 Buick	2	valid
+1239 Cook	2	valid
+156 Madison	2	suspect
+1406 Detroit	2	valid
+1272 Idlewood	2	valid
+1539 Roycroft	2	valid
+13733 Madison	2	valid
+14533 Clifton	2	valid
+2024 Subaru	2	valid
+2097 Halstead	2	valid
+2178 Lewis	2	valid
+1423 Athens	2	valid
+13715 Madison	2	valid
+2170 Elber	2	valid
+1444 Coutant	2	valid
+15526 Madison	2	valid
+14724 Clifton	2	valid
+2030 Atkins	2	valid
+16711 Lake Avenue	2	valid
+15302 Arden	2	valid
+1615 Warren Road	2	valid
+1439 Clifton Place	2	valid
+1597 Winton	2	valid
+1388 Cranford	2	valid
+16724 Lake	2	valid
+12900 Lake Unit	2	valid
+2025 Mercedes	2	valid
+2021 Ford Station	2	valid
+1483 Ridgewood	2	valid
+2010 Jeep	2	valid
+2325 Niagara	2	valid
+1450 Riverside	2	valid
+2010 Toyota Corolla	2	valid
+2019 Ram	2	valid
+1284 Nicholson	2	valid
+14133 Detroit	2	valid
+1578 Elmwood	2	valid
+1471 Ridgewood	2	valid
+115 Madison	2	suspect
+2018 Mitsubishi Outlander	2	valid
+12417 Madison	2	valid
+500 Edgewater	2	suspect
+1404 Newman	2	valid
+2013 Chrysler	2	valid
+2055 Morrison	2	valid
+2073 Morrison	2	valid
+11850 Edgewater Apartment	2	valid
+1508 West	2	valid
+1578 Cordova	2	valid
+2045 Lincoln	2	valid
+2023 Chevy Malibu	2	valid
+2019 Robin	2	valid
+1435 Hopkins	2	valid
+1619 Alameda	2	valid
+1623 Rosewood	2	valid
+1234 Ethel	2	valid
+13914 Clifton	2	valid
+2043 Waterbury	2	valid
+1517 Lincoln	2	valid
+125 Hunter Edgewater	2	suspect
+18900 Detroit Extension	2	valid
+124 Madison	2	suspect
+1101 West Forest	2	valid
+1363 Belle	2	valid
+1278 Chase	2	valid
+12552 Clifton Boulevard	2	valid
+1810 Lake	2	valid
+12900 Lake Avenue	2	valid
+2207 Eldridge	2	valid
+1494 Alameda	2	valid
+15601 Madison Apartment	2	valid
+1278 Edwards	2	valid
+1200 Edgewater	2	valid
+2057 Robin	2	valid
+24306 Detroit	2	suspect
+17712 Narragansett	2	valid
+16902 Clifton	2	valid
+1415 Wyandotte Unit	2	valid
+2088 Bunts	2	valid
+1369 Beach Parkway	2	valid
+2077 Wyandotte	2	valid
+1510 Victoria	2	valid
+1682 Elber	2	valid
+17414 Madison	2	valid
+1640 Lauderdale	2	valid
+2207 Clarence	2	valid
+1278 Marlowe	2	valid
+1382 Frye	2	valid
+1555 Parkwood	2	valid
+725 Detroit	2	suspect
+2160 Adkins	2	valid
+2031 Edgewater	2	valid
+2024 Toyota	2	valid
+1340 Heard	2	valid
+2041 Albor	2	valid
+1445 Rockway	2	valid
+1470 Ridgewood	2	valid
+1208 Andrews	2	valid
+1357 Albert	2	valid
+2015 Mercedes	2	valid
+1837 Edgewater	2	valid
+1543 Wyandotte	2	valid
+11801 Clifton Huntington	2	valid
+11817 Detroit	2	valid
+18891 Detroit	2	valid
+17521 Friese	2	valid
+1242 Chase	2	valid
+1257 Chase	2	valid
+2187 Alger	2	valid
+1610 Cheshire	2	valid
+2004 Honda Accord	2	valid
+1610 Chester	2	valid
+17605 Archdale	2	valid
+2068 Bunts	2	valid
+2009 Ford	2	valid
+13468 Clifton	2	valid
+15119 Lake	2	valid
+1363 Bunch Mary	2	valid
+1626 Warren	2	valid
+2010 Dodge	2	valid
+2026 Clifton	2	valid
+1491 Blossom Park	2	valid
+11824 Madison	2	valid
+195 Brown	2	suspect
+1550 Coutant	2	valid
+2012 Mazda	2	valid
+000 Athens	2	suspect
+2050 Robin	2	valid
+3200 Madison	2	suspect
+18660 Detroit	2	valid
+15914 Clifton	2	valid
+2011 Lincoln	2	valid
+1466 Orchard Grove	2	valid
+15729 Madison	2	valid
+1665 Waterbury	2	valid
+1400 Madison	2	valid
+1187 Brockley	2	valid
+1624 Alameda	2	valid
+2252 Northland	2	valid
+1463 Kutont	2	valid
+2216 Eldreda	2	valid
+12805 Detroit	2	valid
+1277 Cole	2	valid
+1593 Victoria	2	valid
+1446 Winchester	2	valid
+2019 Mercedes	2	valid
+1282 Belle	2	valid
+2027 Bunts Road	2	valid
+14721 Clifton	2	valid
+11730 Clifton	2	valid
+2183 Lakeland	2	valid
+366 Tom	2	suspect
+2002 Belle	2	valid
+2027 Bunts	2	valid
+15106 Detroit	2	valid
+1323 Belle	2	valid
+2019 Quail	2	valid
+2067 Ferndale	2	valid
+1365 Lakewood	2	valid
+1501 Cohasset	2	valid
+2210 Bunts	2	valid
+1295 Gladys	2	valid
+1580 Coutant	2	valid
+1227 Edwards	2	valid
+1530 Ridgewood	2	valid
+11821 Clifton	2	valid
+12005 Clifton	2	valid
+13513 Clifton	2	valid
+14274 Lakewood Heights	2	valid
+1622 Ridgewood	2	valid
+1250 Elber	2	valid
+1477 Waterbury	2	valid
+2115 Bunts	2	valid
+1229 Ethel	2	valid
+12627 Franklin	2	valid
+12010 Clifton	2	valid
+1611 Marlowe	2	valid
+1638 Bell	2	valid
+1640 Alameda	2	valid
+1605 Clarence	2	valid
+1646 Elber	2	valid
+2053 Carabel	2	valid
+15204 Madison Apartment	2	valid
+1447 Graber	2	valid
+1315 Belle	2	valid
+1481 Alameda	2	valid
+2130 Alger	2	valid
+1476 West	2	valid
+18100 Detroit	2	valid
+1380 Warren	2	valid
+1500 Parkwood	2	valid
+14224 Detroit	2	valid
+2085 Chesterland	2	valid
+1439 Graber	2	valid
+1581 Newman	2	valid
+12950 Clifton No	2	valid
+1678 Ridgewood	2	valid
+2014 Quail	2	valid
+130 Black	2	suspect
+2157 Overbrook	2	valid
+2099 Morrison	2	valid
+2033 Morrison	2	valid
+2015 Jeep Station	2	valid
+1277 Colts	2	valid
+1611 Ridgewood	2	valid
+2006 Pontiac	2	valid
+1297 Thoreau	2	valid
+2021 Jeep	2	valid
+1273 Jackson	2	valid
+2019 Jaguar	2	valid
+2023 Dodge Durango	2	valid
+17025 Madison	2	valid
+1323 Brockley	2	valid
+1570 Woodward	2	valid
+1346 Hull	2	valid
+2200 Wyandotte	2	valid
+2086 Robin	2	valid
+12903 Clifton	2	valid
+1247 Summit	2	valid
+2135 Belle	2	valid
+1409 Marlowe	2	valid
+1607 Ridgewood	2	valid
+1221 Granger	2	valid
+1575 Elber	2	valid
+1615 Grace	2	valid
+1342 Hurd	2	valid
+1549 Spring Garden	2	valid
+2943 Clifton	2	suspect
+15620 Mass	2	valid
+16906 Delaware	2	valid
+14035 Madison	2	valid
+1623 Hopkins	2	valid
+1542 Winton	2	valid
+2216 Richland	2	valid
+1623 Newman	2	valid
+14910 Lakewood Heights	2	valid
+2147 Brown	2	valid
+1583 Northland	2	valid
+2132 Waskana	2	valid
+1635 Cohasset	2	valid
+2008 Buick	2	valid
+1570 Westwood	2	valid
+2151 Atkins	2	valid
+1406 Elber	2	valid
+1276 Idlewood	2	valid
+12525 Edgewater	2	valid
+14718 Detroit	2	valid
+3030 Madison	2	suspect
+1649 Winton	2	valid
+2119 Glenberry	2	valid
+13500 Elver Lane	2	valid
+2081 Bunts	2	valid
+1280 Andrews	2	valid
+1535 Coutant	2	valid
+1353 Belle	2	valid
+2023 Lark	2	valid
+2080 Coyle	2	valid
+1445 Roycroft	2	valid
+1341 Cook	2	valid
+1468 Elber	2	valid
+1349 Summit	2	valid
+11825 Lake Avenue	2	valid
+14220 Ferndale	2	valid
+1246 Manor Park	2	valid
+1346 Coves	2	valid
+16927 Detroit	2	valid
+2231 Eldred	2	valid
+14524 Delaware	2	valid
+14532 Lake Foster	2	valid
+18622 Detroit	2	valid
+1227 Ethel	2	valid
+1590 Ridgewood	2	valid
+1652 Lauderdale	2	valid
+15102 Lanning	2	valid
+1658 Parkwood	2	valid
+1244 Ramona	2	valid
+1508 Hopkins	2	valid
+18501 Detroit	2	valid
+2168 Lakeland	2	valid
+1416 Waterbury	2	valid
+2030 Mars	2	valid
+2231 Alger	2	valid
+12509 Lake	2	valid
+14869 Detroit	2	valid
+2153 Halstead	2	valid
+1126 Forrest	2	valid
+1444 Lauderdale	2	valid
+2026 Lark	2	valid
+2023 Quail	2	valid
+17814 Riverside	2	valid
+1377 Annett Court	2	valid
+1627 Ridgewood	2	valid
+13425 Madison	2	valid
+2029 Wyandotte	2	valid
+2034 Brown	2	valid
+1503 Rosewood	2	valid
+2020 Alberta Downstairs	2	valid
+14529 Lake	2	valid
+14306 Fisher Wright	2	valid
+1537 Lewis	2	valid
+11820 Edgewater Apartment	2	valid
+16202 Hilliard	2	valid
+2134 Dowd	2	valid
+2012 Kia	2	valid
+1617 Lakeland	2	valid
+1578 Mars	2	valid
+1269 Hall	2	valid
+1341 Warren	2	valid
+1653 Grace	2	valid
+1341 Lakelands	2	valid
+16215 Madison	2	valid
+13616 Medicine	2	valid
+2007 Dodge Caliber	2	valid
+117 Sapels	2	intersection-117th
+15100 Edgewater	2	valid
+1335 Webb	2	valid
+1329 Fry	2	valid
+2018 Mazda	2	valid
+2100 Wiscona	2	valid
+1284 Gladister	2	valid
+1429 Graber	2	valid
+1215 Ramona	2	valid
+1539 West	2	valid
+1408 Ridgewood	2	valid
+2003 Ford	2	valid
+1458 Belle	2	valid
+15021 Hilliard Road	2	valid
+172 Madison	2	suspect
+2016 Brown	2	valid
+1228 Geale	2	valid
+2126 Lincoln	2	valid
+1548 Spring Garden	2	valid
+1338 Turd	2	valid
+1653 Lincoln	2	valid
+1299 Cove	2	valid
+1651 Parkwood	2	valid
+1252 Warren	2	valid
+17469 Clifton Blvd	2	valid
+1367 Edwards	2	valid
+13454 Parkway	2	valid
+12954 Clifton	2	valid
+1552 Lauderdale	2	valid
+804 Madison	2	suspect
+129 Lake	2	suspect
+2173 Clarency	2	valid
+1201 Cooks	2	valid
+1365 Elber	2	valid
+2125 Brown	2	valid
+1307 Bonnevue	2	valid
+1628 Marlowe	2	valid
+1221 St	2	valid
+2073 Olive	2	valid
+13435 Merle	2	valid
+1298 Warren	2	valid
+2101 Halstead	2	valid
+1263 Jacks	2	valid
+11729 Clifton	2	valid
+12020 Lake Apartment	2	valid
+13304 Hazelwood	2	valid
+1469 Spring Garden	2	valid
+14300 Lakewood Heights	2	valid
+17706 Lakewood Heights	2	valid
+19615 Lake Road	2	suspect
+1490 Ridgewood	2	valid
+14718 Medicine	2	valid
+2015 Toyota Camry	2	valid
+2128 Wyandotte	2	valid
+14808 Clifton	2	valid
+1470 Parkhaven	2	valid
+1530 Parkway	2	valid
+16401 Delaware Hayes	2	valid
+1184 French	2	valid
+2105 Arthur	2	valid
+2023 Cadillac Escalade	2	valid
+17430 Woodford	2	valid
+24600 Detroit	2	suspect
+2167 Clarence	2	valid
+2067 Clarence	2	valid
+1391 Sloan	2	valid
+1330 Phelps	2	valid
+2019 Baxter Lee	2	valid
+17523 Madison	2	valid
+2210 Woodward	2	valid
+2500 Brea	2	valid
+2002 Broadview	2	valid
+1442 Ridgewood	2	valid
+1425 Onwood	2	valid
+1307 Andrews	2	valid
+1233 Belle	2	valid
+2016 Hyundai	2	valid
+15019 Madison	2	valid
+11863 Edgewater	2	valid
+2115 Arthur	2	valid
+155 Brown	2	suspect
+1615 Lakeland	2	valid
+20251 Lake Road	2	suspect
+2018 Quayle	2	valid
+1632 Grace	2	valid
+11829 Edgewater	2	valid
+2017 Mazda	2	valid
+15120 Edgewater	2	valid
+1536 Elmwood	2	valid
+1446 Graber	2	valid
+12535 Edgewater	2	valid
+1664 Cohasset Apartment	2	valid
+2018 Chevy Station	2	valid
+1392 Webb Road	2	valid
+1325 Queen Anne	2	valid
+17819 Webcliff	2	valid
+12526 Clifton	2	valid
+1653 Cohasset	2	valid
+2088 Halstead	2	valid
+2014 Dodge	2	valid
+3190 West	2	suspect
+1423 Lakewood	2	valid
+13727 Madison	2	valid
+1602 Winchester	2	valid
+2081 Mark	2	valid
+1219 Lakeland	2	valid
+2171 Niagara	2	valid
+1223 Lakeland	2	valid
+2018 Jeep Cherokee	2	valid
+17018 Delaware	2	valid
+14927 Arden	2	valid
+2020 Chrysler	2	valid
+1360 Fry	2	valid
+353 Lakewood	2	suspect
+2023 Ford	2	valid
+1306 Matthews	2	valid
+1641 Wyandotte	2	valid
+12308 Clover	2	valid
+1368 Phelps	2	valid
+1671 Bunts	2	valid
+2014 Subaru	2	valid
+2147 Dowd	2	valid
+13608 Detroit	2	valid
+250 Black	2	suspect
+2219 Brown	2	valid
+1449 West Clifton	2	valid
+1617 Newman	2	valid
+14810 Detroit	2	valid
+1246 Nicholson	2	valid
+18224 Detroit	2	valid
+1238 Donald	2	valid
+13322 Madison Unit	2	valid
+11844 Clifton	2	valid
+1614 Ridgewood	2	valid
+1415 Olivewood	2	valid
+1285 Andrews	2	valid
+1306 Park Row	2	valid
+1594 Lakewood	2	valid
+1333 Lakeland	2	valid
+1368 Pry Avenue	2	valid
+1494 Woodward	2	valid
+12984 Lake	2	valid
+1508 Parkway	2	valid
+13314 Detroit	2	valid
+1426 Rio	2	valid
+1352 Clearance	2	valid
+18891 Detroit Extension	2	valid
+2033 Reveille	2	valid
+2183 Albert	2	valid
+2012 Acura	2	valid
+1496 Coutant	2	valid
+1680 Lincoln	2	valid
+1476 Richwood	2	valid
+1292 Hathaway	2	valid
+1219 Webb	2	valid
+10303 Empire Avenue	2	suspect
+14527 Garfield	2	valid
+2010 Silver Corolla	2	valid
+2207 Elber	2	valid
+1384 Beach Ave	2	valid
+230 Detroit	2	suspect
+300 Clifton	2	suspect
+2132 Ascana	2	valid
+2179 Waterbury	2	valid
+1369 Bunce	2	valid
+2013 Volkswagen	2	valid
+1533 Cohasset	2	valid
+1495 St	2	valid
+13386 Madison	2	valid
+1409 Waterbury	2	valid
+1310 Summit	2	valid
+2183 Elber	2	valid
+1247 Donald	2	valid
+2017 Dodge	2	valid
+17897 Captains Cove	2	valid
+1508 Winston	2	valid
+14508 Madison	2	valid
+14908 Clifton	2	valid
+16414 Madison Apartment	2	valid
+11811 Lakewood	2	valid
+1462 Lakewood	2	valid
+2088 Halsted	2	valid
+1204 Marlowe	2	valid
+1620 Victoria	2	valid
+14047 Madison	2	valid
+894 Beach Road	2	suspect
+17817 Shaw	2	valid
+1706 Clifton	2	valid
+2015 Volkswagen	2	valid
+17315 Archdale	2	valid
+2017 Ford Fusion	2	valid
+17508 Riverway	2	valid
+1527 Mars	2	valid
+14532 Lakewood Park	2	valid
+2005 Carabel	2	valid
+12212 Plover	2	valid
+16413 Hilliard	2	valid
+5500 Madison	2	suspect
+2132 West Granite	2	valid
+1349 Warren	2	valid
+1276 Manor Park	2	valid
+1653 Marlowe	2	valid
+1661 Lauderdale	2	valid
+2060 Arthur	2	valid
+17314 Riverway Drive	2	valid
+2069 Lewis	2	valid
+11701 Detroit Walgreens	2	valid
+1504 Winton	2	valid
+12542 Clifton	2	valid
+1807 North Lane	2	valid
+2089 Halstead	2	valid
+1621 Elmwood	2	valid
+1434 Lauderdale	2	valid
+1617 Robinwood	2	valid
+13301 Hazelwood	2	valid
+14229 Athens	2	valid
+2017 Arthur Unit	2	valid
+2205 Linden	2	valid
+1358 Edwards	2	valid
+1276 Clifton Prado	2	valid
+1278 Clifton Prado	2	valid
+1269 Coast	2	valid
+1645 Robinwood	2	valid
+1287 Edwards	2	valid
+2015 Honda	2	valid
+2050 Dowell	2	valid
+1211 Cook	2	valid
+1468 Hopkins	2	valid
+13346 Madison	2	valid
+1624 Winton	2	valid
+1499 Lakeland	2	valid
+2075 Clearance	2	valid
+14920 Lanning	2	valid
+1416 Westwood	2	valid
+15914 Lakeville High	2	valid
+1656 Orchard Grove	2	valid
+1631 Cohabfit	2	valid
+1697 Arthur	2	valid
+2115 Carabel	2	valid
+1760 Tunera	2	valid
+1340 Ethel	2	valid
+1515 West Clifton	2	valid
+1136 Cook	2	valid
+2011 Hyundai	2	valid
+1346 Colesby	2	valid
+1626 Linton	2	valid
+2216 Lincoln	2	valid
+1361 Manor Park	2	valid
+12005 Detroit	2	valid
+12027 Lake	2	valid
+1294 Cove Park	2	valid
+1526 Wyandotte	2	valid
+1242 Heard	2	valid
+2170 Atkins	2	valid
+17803 Riverway	2	valid
+14713 Lake	2	valid
+1206 Webb Road	2	valid
+11823 Clifton	2	valid
+1580 Ridgewood	2	valid
+13455 Lake Avenue	2	valid
+1212 Hall	2	valid
+2034 Atkins	2	valid
+17436 Woodford	2	valid
+2121 Arthur	2	valid
+1045 Homewood	2	valid
+1359 Belle	2	valid
+2142 Chesterland	2	valid
+11806 Clifton	2	valid
+13362 Madison	2	valid
+11811 Lake Unit	2	valid
+2221 Brown	2	valid
+13476 Edgewater	2	valid
+2012 Baxter Lee	2	valid
+19895 Detroit	2	suspect
+1237 Brockley	2	valid
+1467 Parkhaven	2	valid
+1448 Bunts	2	valid
+1454 Rorycroft	2	valid
+17444 Northwood	2	valid
+5300 Hilliard	2	suspect
+2222 Chesterland	2	valid
+1327 Lakewood	2	valid
+1492 Cordova	2	valid
+17881 Lake Road	2	valid
+1557 Alameda	2	valid
+2124 Bunts	2	valid
+2019 Dodge	2	valid
+1474 Woodward	2	valid
+2204 Alger	2	valid
+2110 Clarence	2	valid
+1257 Cole	2	valid
+2122 Olive	2	valid
+12582 Clifton	2	valid
+2100 Lark	2	valid
+1608 Larchmont	2	valid
+11720 Edgewater Apartment	2	valid
+127 Green Madison	2	suspect
+1441 Rosewood	2	valid
+1612 Warren	2	valid
+1679 Windup	2	valid
+1291 Gladys	2	valid
+14930 Lakewood Heights	2	valid
+1363 Bell	2	valid
+2133 Dowd	2	valid
+2035 Chetland	2	valid
+1634 Victoria	2	valid
+2035 Trestle	2	valid
+12813 Detroit	2	valid
+1377 Lakeland	2	valid
+1260 Giel	2	valid
+1220 Donald	2	valid
+1823 Clifton	2	valid
+1582 Orchard Grove	2	valid
+16511 Hilliard	2	valid
+1258 Belle	2	valid
+13828 Clifton	2	valid
+1201 Webb	2	valid
+14200 Madison	2	valid
+57170 Black	2	suspect
+1278 Belle	2	valid
+1382 Kose	2	valid
+1229 Nicholson	2	valid
+1264 Lakeland	2	valid
+1523 Newman	2	valid
+1331 Gladys	2	valid
+15509 Madison	2	valid
+17527 Madison	2	valid
+13804 Detroit	2	valid
+11835 Edgewater	2	valid
+12933 Clifton	2	valid
+1578 Lakeland	2	valid
+1643 Rosewood	2	valid
+1368 Marlowe	2	valid
+1500 Wagar	2	valid
+1615 Westwood	2	valid
+1425 Warren	2	valid
+3389 Madison	2	suspect
+1476 Bridgewood	2	valid
+1656 Lincoln	2	valid
+2227 Lewis Drive	2	valid
+117 St	2	intersection-117th
+1276 Pathway	2	valid
+1476 Lauderdale	2	valid
+28900 Detroit	2	suspect
+2022 Tesla	2	valid
+1257 Arlington	2	valid
+2164 Overbrook	2	valid
+14408 Bays	2	valid
+1507 Cohasset	2	valid
+1252 Geale	2	valid
+13520 Albuquerque	2	valid
+1537 Alameda	2	valid
+13114 Detroit Garfield	2	valid
+2087 Lakeland	2	valid
+132 Madison	2	suspect
+11732 Lake De	2	valid
+2172 Olive	2	valid
+1630 Elber	2	valid
+12966 Clifton	2	valid
+1605 Riverside	2	valid
+1593 Newman	2	valid
+1331 Edwards	2	valid
+1205 Brockley	2	valid
+1459 Riverside	2	valid
+365 Moorwood Parkway	2	suspect
+2053 Robin	2	valid
+2160 Arthur	2	valid
+2023 Lexus	2	valid
+1423 Owego	2	valid
+4500 Madison	2	suspect
+1386 Clarence	2	valid
+2021 Subaru	2	valid
+17314 Madison	2	valid
+1416 Elmwood	2	valid
+1363 Bunts Road	2	valid
+1359 Elber	2	valid
+17017 Madison	2	valid
+2021 Atkins	2	valid
+1479 Hopkins	2	valid
+2170 Woodward	2	valid
+2022 Blue Mazda	2	valid
+2213 Lewis	2	valid
+17836 Cannon	2	valid
+12981 Clifton	2	valid
+20662 Avalon Drive	2	suspect
+12015 Clifton Unit	2	valid
+1518 Elber	2	valid
+1363 Lakewood	2	valid
+423 Clifton	2	suspect
+1458 Ridgewood	2	valid
+1251 Hathaway	2	valid
+2160 Halsted	2	valid
+17617 Franklin	2	valid
+1497 Winston	2	valid
+15613 Detroit	2	valid
+1177 Gladys	2	valid
+16519 Delaware	2	valid
+830 Beach Road	2	suspect
+2168 Brown	2	valid
+13321 Madison	2	valid
+2121 Riverside	2	valid
+1553 Mars	2	valid
+1265 Nicholson	2	valid
+1230 Hurd	2	valid
+13410 Emerson	2	valid
+1300 Athens	2	valid
+15500 Madison	2	valid
+14414 Detroit	2	valid
+13616 Madison	2	valid
+1340 Fry	2	valid
+1463 Rosewood	2	valid
+17909 Lake	2	valid
+2197 Brown	2	valid
+2065 Lincoln	2	valid
+14702 Leonard	2	valid
+1620 Alameda	2	valid
+1209 Clifton No	2	valid
+1371 Nicholson	2	valid
+1670 Mars	2	valid
+1617 Mars	2	valid
+1617 Marsh	2	valid
+17504 Lakewood Heights	2	valid
+800 Madison	2	suspect
+1590 Waterbury	2	valid
+2179 Carabel	2	valid
+1591 Waterbury	2	valid
+17323 Archdale	2	valid
+1424 Elmwood	2	valid
+16932 Clifton	2	valid
+1559 Woodward	2	valid
+15027 Madison	2	valid
+1654 Lauderdale	2	valid
+14404 Bays	2	valid
+2105 Carabel	2	valid
+2183 Bunts	2	valid
+1589 Alameda	2	valid
+580 Humestead	2	suspect
+1346 Felt	2	valid
+1529 Belle	2	valid
+1415 Clifton Place	2	valid
+1251 Geale	2	valid
+1251 Geel	2	valid
+1546 Belle	2	valid
+11820 South Lane	2	valid
+1820 South Lane	2	valid
+1452 Lakeland	2	valid
+2004 Ford	2	valid
+2019 Nissan	2	valid
+14306 Detroit Number	2	valid
+2012 Dodge Ram	2	valid
+990 East	2	suspect
+1321 Nicholson	2	valid
+630 West	2	suspect
+11610 Madison	2	suspect
+7800 Detroit	2	suspect
+5601 Madison	2	suspect
+1598 Hopkins	2	valid
+2029 Waterbury	2	valid
+2026 Tesla	2	valid
+1391 Beach	2	valid
+2007 Toyota	2	valid
+1612 Westwood	2	valid
+14881 Detroit	2	valid
+2228 Bunts Road	2	valid
+2025 Volkswagen	2	valid
+1357 Elbur	2	valid
+1472 Northland	2	valid
+2229 Lewis	2	valid
+430 West	2	suspect
+1614 Lakewood Number	2	valid
+13302 Detroit Court	2	valid
+1445 Wagar	2	valid
+12228 Clifton Number	2	valid
+11809 South Lane	2	valid
+17512 Freeze Avenue	2	valid
+17460 Clifton Boulevard	2	valid
+052 Marlowe	2	suspect
+2148 Wyandotte	2	valid
+701 Detroit	2	suspect
+2500 Detroit	2	valid
+12401 Detroit	2	valid
+1428 Grace	2	valid
+1255 Hathaway	2	valid
+1422 Grace	2	valid
+12595 Lake	2	valid
+12405 Franklin Unit	2	valid
+17845 Lake Road	2	valid
+2017 Chevy	2	valid
+1661 Bunts	2	valid
+1598 Lincoln	2	valid
+1363 West Clifton	2	valid
+1600 Cordova	2	valid
+1322 Marlowe	2	valid
+1582 Hopkins	2	valid
+1648 Cohassett	2	valid
+2033 Waterbury	2	valid
+868 Clifton	2	suspect
+1441 Wagar	2	valid
+17420 Norton	2	valid
+2041 Lewis Drive	2	valid
+2285 Riverside	2	valid
+18235 Detroit	2	valid
+12413 Madison	2	valid
+14232 Madison	2	valid
+2014 Nissan	2	valid
+2011 Honda	2	valid
+1555 Winchester	2	valid
+11810 Franklin	2	valid
+4725 Detroit	2	suspect
+2187 Waterbury	2	valid
+861 Detroit	2	suspect
+12006 Clifton	2	valid
+12315 Detroit	2	valid
+2018 Toyota	2	valid
+3511 Detroit	2	suspect
+2018 Nissan	2	valid
+1623 Orchard Grove	2	valid
+26103 Lorraine Road	2	suspect
+1821 Detroit	2	valid
+2202 Chesterland	2	valid
+1435 Warren	2	valid
+1435 Warren Road	2	valid
+1416 Ridgewood	2	valid
+1274 Saint Charles	2	valid
+2088 Chesterland	2	valid
+7625 Detroit	2	suspect
+330 Detroit	2	suspect
+15018 Hilliard	2	valid
+1639 Lakewood	2	valid
+2067 Waterbury	2	valid
+117 Western	2	intersection-117th
+1449 Alameda	2	valid
+15520 Detroit	2	valid
+17009 Madison Number	2	valid
+17221 Clifton	2	valid
+1563 Northland	2	valid
+12518 Clifton Boulevard	2	valid
+2052 Lark Number	2	valid
+17613 Lakewood Heights	2	valid
+1430 Park Haven	2	valid
+6915 Detroit	2	suspect
+2012 Volkswagen	2	valid
+2009 Clifton	2	valid
+1075 Kirtland Lane	2	valid
+1552 Alameda	2	valid
+17886 Beach Road	2	valid
+2021 Edgewater	2	valid
+1650 Orchard Grove	2	valid
+2022 Nissan	2	valid
+1738 Lake	2	valid
+1633 Alameda	2	valid
+2222 Detroit	2	valid
+1495 Elmwood	2	valid
+1296 Saint Charles	2	valid
+1265 Beach	2	valid
+1551 Alameda	2	valid
+12501 Madison	2	valid
+1532 Hopkins	2	valid
+2023 Honda	2	valid
+1519 Ridgewood	2	valid
+1638 Wagar	2	valid
+1345 Bunts Road	2	valid
+15713 Detroit	2	valid
+2203 Clifton	2	valid
+15105 Detroit	2	valid
+2212 Bunts Road	2	valid
+1437 Westwood	2	valid
+2140 Woodward	2	valid
+1386 Beach	2	valid
+1386 Beach Avenue	2	valid
+1850 South Lane	2	valid
+990 West	2	suspect
+12210 Detroit	2	valid
+1462 Olivewood	2	valid
+1650 Alameda	2	valid
+134 Sick	2	suspect
+14313 Delaware	2	valid
+18183 Clifton Road	2	valid
+1503 Winchester	2	valid
+17100 Madison	2	valid
+2020 Wascana	2	valid
+1486 Woodward	2	valid
+600 West	2	suspect
+1422 Northland	2	valid
+2105 Brown	2	valid
+16720 Lake	2	valid
+14923 Edgewater	2	valid
+2117 Halsted	2	valid
+2021 Toyota	2	valid
+17306 Madison	2	valid
+2007 Lexus	2	valid
+1329 Warren	2	valid
+12050 Lake Unit	2	valid
+1600 Westmont	2	valid
+2174 Elbur	2	valid
+14587 Madison	2	valid
+16400 Madison	2	valid
+14760 Athens	2	valid
+2016 Dodge Dart	2	valid
+381 Bunts	2	suspect
+14505 Athens	2	valid
+16505 Lake	2	valid
+15118 Detroit Route	2	valid
+2009 Hyundai	2	valid
+908 Beach Road	2	suspect
+1462 Woodward	2	valid
+1428 Ridgewood	2	valid
+1055 Nicholson	2	valid
+14328 Delaware	2	valid
+2023 Volkswagen	2	valid
+2109 Riverside	2	valid
+4251 West	2	suspect
+13610 Detroit	2	valid
+1359 Elbur	2	valid
+1825 Lake	2	valid
+2025 Mitsubishi	2	valid
+1431 Riverside	2	valid
+1548 West Hundred	2	valid
+1535 Parkwood	2	valid
+2153 Lakeland	2	valid
+2083 Warren	2	valid
+17437 Shaw	2	valid
+1473 Wyandotte	2	valid
+679 Dover Center	2	suspect
+2033 Halsted	2	valid
+1245 Bonny View	2	valid
+2011 Mazda	2	valid
+17844 Lake	2	valid
+1657 Elmwood	2	valid
+14237 Athens	2	valid
+1650 Waterbury	2	valid
+29117 Detroit	2	suspect
+2025 Hyundai Elantra	2	valid
+2017 Arthur	2	valid
+13711 Madison	2	valid
+1494 Ridgewood	2	valid
+1657 Wagar	2	valid
+1383 Bonny View	2	valid
+1383 Bonnyville	2	valid
+2199 Lincoln	2	valid
+1447 Clifton Place	2	valid
+15703 Lake	2	valid
+1632 Cohassett	2	valid
+15645 Madison	2	valid
+2121 Morrison	2	valid
+2159 Alger	2	valid
+1636 Parkwood	2	valid
+1477 Riverside	2	valid
+1445 Cohassett	2	valid
+1250 Beach	2	valid
+1287 Donald	2	valid
+1464 Lakeland	2	valid
+15117 Detroit	2	valid
+1612 Northland	2	valid
+1599 Waterbury	2	valid
+104 Station	2	suspect
+13385 Madison	2	valid
+1535 Lauderdale	2	valid
+1633 Cordova	2	valid
+1541 Parkwood	2	valid
+1437 Lakeland	2	valid
+1436 Woodward	2	valid
+2021 Toyota Camry	2	valid
+1476 Ridgewood	2	valid
+2015 Dodge Charger	2	valid
+2197 Woodward	2	valid
+18140 Clifton Road	2	valid
+1347 Lakewood	2	valid
+1236 Nicholson	2	valid
+1468 Woodward	2	valid
+11818 South Lane	2	valid
+1614 Waterbury	2	valid
+20729 Woodstock Avenue	2	suspect
+1233 Virginia	2	valid
+1285 West Clifton	2	valid
+17770 Riverside	2	valid
+1331 Arlington	2	valid
+1389 Giel	2	valid
+2254 Warren	2	valid
+1531 Warren Road	2	valid
+2115 Lewis	2	valid
+14300 Detroit Number	2	valid
+14323 Madison	2	valid
+12600 Berea	2	valid
+2006 Ground Number	2	valid
+1497 Lauderdale	2	valid

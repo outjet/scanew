@@ -1,0 +1,202 @@
+=== Vocabulary Analysis Summary ===
+Total transcripts analyzed: 203,044
+Unique unigrams: 42,684
+Unique bigrams:  313,564
+Unique trigrams: 655,039
+
+--- Top 30 unigrams (excluding stop words) ---
+   15678  medic
+   13809  i'm
+   12316  10-4
+    8639  dispatch
+    8569  i'll
+    7635  back
+    7609  was
+    7157  male
+    6815  have
+    6302  10-8
+    6262  detroit
+    6202  car
+    6064  all
+    5867  we're
+    5552  going
+    5533  if
+    5486  her
+    5479  female
+    5431  it's
+    5150  said
+    4764  are
+    4665  old
+    4442  me
+    4407  he's
+    4393  year
+    4391  engine
+    4389  service
+    4337  traffic
+    4245  madison
+    4122  number
+
+--- Top 30 bigrams ---
+    7037  go ahead
+    6058  can you
+    5931  i copy
+    5742  in the
+    5504  i'll be
+    4970  on the
+    4816  medic 3
+    4764  to the
+    4617  medic 1
+    4604  you can
+    4581  going to
+    4521  out of
+    4255  year old
+    4051  thank you
+    3904  of the
+    3857  for a
+    3493  in service
+    3368  en route
+    3357  dispatch medic
+    3069  we'll be
+    2995  medic 2
+    2835  to be
+    2783  be 10-8
+    2732  all set
+    2542  if you
+    2371  car 2
+    2342  at the
+    2293  respond to
+    2275  be out
+    2263  back in
+
+--- Top 20 trigrams ---
+    2219  year old male
+    2161  going to be
+    1729  year old female
+    1656  back in service
+    1405  we'll be 10-8
+    1330  valid no wants
+    1283  in front of
+    1282  i'll be out
+    1241  medic 3 is
+    1158  dispatch medic 3
+    1075  i'm going to
+    1063  en route to
+    1057  i'll be 10-8
+    1056  you can go
+     773  medic 1 medic
+     761  dispatch medic 1
+     754  if you could
+     741  date of birth
+     726  is en route
+     721  we're going to
+
+--- Top 10 four-grams ---
+     538  dispatch medic 3 is
+     534  is going to be
+     485  is back in service
+     456  i'll be out with
+     419  year old male valid
+     415  are you all set
+     375  old male valid no
+     360  in front of the
+     353  back in the city
+     352  it's going to be
+
+--- Unit mentions ---
+    5803  Medic 1  [✓]
+    5432  Medic 3  [✓]
+    3395  Medic 2  [✓]
+    2845  Car 2  [✓]
+    2166  Engine 3  [✓]
+    2021  Truck 1  [✓]
+    1760  Engine 2  [✓]
+     212  Car 10  [✓]
+     150  Car 8  [✓]
+     139  Truck 2  [✓]
+     105  Medic 4  [✓]
+      94  Car 4  [✓]
+      73  Car 6  [UNKNOWN — likely hallucination/bleed]
+      49  Car 3  [UNKNOWN — likely hallucination/bleed]
+      27  Car 1  [UNKNOWN — likely hallucination/bleed]
+      26  Car 5  [UNKNOWN — likely hallucination/bleed]
+      22  Medic 123  [UNKNOWN — likely hallucination/bleed]
+      19  Medic 10  [UNKNOWN — likely hallucination/bleed]
+      17  Engine 10  [UNKNOWN — likely hallucination/bleed]
+      15  Engine 1  [✓]
+      15  Medic 30  [UNKNOWN — likely hallucination/bleed]
+      14  Engine 20  [UNKNOWN — likely hallucination/bleed]
+      12  Car 0  [UNKNOWN — likely hallucination/bleed]
+      12  Engine 8  [UNKNOWN — likely hallucination/bleed]
+      11  Medic 12  [UNKNOWN — likely hallucination/bleed]
+      10  Engine 7  [UNKNOWN — likely hallucination/bleed]
+      10  Engine 19  [UNKNOWN — likely hallucination/bleed]
+       8  Medic 117  [UNKNOWN — likely hallucination/bleed]
+       8  Truck 3  [UNKNOWN — likely hallucination/bleed]
+       8  Medic 7  [UNKNOWN — likely hallucination/bleed]
+       8  Engine 0  [UNKNOWN — likely hallucination/bleed]
+       8  Medic 0  [UNKNOWN — likely hallucination/bleed]
+       7  Engine 23  [UNKNOWN — likely hallucination/bleed]
+       7  Engine 13  [UNKNOWN — likely hallucination/bleed]
+       6  Medic 5  [UNKNOWN — likely hallucination/bleed]
+       5  Medic 6  [UNKNOWN — likely hallucination/bleed]
+       5  Engine 9  [UNKNOWN — likely hallucination/bleed]
+       5  Engine 5  [UNKNOWN — likely hallucination/bleed]
+       5  Engine 30  [UNKNOWN — likely hallucination/bleed]
+       5  Battalion 8  [UNKNOWN — likely hallucination/bleed]
+       5  Medic 20  [UNKNOWN — likely hallucination/bleed]
+
+--- Most common addresses (valid range) ---
+     162  14312 Detroit
+     158  14306 Detroit
+     129  12400 Madison
+     114  13900 Detroit
+     108  1341 Marlowe
+     105  14300 Detroit
+      98  12506 Edgewater
+      77  11820 Edgewater
+      67  12900 Lake
+      64  14701 Detroit
+      57  13315 Detroit
+      55  1346 Cove
+      54  12511 Clifton
+      54  14401 Detroit
+      52  1277 Cove
+      51  13330 Detroit
+      48  1381 Bunts
+      48  11701 Detroit
+      47  11839 Edgewater
+      42  12700 Lake
+      41  12019 Lake
+      41  11850 Edgewater
+      39  11839 Clifton
+      38  12650 Detroit
+      32  1600 West
+
+--- Intersection references (117th & something) ---
+      25  117 Franklin
+      23  117 Madison
+      16  117 Detroit
+       7  117 Clifton
+       6  117 South Of
+
+--- Addresses outside Lakewood ranges (worth checking) ---
+      26  4300 Detroit   <-- check
+      25  8900 Detroit   <-- check
+      19  400 Madison   <-- check
+      19  000 Edgewater   <-- check
+      17  2700 Lake   <-- check
+      16  4312 Detroit   <-- check
+      14  2900 Lake   <-- check
+      13  300 Detroit   <-- check
+      13  2506 Edgewater   <-- check
+      10  180 Brown   <-- check
+      10  160 Brown   <-- check
+      10  150 Brown   <-- check
+      10  100 Detroit   <-- check
+       8  4600 Detroit   <-- check
+       8  4401 Detroit   <-- check
+       7  135 Brown   <-- check
+       7  140 Brown   <-- check
+       7  000 Detroit   <-- check
+       6  175 Brown   <-- check
+       6  170 Brown   <-- check
