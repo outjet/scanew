@@ -27,6 +27,9 @@
       <div class="app-bar-sub">Lakewood · {{ records_count }} calls today</div>
     </div>
     <div class="app-bar-actions">
+      <button class="icon-btn" id="filterBtn" type="button" title="Show dispatches &amp; alerts only">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      </button>
       <button class="icon-btn" id="searchBtn" type="button" title="Search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </button>
@@ -51,6 +54,13 @@
     <div class="search-meta" id="searchMeta"{% if not search_query %} hidden{% endif %}>
       {{ transcriptions|length }} {{ 'match' if transcriptions|length == 1 else 'matches' }} · live feed paused
     </div>
+  </div>
+
+  <!-- ── Filter banner ─────────────────────────────────────── -->
+  <div class="filter-banner" id="filterBanner" hidden>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    Dispatches &amp; alerts only
+    <button type="button" class="filter-banner-clear" id="filterBannerClear">✕</button>
   </div>
 
   <!-- ── Tab panels ─────────────────────────────────────────── -->

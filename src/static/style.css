@@ -187,6 +187,34 @@ a { color: inherit; text-decoration: none; }
 }
 .search-bar[hidden] { display: none; }
 
+/* ── Filter banner ────────────────────────────────────────── */
+.filter-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid rgba(37,99,235,0.15);
+}
+.filter-banner[hidden] { display: none; }
+.filter-banner-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 11px;
+  padding: 0 0 0 6px;
+  line-height: 1;
+  opacity: 0.65;
+}
+.filter-banner-clear:hover { opacity: 1; }
+
 .search-input-wrap {
   display: flex;
   align-items: center;
