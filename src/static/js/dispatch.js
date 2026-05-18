@@ -10,6 +10,7 @@ let scrubIntervalId = null;
 let longPressActivated = false;
 let longPressTimer = null;
 let ctxActiveRow = null;
+let filterActive = localStorage.getItem('dispatchFilterActive') === '1';
 
 const SSE_ENABLED = true;
 const STALE_RECONNECT_MS = 20000;
@@ -238,6 +239,10 @@ function processNewTranscription(transcription) {
   newRow.classList.add('row-new');
   feedList.insertBefore(newRow, feedList.firstChild);
   window.setTimeout(() => newRow.classList.remove('row-new'), 1500);
+  if (filterActive) {
+    const isMatch = newRow.classList.contains('alert-match') || newRow.classList.contains('initial-dispatch');
+    newRow.hidden = !isMatch;
+  }
 
   lastProcessedId = transcription.id;
   playSelectedTone();
@@ -530,6 +535,18 @@ function fetchUnitLocations() {
     });
 }
 
+// ── Feed filter (Dispatches & Alerts only) ───────────────────
+function applyFilter() {
+  const btn    = document.getElementById('filterBtn');
+  const banner = document.getElementById('filterBanner');
+  if (btn)    btn.classList.toggle('active', filterActive);
+  if (banner) banner.hidden = !filterActive;
+  document.querySelectorAll('#feedList .transcript-row').forEach(function (row) {
+    const isMatch = row.classList.contains('alert-match') || row.classList.contains('initial-dispatch');
+    row.hidden = filterActive && !isMatch;
+  });
+}
+
 // ── Swipe to validate / edit ─────────────────────────────────
 function validateTranscription(id, row) {
   if (typeof validateTranscriptionUrl === 'undefined' || !validateTranscriptionUrl) return;
@@ -732,6 +749,19 @@ $(document).ready(function () {
   // Tab switching
   $(document).on('click', '.tab-btn', function () {
     switchTab(this.dataset.tab);
+  });
+
+  // Feed filter toggle
+  applyFilter(); // restore persisted state on page load
+  $('#filterBtn').on('click', function () {
+    filterActive = !filterActive;
+    localStorage.setItem('dispatchFilterActive', filterActive ? '1' : '0');
+    applyFilter();
+  });
+  $('#filterBannerClear').on('click', function () {
+    filterActive = false;
+    localStorage.setItem('dispatchFilterActive', '0');
+    applyFilter();
   });
 
   // Transcript row click → play audio (guarded against long-press)
