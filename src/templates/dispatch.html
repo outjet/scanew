@@ -27,7 +27,7 @@
       <div class="app-bar-sub">Lakewood · {{ records_count }} calls today</div>
     </div>
     <div class="app-bar-actions">
-      <button class="icon-btn" id="filterBtn" type="button" title="Show dispatches &amp; alerts only">
+      <button class="icon-btn" id="filterBtn" type="button" title="Show dispatches only">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       </button>
       <button class="icon-btn" id="searchBtn" type="button" title="Search">
@@ -59,7 +59,7 @@
   <!-- ── Filter banner ─────────────────────────────────────── -->
   <div class="filter-banner" id="filterBanner" hidden>
     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-    Dispatches &amp; alerts only
+    Dispatches only
     <button type="button" class="filter-banner-clear" id="filterBannerClear">✕</button>
   </div>
 
@@ -107,25 +107,25 @@
       <nav class="feed-pagination" aria-label="Page navigation">
         <div class="page-links">
           {% if page > 1 %}
-            <a class="page-btn" href="{{ url_for('dispatch.view_transcriptions', page=page-1, per_page=per_page, search_query=search_query) }}">← Prev</a>
+            <a class="page-btn" href="{{ url_for('dispatch.view_transcriptions', page=page-1, per_page=per_page, search_query=search_query, filter=feed_filter) }}">← Prev</a>
           {% else %}
             <span class="page-btn disabled">← Prev</span>
           {% endif %}
 
           {% for p in range(page_range_start, page_range_end) %}
             {% if p == 1 %}
-              <a class="page-btn{% if p == page %} active{% endif %}" href="{{ url_for('dispatch.view_transcriptions', page=1, per_page=per_page, search_query=search_query) }}">1</a>
+              <a class="page-btn{% if p == page %} active{% endif %}" href="{{ url_for('dispatch.view_transcriptions', page=1, per_page=per_page, search_query=search_query, filter=feed_filter) }}">1</a>
               {% if page > 4 %}<span class="page-btn disabled">…</span>{% endif %}
             {% elif p == total_pages %}
               {% if page < total_pages - 3 %}<span class="page-btn disabled">…</span>{% endif %}
-              <a class="page-btn{% if p == page %} active{% endif %}" href="{{ url_for('dispatch.view_transcriptions', page=total_pages, per_page=per_page, search_query=search_query) }}">{{ total_pages }}</a>
+              <a class="page-btn{% if p == page %} active{% endif %}" href="{{ url_for('dispatch.view_transcriptions', page=total_pages, per_page=per_page, search_query=search_query, filter=feed_filter) }}">{{ total_pages }}</a>
             {% else %}
-              <a class="page-btn{% if p == page %} active{% endif %}" href="{{ url_for('dispatch.view_transcriptions', page=p, per_page=per_page, search_query=search_query) }}">{{ p }}</a>
+              <a class="page-btn{% if p == page %} active{% endif %}" href="{{ url_for('dispatch.view_transcriptions', page=p, per_page=per_page, search_query=search_query, filter=feed_filter) }}">{{ p }}</a>
             {% endif %}
           {% endfor %}
 
           {% if page < total_pages %}
-            <a class="page-btn" href="{{ url_for('dispatch.view_transcriptions', page=page+1, per_page=per_page, search_query=search_query) }}">Next →</a>
+            <a class="page-btn" href="{{ url_for('dispatch.view_transcriptions', page=page+1, per_page=per_page, search_query=search_query, filter=feed_filter) }}">Next →</a>
           {% else %}
             <span class="page-btn disabled">Next →</span>
           {% endif %}
@@ -292,6 +292,9 @@
   var validateTranscriptionUrl = "{{ url_for('dispatch.validate_transcription') }}";
   var alertPatterns = {{ alert_patterns|tojson }};
   var userHasAdminRole = {{ 'true' if current_user.is_authenticated and current_user.has_role('admin') else 'false' }};
+  var feedUrl = {{ url_for('dispatch.view_transcriptions')|tojson }};
+  var currentPerPage = {{ per_page }};
+  var currentFeedFilter = {{ feed_filter|tojson }};
 </script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{{ static_url('js/dispatch.js') }}"></script>

@@ -285,12 +285,15 @@ def view_transcriptions():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 100, type=int)
         search_query = request.form.get('search_query', '').strip() if request.method == 'POST' else request.args.get('search_query', '').strip()
+        feed_filter = request.args.get('filter', '')
 
-        current_app.logger.debug(f"Page: {page}, Per Page: {per_page}, Search Query: {search_query}")
+        current_app.logger.debug(f"Page: {page}, Per Page: {per_page}, Search Query: {search_query}, Filter: {feed_filter}")
 
         query = Transcription.query
         if search_query:
             query = query.filter(Transcription.transcript.ilike(f"%{search_query}%"))
+        if feed_filter == 'dispatches':
+            query = query.filter(Transcription.initialdispatch == True)
 
         total_transcriptions = query.count()
         current_app.logger.debug(f"Total transcriptions: {total_transcriptions}")
@@ -340,6 +343,7 @@ def view_transcriptions():
                                per_page=per_page,
                                records_count=todays_count,
                                search_query=search_query,
+                               feed_filter=feed_filter,
                                page_range_start=page_range_start,
                                page_range_end=page_range_end,
                                alert_patterns=[pat.pattern for pat in ALERT_PATTERNS],
