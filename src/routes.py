@@ -295,6 +295,14 @@ def view_transcriptions():
         total_transcriptions = query.count()
         current_app.logger.debug(f"Total transcriptions: {total_transcriptions}")
 
+        # Count only today's transcriptions (Eastern time) for the subtitle
+        from datetime import datetime, timezone, timedelta
+        eastern = timezone(timedelta(hours=-4))  # EDT; adjust to -5 in winter
+        today_eastern = datetime.now(eastern).strftime('%Y-%m-%d')
+        todays_count = Transcription.query.filter(
+            Transcription.timestamp.like(f'{today_eastern}%')
+        ).count()
+
         pagination = query.order_by(func.datetime(Transcription.timestamp).desc()).paginate(page=page, per_page=per_page, error_out=False)
         transcriptions = pagination.items
         total_pages = pagination.pages
@@ -315,6 +323,8 @@ def view_transcriptions():
                 'alert_match': _matches_alert_pattern(transcription.transcript),
                 'class_code': transcription.class_code,
                 'initialdispatch': bool(transcription.initialdispatch),
+                'validated': bool(transcription.validated),
+                'edited': bool(transcription.edited),
             })
 
         current_app.logger.debug("Successfully formatted transcriptions")
@@ -328,7 +338,7 @@ def view_transcriptions():
                                page=page,
                                total_pages=total_pages,
                                per_page=per_page,
-                               records_count=total_transcriptions,
+                               records_count=todays_count,
                                search_query=search_query,
                                page_range_start=page_range_start,
                                page_range_end=page_range_end,
@@ -371,6 +381,8 @@ def fetch_new_transcriptions():
                 'alert_match': _matches_alert_pattern(transcription.transcript),
                 'class_code': transcription.class_code,
                 'initialdispatch': bool(transcription.initialdispatch),
+                'validated': bool(transcription.validated),
+                'edited': bool(transcription.edited),
             })
 
         return jsonify(formatted_transcriptions)
@@ -817,12 +829,34 @@ def edit_transcription():
             current_app.logger.error(f"Transcription not found: {transcription_id}")
             return jsonify({'success': False, 'error': 'Transcription not found'}), 404
 
-        # Update the transcription text
+        # Update the transcription text and mark as edited
         transcription.transcript = new_transcript
+        transcription.edited = True
         db.session.commit()
 
         current_app.logger.info(f"Transcription {transcription_id} updated successfully")
         return jsonify({'success': True})
     except Exception as e:
         current_app.logger.error(f"Error in edit_transcription: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal Server Error'}), 500
+
+@dispatch_bp.route('/validate_transcription', methods=['POST'])
+@login_required
+def validate_transcription():
+    _require_dispatch_access()
+    try:
+        data = request.get_json()
+        transcription_id = data.get('id')
+        validated = data.get('validated', True)
+        if not transcription_id:
+            return jsonify({'success': False, 'error': 'Missing transcription ID'}), 400
+        transcription = Transcription.query.get(transcription_id)
+        if not transcription:
+            return jsonify({'success': False, 'error': 'Transcription not found'}), 404
+        transcription.validated = bool(validated)
+        db.session.commit()
+        current_app.logger.info(f"Transcription {transcription_id} validated={validated}")
+        return jsonify({'success': True})
+    except Exception as e:
+        current_app.logger.error(f"Error in validate_transcription: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal Server Error'}), 500

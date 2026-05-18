@@ -22,6 +22,8 @@ class Transcription(db.Model):
     classification_prompt_tokens = db.Column(db.Integer)
     classification_candidate_tokens = db.Column(db.Integer)
     classification_total_tokens = db.Column(db.Integer)
+    edited = db.Column(db.Boolean, default=False)
+    validated = db.Column(db.Boolean, default=False)
 
 class DailyBlotter(db.Model):
     __tablename__ = 'daily_blotter'

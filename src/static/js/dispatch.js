@@ -175,8 +175,15 @@ function createTranscriptionRow(transcription) {
   row.setAttribute('data-initialdispatch', initialDispatch ? 'true' : 'false');
   if (audioUrl) row.setAttribute('data-audio-url', audioUrl);
 
+  const isValidated = Boolean(transcription.validated);
+  const isEdited = Boolean(transcription.edited);
+  row.setAttribute('data-validated', isValidated ? 'true' : 'false');
+  row.setAttribute('data-edited', isEdited ? 'true' : 'false');
+
   if (alertMatch) row.classList.add('alert-match');
   if (initialDispatch) row.classList.add('initial-dispatch');
+  if (isValidated) row.classList.add('is-validated');
+  if (isEdited) row.classList.add('is-edited');
 
   const tagHtml = alertMatch
     ? '<span class="row-tag tag-alert">ALERT</span>'
@@ -523,6 +530,27 @@ function fetchUnitLocations() {
     });
 }
 
+// ── Swipe to validate / edit ─────────────────────────────────
+function validateTranscription(id, row) {
+  if (typeof validateTranscriptionUrl === 'undefined' || !validateTranscriptionUrl) return;
+  const alreadyValidated = row.classList.contains('is-validated');
+  fetch(validateTranscriptionUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, validated: !alreadyValidated })
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        row.classList.toggle('is-validated', !alreadyValidated);
+        row.setAttribute('data-validated', (!alreadyValidated).toString());
+        row.classList.add('swipe-flash-right');
+        setTimeout(() => row.classList.remove('swipe-flash-right'), 600);
+      }
+    })
+    .catch(err => console.error('Validate error:', err));
+}
+
 // ── Context menu (long-press / right-click) ──────────────────
 function showContextMenu(row) {
   longPressActivated = true;
@@ -580,7 +608,12 @@ function saveEdit() {
     .then(data => {
       if (!data.success) throw new Error(data.error || 'Unknown error');
       const row = document.querySelector(`.transcript-row[data-id="${id}"]`);
-      if (row) { const el = row.querySelector('.row-text'); if (el) el.textContent = transcript; }
+      if (row) {
+        const el = row.querySelector('.row-text');
+        if (el) el.textContent = transcript;
+        row.classList.add('is-edited');
+        row.setAttribute('data-edited', 'true');
+      }
       dialog.close();
     })
     .catch(err => { console.error('Error saving edit:', err); alert('Error saving: ' + err.message); });
@@ -717,13 +750,55 @@ $(document).ready(function () {
     playAudio(audioUrl, this);
   });
 
-  // Long-press → context menu (mobile)
-  $(document).on('touchstart', '.transcript-row', function () {
+  // Swipe + long-press detection (mobile)
+  let swipeTouchStartX = 0;
+  let swipeTouchStartY = 0;
+  let swipeActivated = false;
+
+  $(document).on('touchstart', '.transcript-row', function (e) {
     const row = this;
+    const touch = e.originalEvent.touches[0];
+    swipeTouchStartX = touch.clientX;
+    swipeTouchStartY = touch.clientY;
+    swipeActivated = false;
     longPressActivated = false;
     longPressTimer = setTimeout(() => { showContextMenu(row); }, 1000);
   });
-  $(document).on('touchmove touchend touchcancel', '.transcript-row', function () {
+
+  $(document).on('touchmove', '.transcript-row', function (e) {
+    const touch = e.originalEvent.touches[0];
+    const dx = touch.clientX - swipeTouchStartX;
+    const dy = touch.clientY - swipeTouchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      clearTimeout(longPressTimer);
+      e.preventDefault(); // prevent scroll during horizontal swipe
+    }
+  });
+
+  $(document).on('touchend', '.transcript-row', function (e) {
+    clearTimeout(longPressTimer);
+    if (swipeActivated) return;
+    const touch = e.originalEvent.changedTouches[0];
+    const dx = touch.clientX - swipeTouchStartX;
+    const dy = touch.clientY - swipeTouchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
+      swipeActivated = true;
+      longPressActivated = true; // suppress click
+      if (dx > 0) {
+        // Swipe right → validate
+        validateTranscription(this.getAttribute('data-id'), this);
+      } else {
+        // Swipe left → play audio + open edit dialog
+        if (userHasAdminRole) {
+          const audioUrl = this.getAttribute('data-audio-url');
+          if (audioUrl) playAudio(audioUrl, this);
+          openEditDialog(this);
+        }
+      }
+    }
+  });
+
+  $(document).on('touchcancel', '.transcript-row', function () {
     clearTimeout(longPressTimer);
   });
 
