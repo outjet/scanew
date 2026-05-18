@@ -293,16 +293,7 @@ def view_transcriptions():
         if search_query:
             query = query.filter(Transcription.transcript.ilike(f"%{search_query}%"))
         if feed_filter == 'dispatches':
-            from sqlalchemy import or_
-            import re as _re
-            _complex_rx = _re.compile(r'[(\[|]')
-            alert_likes = []
-            for _pat in ALERT_PATTERNS:
-                _simplified = _pat.pattern.replace('\\b', '')
-                _simplified = _re.sub(r'\\s[*+?]?', ' ', _simplified).strip()
-                if not _complex_rx.search(_simplified) and _simplified:
-                    alert_likes.append(Transcription.transcript.ilike(f'%{_simplified}%'))
-            query = query.filter(or_(Transcription.initialdispatch == True, *alert_likes))
+            query = query.filter(Transcription.initialdispatch == True)
 
         total_transcriptions = query.count()
         current_app.logger.debug(f"Total transcriptions: {total_transcriptions}")
