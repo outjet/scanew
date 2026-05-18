@@ -7,6 +7,9 @@ let lastServerSignalAt = 0;
 let heartbeatMonitorId = null;
 let liveFlashTimeoutId = null;
 let scrubIntervalId = null;
+let longPressActivated = false;
+let longPressTimer = null;
+let ctxActiveRow = null;
 
 const SSE_ENABLED = true;
 const STALE_RECONNECT_MS = 20000;
@@ -520,62 +523,67 @@ function fetchUnitLocations() {
     });
 }
 
-function editTranscription(id, text, audioUrl) {
-  if (!id) return;
-  $('#editModal').data('transcriptionId', id);
-  $('#editModal').find('#editText').val(text);
-  $('#editModal').find('#playPauseButton').data('audio-url', audioUrl);
-  $('#editModal').modal('show');
+// ── Context menu (long-press / right-click) ──────────────────
+function showContextMenu(row) {
+  longPressActivated = true;
+  ctxActiveRow = row;
+  const preview = (row.querySelector('.row-text') || {}).textContent || '';
+  const previewEl = document.getElementById('ctxPreview');
+  if (previewEl) previewEl.textContent = preview.length > 120 ? preview.slice(0, 117) + '…' : preview;
+  const editBtn = document.getElementById('ctxEditBtn');
+  if (editBtn) editBtn.hidden = !userHasAdminRole;
+  const overlay = document.getElementById('ctxOverlay');
+  const sheet = document.getElementById('ctxSheet');
+  row.classList.add('ctx-highlight');
+  if (overlay) overlay.hidden = false;
+  if (sheet) { sheet.hidden = false; requestAnimationFrame(() => sheet.classList.add('is-open')); }
+}
+
+function closeContextMenu() {
+  const overlay = document.getElementById('ctxOverlay');
+  const sheet = document.getElementById('ctxSheet');
+  if (sheet) {
+    sheet.classList.remove('is-open');
+    sheet.addEventListener('transitionend', () => { sheet.hidden = true; }, { once: true });
+  }
+  if (overlay) overlay.hidden = true;
+  if (ctxActiveRow) ctxActiveRow.classList.remove('ctx-highlight');
+  ctxActiveRow = null;
+}
+
+function openEditDialog(row) {
+  closeContextMenu();
+  const id = row.getAttribute('data-id');
+  const text = (row.querySelector('.row-text') || {}).textContent || '';
+  const textarea = document.getElementById('editTextarea');
+  const dialog = document.getElementById('editDialog');
+  if (!textarea || !dialog) return;
+  textarea.value = text;
+  dialog.dataset.editId = id;
+  dialog.showModal();
 }
 
 function saveEdit() {
   if (typeof editTranscriptionUrl === 'undefined' || !editTranscriptionUrl) return;
-
-  const id = $('#editModal').data('transcriptionId');
-  const text = $('#editModal').find('#editText').val();
+  const dialog = document.getElementById('editDialog');
+  const textarea = document.getElementById('editTextarea');
+  if (!dialog || !textarea) return;
+  const id = dialog.dataset.editId;
+  const transcript = textarea.value;
   if (!id) return;
-
   fetch(editTranscriptionUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, text })
+    body: JSON.stringify({ id, transcript })
   })
-    .then((response) => {
-      if (!response.ok) return response.text().then((txt) => { throw new Error(txt); });
-      return response.json();
-    })
-    .then((data) => {
+    .then(r => { if (!r.ok) return r.text().then(t => { throw new Error(t); }); return r.json(); })
+    .then(data => {
       if (!data.success) throw new Error(data.error || 'Unknown error');
-      $(`tr[data-id="${id}"] .transcription-text`).text(text);
-      $('#editModal').modal('hide');
+      const row = document.querySelector(`.transcript-row[data-id="${id}"]`);
+      if (row) { const el = row.querySelector('.row-text'); if (el) el.textContent = transcript; }
+      dialog.close();
     })
-    .catch((error) => {
-      console.error('Error saving edit:', error);
-      alert(`An error occurred while saving changes: ${error.message}`);
-    });
-}
-
-function togglePlayPause() {
-  const audioUrl = $('#playPauseButton').data('audio-url');
-  const icon = $('#playPauseButton i');
-
-  if (!currentAudio) {
-    currentAudio = new Audio(audioUrl);
-    currentAudio.play();
-    icon.removeClass('fa-play').addClass('fa-pause');
-    $('#playPauseButton').contents().last()[0].textContent = ' Pause';
-    return;
-  }
-
-  if (currentAudio.paused) {
-    currentAudio.play();
-    icon.removeClass('fa-play').addClass('fa-pause');
-    $('#playPauseButton').contents().last()[0].textContent = ' Pause';
-  } else {
-    currentAudio.pause();
-    icon.removeClass('fa-pause').addClass('fa-play');
-    $('#playPauseButton').contents().last()[0].textContent = ' Play';
-  }
+    .catch(err => { console.error('Error saving edit:', err); alert('Error saving: ' + err.message); });
 }
 
 // ── Tab switching ──────────────────────────────────────────
@@ -693,13 +701,47 @@ $(document).ready(function () {
     switchTab(this.dataset.tab);
   });
 
-  // Transcript row click → play audio
+  // Transcript row click → play audio (guarded against long-press)
   $(document).on('click', '.transcript-row', function (event) {
+    if (longPressActivated) { longPressActivated = false; return; }
     if ($(event.target).closest('a').length) return;
     const audioUrl = this.getAttribute('data-audio-url');
     if (!audioUrl) return;
     playAudio(audioUrl, this);
   });
+
+  // Long-press → context menu (mobile)
+  $(document).on('touchstart', '.transcript-row', function () {
+    const row = this;
+    longPressActivated = false;
+    longPressTimer = setTimeout(() => { showContextMenu(row); }, 500);
+  });
+  $(document).on('touchmove touchend touchcancel', '.transcript-row', function () {
+    clearTimeout(longPressTimer);
+  });
+
+  // Right-click → context menu (desktop)
+  $(document).on('contextmenu', '.transcript-row', function (e) {
+    e.preventDefault();
+    showContextMenu(this);
+  });
+
+  // Context menu actions
+  $('#ctxOverlay').on('click', closeContextMenu);
+  $('#ctxCancelBtn').on('click', closeContextMenu);
+  $('#ctxCopyBtn').on('click', function () {
+    const text = (ctxActiveRow && ctxActiveRow.querySelector('.row-text') || {}).textContent || '';
+    navigator.clipboard.writeText(text).catch(() => {});
+    closeContextMenu();
+  });
+  $('#ctxEditBtn').on('click', function () {
+    if (ctxActiveRow) openEditDialog(ctxActiveRow);
+  });
+
+  // Edit dialog actions
+  $('#editSaveBtn').on('click', saveEdit);
+  $('#editCancelBtn').on('click', function () { document.getElementById('editDialog').close(); });
+  $('#editCloseBtn').on('click', function () { document.getElementById('editDialog').close(); });
 
   // Blotter refresh
   $('#refreshBlotterBtn').on('click', fetchBlotter);

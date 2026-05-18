@@ -240,9 +240,43 @@
 
 </div><!-- end .app-shell -->
 
+<!-- ── Context menu bottom sheet ──────────────────────────── -->
+<div class="ctx-overlay" id="ctxOverlay" hidden></div>
+<div class="ctx-sheet" id="ctxSheet" hidden>
+  <div class="ctx-handle"></div>
+  <p class="ctx-preview" id="ctxPreview"></p>
+  <div class="ctx-actions">
+    <button class="ctx-btn" id="ctxEditBtn" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit transcript
+    </button>
+    <button class="ctx-btn" id="ctxCopyBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy text
+    </button>
+    <button class="ctx-btn ctx-btn-cancel" id="ctxCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Edit transcript dialog ─────────────────────────────── -->
+<dialog class="edit-dialog" id="editDialog">
+  <div class="edit-dialog-header">
+    <span class="edit-dialog-title">Edit transcript</span>
+    <button class="icon-btn" id="editCloseBtn" type="button" aria-label="Close">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <textarea id="editTextarea" class="edit-textarea" rows="5" placeholder="Transcript text…"></textarea>
+  <div class="edit-dialog-footer">
+    <button class="text-btn" id="editCancelBtn" type="button">Cancel</button>
+    <button class="accent-btn" id="editSaveBtn" type="button">Save</button>
+  </div>
+</dialog>
+
 <script>
   var streamUrl = {{ stream_url|tojson }};
   var blotterUrl = "{{ url_for('dispatch.blotter') }}";
+  var editTranscriptionUrl = "{{ url_for('dispatch.edit_transcription') }}";
   var alertPatterns = {{ alert_patterns|tojson }};
   var userHasAdminRole = {{ 'true' if current_user.is_authenticated and current_user.has_role('admin') else 'false' }};
 </script>
