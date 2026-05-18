@@ -705,6 +705,13 @@ $(document).ready(function () {
   $(document).on('click', '.transcript-row', function (event) {
     if (longPressActivated) { longPressActivated = false; return; }
     if ($(event.target).closest('a').length) return;
+    if (this.classList.contains('is-playing')) {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      stopScrubber();
+      this.classList.remove('is-playing');
+      if (currentPlayingRow === this) currentPlayingRow = null;
+      return;
+    }
     const audioUrl = this.getAttribute('data-audio-url');
     if (!audioUrl) return;
     playAudio(audioUrl, this);
@@ -714,7 +721,7 @@ $(document).ready(function () {
   $(document).on('touchstart', '.transcript-row', function () {
     const row = this;
     longPressActivated = false;
-    longPressTimer = setTimeout(() => { showContextMenu(row); }, 500);
+    longPressTimer = setTimeout(() => { showContextMenu(row); }, 1000);
   });
   $(document).on('touchmove touchend touchcancel', '.transcript-row', function () {
     clearTimeout(longPressTimer);
