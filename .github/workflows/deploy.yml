@@ -23,6 +23,6 @@ jobs:
             --tunnel-through-iap \
             --command="
               sudo -u robert_bardwell git -C /opt/scanew pull origin main &&
-              sudo /opt/scanew/myenv/bin/pip install -r requirements.txt --quiet &&
+              sudo /opt/scanew/myenv/bin/pip install -r /opt/scanew/requirements.txt --quiet &&
               sudo systemctl restart scanew scanew-web
             "
