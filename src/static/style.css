@@ -903,9 +903,10 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
   box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
   transform: translateY(100%);
   transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: none; /* prevent click-through while sheet is animating in */
 }
 .ctx-sheet[hidden] { display: none; }
-.ctx-sheet.is-open { transform: translateY(0); }
+.ctx-sheet.is-open { transform: translateY(0); pointer-events: auto; }
 
 .ctx-handle {
   width: 36px; height: 4px;
@@ -1046,31 +1047,12 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
 .accent-btn:hover { opacity: 0.88; }
 .accent-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── 10-4 quick-save button ─────────────────────────────────── */
-.ten-four-btn {
-  flex-shrink: 0;
-  align-self: center;
-  margin-left: auto;
+/* ── Edit dialog 10-4 quick-save button ──────────────────────── */
+.edit-ten-four-btn {
+  margin-right: auto;
   font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 2px 7px;
-  border-radius: 5px;
-  border: 1px solid var(--border-strong);
-  background: transparent;
-  color: var(--text3);
-  cursor: pointer;
-  line-height: 1.5;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.ten-four-btn:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.transcript-row.is-playing .ten-four-btn {
-  margin-left: 6px;
 }
 
 /* ── Swipe feedback ─────────────────────────────────────────── */

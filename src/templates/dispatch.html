@@ -94,9 +94,6 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span>
             </span>
-            {% if t.transcript|length < 10 and current_user.is_authenticated and current_user.has_role('admin') %}
-            <button class="ten-four-btn" data-id="{{ t.id }}" type="button" title="Save as 10-4">10-4</button>
-            {% endif %}
           </div>
           <div class="row-text">{{ t.transcript }}</div>
           <div class="row-scrubber">
@@ -278,6 +275,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit transcript
     </button>
+    <button class="ctx-btn" id="ctxTenFourBtn" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Save as 10-4
+    </button>
     <button class="ctx-btn" id="ctxValidateBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       <span id="ctxValidateLabel">Validate</span>
@@ -303,6 +304,7 @@
   </div>
   <textarea id="editTextarea" class="edit-textarea" rows="5" placeholder="Transcript text…"></textarea>
   <div class="edit-dialog-footer">
+    <button class="text-btn edit-ten-four-btn" id="editTenFourBtn" type="button">10-4</button>
     <button class="text-btn" id="editCancelBtn" type="button">Cancel</button>
     <button class="accent-btn" id="editSaveBtn" type="button">Save</button>
   </div>
