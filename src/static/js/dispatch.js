@@ -204,6 +204,12 @@ function createTranscriptionRow(transcription) {
     ? `<button class="ten-four-btn" title="Save as 10-4">10-4</button>`
     : '';
 
+  const editActionHtml = userHasAdminRole
+    ? `<button class="row-action-btn row-action-edit" type="button" title="Edit transcript">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+       </button>`
+    : '';
+
   row.innerHTML = `
     <div class="row-bar"></div>
     <div class="row-header">
@@ -221,6 +227,12 @@ function createTranscriptionRow(transcription) {
       <span class="scrub-elapsed">0:00</span>
       <div class="scrub-track"><div class="scrub-fill"></div></div>
       <span class="scrub-total">0:00</span>
+    </div>
+    <div class="row-actions">
+      ${editActionHtml}
+      <button class="row-action-btn row-action-validate" type="button" title="Validate">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
     </div>
   `;
 
@@ -595,6 +607,8 @@ function showContextMenu(row) {
   if (previewEl) previewEl.textContent = preview.length > 120 ? preview.slice(0, 117) + '…' : preview;
   const editBtn = document.getElementById('ctxEditBtn');
   if (editBtn) editBtn.hidden = !userHasAdminRole;
+  const validateLabel = document.getElementById('ctxValidateLabel');
+  if (validateLabel) validateLabel.textContent = row.classList.contains('is-validated') ? 'Unvalidate' : 'Validate';
   const overlay = document.getElementById('ctxOverlay');
   const sheet = document.getElementById('ctxSheet');
   row.classList.add('ctx-highlight');
@@ -862,6 +876,22 @@ $(document).ready(function () {
   });
   $('#ctxEditBtn').on('click', function () {
     if (ctxActiveRow) openEditDialog(ctxActiveRow);
+  });
+  $('#ctxValidateBtn').on('click', function () {
+    if (ctxActiveRow) validateTranscription(ctxActiveRow.getAttribute('data-id'), ctxActiveRow);
+    closeContextMenu();
+  });
+
+  // Row hover action buttons (desktop)
+  $(document).on('click', '.row-action-edit', function (e) {
+    e.stopPropagation();
+    const row = $(this).closest('.transcript-row')[0];
+    if (row) openEditDialog(row);
+  });
+  $(document).on('click', '.row-action-validate', function (e) {
+    e.stopPropagation();
+    const row = $(this).closest('.transcript-row')[0];
+    if (row) validateTranscription(row.getAttribute('data-id'), row);
   });
 
   // Edit dialog actions
