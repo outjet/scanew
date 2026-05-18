@@ -23,6 +23,6 @@ jobs:
             --command="
               cd /opt/scanew &&
               git pull origin main &&
-              /opt/scanew/myenv/bin/pip install -r requirements.txt --quiet &&
+              sudo /opt/scanew/myenv/bin/pip install -r requirements.txt --quiet &&
               sudo systemctl restart scanew scanew-web
             "
