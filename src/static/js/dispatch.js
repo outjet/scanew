@@ -284,24 +284,30 @@ function stopScrubber() {
   if (scrubIntervalId) { window.clearInterval(scrubIntervalId); scrubIntervalId = null; }
 }
 
-function startScrubber(audio, row) {
+function startScrubber(audio, row, onDone) {
   stopScrubber();
   const fill    = row.querySelector('.scrub-fill');
   const elapsed = row.querySelector('.scrub-elapsed');
   const total   = row.querySelector('.scrub-total');
 
+  audio.addEventListener('loadedmetadata', () => {
+    if (isFinite(audio.duration) && total) total.textContent = fmtSec(audio.duration);
+  });
+
   scrubIntervalId = window.setInterval(() => {
-    if (!audio || audio.paused) return;
-    const dur = audio.duration || 0;
+    if (!audio) { stopScrubber(); return; }
+    const dur = isFinite(audio.duration) ? audio.duration : 0;
     const cur = audio.currentTime || 0;
     if (fill)    fill.style.width = dur ? `${(cur / dur) * 100}%` : '0%';
     if (elapsed) elapsed.textContent = fmtSec(cur);
-    if (total)   total.textContent   = fmtSec(dur);
-  }, 100);
+    if (dur && total) total.textContent = fmtSec(dur);
 
-  audio.addEventListener('loadedmetadata', () => {
-    if (total) total.textContent = fmtSec(audio.duration);
-  });
+    // Fallback: if audio ended but onended didn't fire (common on mobile)
+    if (dur > 0 && cur >= dur - 0.15 && audio.paused) {
+      stopScrubber();
+      if (onDone) onDone();
+    }
+  }, 150);
 }
 
 function playAudio(url, rowToHighlight = null) {
@@ -316,16 +322,30 @@ function playAudio(url, rowToHighlight = null) {
     currentPlayingRow = rowToHighlight;
   }
 
-  currentAudio = new Audio(url);
-  currentAudio.play().catch((err) => console.warn('Audio playback failed:', err));
-  if (rowToHighlight) startScrubber(currentAudio, rowToHighlight);
+  const audio = new Audio(url);
+  currentAudio = audio;
+  const row = rowToHighlight;
 
-  currentAudio.onended = function () {
+  function cleanup() {
+    if (currentAudio !== audio) return; // a newer playAudio call took over
     stopScrubber();
-    if (currentPlayingRow) currentPlayingRow.classList.remove('is-playing');
-    currentPlayingRow = null;
+    if (row) row.classList.remove('is-playing');
+    if (currentPlayingRow === row) { currentPlayingRow = null; }
     currentAudio = null;
-  };
+  }
+
+  audio.onended = cleanup;
+  audio.onerror = cleanup;
+
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch((err) => {
+      console.warn('Audio playback failed:', err);
+      cleanup();
+    });
+  }
+
+  if (row) startScrubber(audio, row, cleanup);
 }
 
 function updateToneLabel() {
