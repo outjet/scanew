@@ -788,8 +788,12 @@ $(document).ready(function () {
         // Swipe right → validate
         validateTranscription(this.getAttribute('data-id'), this);
       } else {
-        // Swipe left → edit
-        if (userHasAdminRole) openEditDialog(this);
+        // Swipe left → play audio + open edit dialog
+        if (userHasAdminRole) {
+          const audioUrl = this.getAttribute('data-audio-url');
+          if (audioUrl) playAudio(audioUrl, this);
+          openEditDialog(this);
+        }
       }
     }
   });
