@@ -14,6 +14,7 @@
 
 <div class="app-shell" id="appShell">
 
+<div class="main-content">
   <!-- ── App bar ─────────────────────────────────────────────── -->
   <header class="app-bar">
     <div class="app-bar-main">
@@ -93,12 +94,25 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span>
             </span>
+            {% if t.transcript|length < 10 and current_user.is_authenticated and current_user.has_role('admin') %}
+            <button class="ten-four-btn" data-id="{{ t.id }}" type="button" title="Save as 10-4">10-4</button>
+            {% endif %}
           </div>
           <div class="row-text">{{ t.transcript }}</div>
           <div class="row-scrubber">
             <span class="scrub-elapsed">0:00</span>
             <div class="scrub-track"><div class="scrub-fill"></div></div>
             <span class="scrub-total">0:00</span>
+          </div>
+          <div class="row-actions">
+            {% if current_user.is_authenticated and current_user.has_role('admin') %}
+            <button class="row-action-btn row-action-edit" type="button" title="Edit transcript">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            {% endif %}
+            <button class="row-action-btn row-action-validate" type="button" title="Validate">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
           </div>
         </div>
         {% endfor %}
@@ -230,6 +244,8 @@
 
   </div><!-- end .tab-panels -->
 
+</div><!-- end .main-content -->
+
   <!-- ── Bottom tab bar ─────────────────────────────────────── -->
   <nav class="tab-bar" id="tabBar">
     <button class="tab-btn active" data-tab="feed" type="button">
@@ -262,6 +278,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit transcript
     </button>
+    <button class="ctx-btn" id="ctxValidateBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="ctxValidateLabel">Validate</span>
+    </button>
     <button class="ctx-btn" id="ctxCopyBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       Copy text
@@ -274,6 +294,9 @@
 <dialog class="edit-dialog" id="editDialog">
   <div class="edit-dialog-header">
     <span class="edit-dialog-title">Edit transcript</span>
+    <button class="icon-btn" id="editReplayBtn" type="button" aria-label="Replay audio" title="Replay audio" hidden>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
     <button class="icon-btn" id="editCloseBtn" type="button" aria-label="Close">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>

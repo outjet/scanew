@@ -70,6 +70,15 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 
+.main-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ── App bar ──────────────────────────────────────────────── */
 .app-bar {
   flex-shrink: 0;
@@ -767,6 +776,63 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
 .tab-btn span { font-size: 10.5px; font-weight: 500; }
 .tab-btn.active { color: var(--accent); }
 
+/* ── Row hover actions (desktop) ────────────────────────────── */
+.row-actions { display: none; }
+
+@media (min-width: 768px) {
+  .row-actions {
+    display: flex;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px 0 32px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    background: linear-gradient(to right, transparent, var(--surface));
+  }
+  .transcript-row.alert-match .row-actions        { background: linear-gradient(to right, transparent, var(--alert-bg)); }
+  .transcript-row.initial-dispatch .row-actions   { background: linear-gradient(to right, transparent, var(--initial-bg)); }
+  .transcript-row.is-playing .row-actions         { background: linear-gradient(to right, transparent, var(--accent-soft)); }
+  .transcript-row.ctx-highlight .row-actions      { background: linear-gradient(to right, transparent, var(--accent-soft)); }
+  .transcript-row:hover .row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.row-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.row-action-validate:hover {
+  background: rgba(16,185,129,0.12);
+  color: #10b981;
+  border-color: rgba(16,185,129,0.5);
+}
+.transcript-row.is-validated .row-action-validate {
+  color: #10b981;
+  border-color: rgba(16,185,129,0.4);
+}
+.row-action-edit:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* ── Desktop sidebar layout ───────────────────────────────── */
 @media (min-width: 768px) {
   .app-shell {
@@ -799,7 +865,6 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
   .tab-btn span { font-size: 13px; font-weight: 500; }
   .tab-btn.active { background: var(--accent-soft); }
 
-  .tab-panels { flex: 1; }
   .tab-panel { padding-bottom: 16px; }
 
   .app-bar { padding: 10px 18px 12px; }
@@ -980,6 +1045,33 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
 }
 .accent-btn:hover { opacity: 0.88; }
 .accent-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── 10-4 quick-save button ─────────────────────────────────── */
+.ten-four-btn {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  line-height: 1.5;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ten-four-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.transcript-row.is-playing .ten-four-btn {
+  margin-left: 6px;
+}
 
 /* ── Swipe feedback ─────────────────────────────────────────── */
 @keyframes swipeFlashRight {
