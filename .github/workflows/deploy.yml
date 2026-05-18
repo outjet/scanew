@@ -21,9 +21,8 @@ jobs:
             --zone=us-central1-a \
             --tunnel-through-iap \
             --command="
-              sudo git config --system --add safe.directory /home/robert_bardwell/scanew &&
-              cd /home/robert_bardwell/scanew &&
+              cd /opt/scanew &&
               git pull origin main &&
-              pip install -r requirements.txt --quiet &&
+              /opt/scanew/myenv/bin/pip install -r requirements.txt --quiet &&
               sudo systemctl restart scanew scanew-web
             "
