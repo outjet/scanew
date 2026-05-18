@@ -60,12 +60,14 @@
     <div class="tab-panel" id="panel-feed">
       <div class="feed-list" id="feedList">
         {% for t in transcriptions %}
-        <div class="transcript-row{% if t.alert_match %} alert-match{% endif %}{% if t.initialdispatch %} initial-dispatch{% endif %}"
+        <div class="transcript-row{% if t.alert_match %} alert-match{% endif %}{% if t.initialdispatch %} initial-dispatch{% endif %}{% if t.validated %} is-validated{% endif %}{% if t.edited %} is-edited{% endif %}"
              data-id="{{ t.id }}"
              data-timestamp="{{ t.timestamp }}"
              data-alert-match="{{ 'true' if t.alert_match else 'false' }}"
              data-class-code="{{ t.class_code if t.class_code is not none else '' }}"
              data-initialdispatch="{{ 'true' if t.initialdispatch else 'false' }}"
+             data-validated="{{ 'true' if t.validated else 'false' }}"
+             data-edited="{{ 'true' if t.edited else 'false' }}"
              {% if t.wav_filename %}data-audio-url="/recordings/{{ t.wav_filename }}"{% endif %}>
           <div class="row-bar"></div>
           <div class="row-header">
@@ -277,6 +279,7 @@
   var streamUrl = {{ stream_url|tojson }};
   var blotterUrl = "{{ url_for('dispatch.blotter') }}";
   var editTranscriptionUrl = "{{ url_for('dispatch.edit_transcription') }}";
+  var validateTranscriptionUrl = "{{ url_for('dispatch.validate_transcription') }}";
   var alertPatterns = {{ alert_patterns|tojson }};
   var userHasAdminRole = {{ 'true' if current_user.is_authenticated and current_user.has_role('admin') else 'false' }};
 </script>

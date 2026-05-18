@@ -817,12 +817,34 @@ def edit_transcription():
             current_app.logger.error(f"Transcription not found: {transcription_id}")
             return jsonify({'success': False, 'error': 'Transcription not found'}), 404
 
-        # Update the transcription text
+        # Update the transcription text and mark as edited
         transcription.transcript = new_transcript
+        transcription.edited = True
         db.session.commit()
 
         current_app.logger.info(f"Transcription {transcription_id} updated successfully")
         return jsonify({'success': True})
     except Exception as e:
         current_app.logger.error(f"Error in edit_transcription: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal Server Error'}), 500
+
+@dispatch_bp.route('/validate_transcription', methods=['POST'])
+@login_required
+def validate_transcription():
+    _require_dispatch_access()
+    try:
+        data = request.get_json()
+        transcription_id = data.get('id')
+        validated = data.get('validated', True)
+        if not transcription_id:
+            return jsonify({'success': False, 'error': 'Missing transcription ID'}), 400
+        transcription = Transcription.query.get(transcription_id)
+        if not transcription:
+            return jsonify({'success': False, 'error': 'Transcription not found'}), 404
+        transcription.validated = bool(validated)
+        db.session.commit()
+        current_app.logger.info(f"Transcription {transcription_id} validated={validated}")
+        return jsonify({'success': True})
+    except Exception as e:
+        current_app.logger.error(f"Error in validate_transcription: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal Server Error'}), 500

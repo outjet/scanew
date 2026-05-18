@@ -266,6 +266,8 @@ a { color: inherit; text-decoration: none; }
 .transcript-row.alert-match  { background: var(--alert-bg); }
 .transcript-row.initial-dispatch { background: var(--initial-bg); }
 .transcript-row.is-playing   { background: var(--accent-soft) !important; }
+.transcript-row.is-validated { background: rgba(16,185,129,0.07); }
+.transcript-row.is-edited    { background: rgba(139,92,246,0.07); }
 
 /* left accent bar */
 .row-bar {
@@ -277,6 +279,8 @@ a { color: inherit; text-decoration: none; }
 .transcript-row.alert-match  .row-bar { background: var(--alert); }
 .transcript-row.initial-dispatch .row-bar { background: var(--initial); }
 .transcript-row.is-playing .row-bar   { background: var(--accent); }
+.transcript-row.is-validated .row-bar { background: #10b981; }
+.transcript-row.is-edited .row-bar    { background: #8b5cf6; }
 
 /* row header: time + tags + waveform */
 .row-header {
@@ -948,3 +952,19 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
 }
 .accent-btn:hover { opacity: 0.88; }
 .accent-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Swipe feedback ─────────────────────────────────────────── */
+@keyframes swipeFlashRight {
+  0%   { background: rgba(16,185,129,0.35); }
+  100% { background: transparent; }
+}
+@keyframes swipeFlashLeft {
+  0%   { background: rgba(139,92,246,0.35); }
+  100% { background: transparent; }
+}
+.transcript-row.swipe-flash-right {
+  animation: swipeFlashRight 0.6s ease-out forwards;
+}
+.transcript-row.swipe-flash-left {
+  animation: swipeFlashLeft 0.6s ease-out forwards;
+}
