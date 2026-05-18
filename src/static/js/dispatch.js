@@ -200,6 +200,10 @@ function createTranscriptionRow(transcription) {
        </a>`
     : '';
 
+  const tenFourHtml = (userHasAdminRole && text.length < 10)
+    ? `<button class="ten-four-btn" title="Save as 10-4">10-4</button>`
+    : '';
+
   row.innerHTML = `
     <div class="row-bar"></div>
     <div class="row-header">
@@ -210,6 +214,7 @@ function createTranscriptionRow(transcription) {
         <span></span><span></span><span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span><span></span><span></span>
       </span>
+      ${tenFourHtml}
     </div>
     <div class="row-text"></div>
     <div class="row-scrubber">
@@ -613,11 +618,15 @@ function openEditDialog(row) {
   closeContextMenu();
   const id = row.getAttribute('data-id');
   const text = (row.querySelector('.row-text') || {}).textContent || '';
+  const audioUrl = row.getAttribute('data-audio-url') || '';
   const textarea = document.getElementById('editTextarea');
   const dialog = document.getElementById('editDialog');
   if (!textarea || !dialog) return;
   textarea.value = text;
   dialog.dataset.editId = id;
+  dialog.dataset.audioUrl = audioUrl;
+  const replayBtn = document.getElementById('editReplayBtn');
+  if (replayBtn) replayBtn.hidden = !audioUrl;
   dialog.showModal();
 }
 
@@ -859,6 +868,38 @@ $(document).ready(function () {
   $('#editSaveBtn').on('click', saveEdit);
   $('#editCancelBtn').on('click', function () { document.getElementById('editDialog').close(); });
   $('#editCloseBtn').on('click', function () { document.getElementById('editDialog').close(); });
+  $('#editReplayBtn').on('click', function () {
+    const dialog = document.getElementById('editDialog');
+    const audioUrl = dialog && dialog.dataset.audioUrl;
+    if (audioUrl) playAudio(audioUrl);
+  });
+
+  // 10-4 quick-save button
+  $(document).on('click', '.ten-four-btn', function (e) {
+    e.stopPropagation();
+    if (typeof editTranscriptionUrl === 'undefined' || !editTranscriptionUrl) return;
+    const row = $(this).closest('.transcript-row')[0];
+    if (!row) return;
+    const id = row.getAttribute('data-id');
+    if (!id) return;
+    const btn = this;
+    fetch(editTranscriptionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, transcript: '10-4' })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          const el = row.querySelector('.row-text');
+          if (el) el.textContent = '10-4';
+          row.classList.add('is-edited');
+          row.setAttribute('data-edited', 'true');
+          btn.hidden = true;
+        }
+      })
+      .catch(err => console.error('10-4 save error:', err));
+  });
 
   // Blotter refresh
   $('#refreshBlotterBtn').on('click', fetchBlotter);

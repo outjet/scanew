@@ -93,6 +93,9 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span>
             </span>
+            {% if t.transcript|length < 10 and current_user.is_authenticated and current_user.has_role('admin') %}
+            <button class="ten-four-btn" data-id="{{ t.id }}" type="button" title="Save as 10-4">10-4</button>
+            {% endif %}
           </div>
           <div class="row-text">{{ t.transcript }}</div>
           <div class="row-scrubber">
@@ -274,6 +277,9 @@
 <dialog class="edit-dialog" id="editDialog">
   <div class="edit-dialog-header">
     <span class="edit-dialog-title">Edit transcript</span>
+    <button class="icon-btn" id="editReplayBtn" type="button" aria-label="Replay audio" title="Replay audio" hidden>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
     <button class="icon-btn" id="editCloseBtn" type="button" aria-label="Close">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
