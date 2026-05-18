@@ -267,7 +267,7 @@ a { color: inherit; text-decoration: none; }
 .transcript-row.initial-dispatch { background: var(--initial-bg); }
 .transcript-row.is-playing   { background: var(--accent-soft) !important; }
 .transcript-row.is-validated { background: rgba(16,185,129,0.07); }
-.transcript-row.is-edited    { background: rgba(139,92,246,0.07); }
+.transcript-row.is-edited    { background: rgba(16,185,129,0.07); }
 
 /* left accent bar */
 .row-bar {
@@ -280,7 +280,7 @@ a { color: inherit; text-decoration: none; }
 .transcript-row.initial-dispatch .row-bar { background: var(--initial); }
 .transcript-row.is-playing .row-bar   { background: var(--accent); }
 .transcript-row.is-validated .row-bar { background: #10b981; }
-.transcript-row.is-edited .row-bar    { background: #8b5cf6; }
+.transcript-row.is-edited .row-bar    { background: #10b981; }
 
 /* row header: time + tags + waveform */
 .row-header {
