@@ -285,12 +285,24 @@ def view_transcriptions():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 100, type=int)
         search_query = request.form.get('search_query', '').strip() if request.method == 'POST' else request.args.get('search_query', '').strip()
+        feed_filter = request.args.get('filter', '')
 
-        current_app.logger.debug(f"Page: {page}, Per Page: {per_page}, Search Query: {search_query}")
+        current_app.logger.debug(f"Page: {page}, Per Page: {per_page}, Search Query: {search_query}, Filter: {feed_filter}")
 
         query = Transcription.query
         if search_query:
             query = query.filter(Transcription.transcript.ilike(f"%{search_query}%"))
+        if feed_filter == 'dispatches':
+            from sqlalchemy import or_
+            import re as _re
+            _complex_rx = _re.compile(r'[(\[|]')
+            alert_likes = []
+            for _pat in ALERT_PATTERNS:
+                _simplified = _pat.pattern.replace('\\b', '')
+                _simplified = _re.sub(r'\\s[*+?]?', ' ', _simplified).strip()
+                if not _complex_rx.search(_simplified) and _simplified:
+                    alert_likes.append(Transcription.transcript.ilike(f'%{_simplified}%'))
+            query = query.filter(or_(Transcription.initialdispatch == True, *alert_likes))
 
         total_transcriptions = query.count()
         current_app.logger.debug(f"Total transcriptions: {total_transcriptions}")
@@ -340,6 +352,7 @@ def view_transcriptions():
                                per_page=per_page,
                                records_count=todays_count,
                                search_query=search_query,
+                               feed_filter=feed_filter,
                                page_range_start=page_range_start,
                                page_range_end=page_range_end,
                                alert_patterns=[pat.pattern for pat in ALERT_PATTERNS],

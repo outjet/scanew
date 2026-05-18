@@ -10,7 +10,7 @@ let scrubIntervalId = null;
 let longPressActivated = false;
 let longPressTimer = null;
 let ctxActiveRow = null;
-let filterActive = localStorage.getItem('dispatchFilterActive') === '1';
+let filterActive = false; // set by applyFilter() once DOM + server vars are available
 
 const SSE_ENABLED = true;
 const STALE_RECONNECT_MS = 20000;
@@ -537,14 +537,27 @@ function fetchUnitLocations() {
 
 // ── Feed filter (Dispatches & Alerts only) ───────────────────
 function applyFilter() {
+  // Sync button + banner to current URL state (no JS hide/show — server handles it)
   const btn    = document.getElementById('filterBtn');
   const banner = document.getElementById('filterBanner');
-  if (btn)    btn.classList.toggle('active', filterActive);
-  if (banner) banner.hidden = !filterActive;
-  document.querySelectorAll('#feedList .transcript-row').forEach(function (row) {
-    const isMatch = row.classList.contains('alert-match') || row.classList.contains('initial-dispatch');
-    row.hidden = filterActive && !isMatch;
-  });
+  const isFiltered = (typeof currentFeedFilter !== 'undefined') && currentFeedFilter === 'dispatches';
+  if (btn)    btn.classList.toggle('active', isFiltered);
+  if (banner) banner.hidden = !isFiltered;
+  // Keep module-level flag in sync for SSE rows
+  filterActive = isFiltered;
+}
+
+function toggleFilter() {
+  const isFiltered = (typeof currentFeedFilter !== 'undefined') && currentFeedFilter === 'dispatches';
+  const url = new URL(feedUrl, window.location.origin);
+  url.searchParams.set('page', '1');
+  url.searchParams.set('per_page', String(currentPerPage));
+  if (isFiltered) {
+    url.searchParams.delete('filter');
+  } else {
+    url.searchParams.set('filter', 'dispatches');
+  }
+  window.location.href = url.toString();
 }
 
 // ── Swipe to validate / edit ─────────────────────────────────
@@ -752,17 +765,9 @@ $(document).ready(function () {
   });
 
   // Feed filter toggle
-  applyFilter(); // restore persisted state on page load
-  $('#filterBtn').on('click', function () {
-    filterActive = !filterActive;
-    localStorage.setItem('dispatchFilterActive', filterActive ? '1' : '0');
-    applyFilter();
-  });
-  $('#filterBannerClear').on('click', function () {
-    filterActive = false;
-    localStorage.setItem('dispatchFilterActive', '0');
-    applyFilter();
-  });
+  applyFilter(); // sync button/banner to URL state on load
+  $('#filterBtn').on('click', toggleFilter);
+  $('#filterBannerClear').on('click', toggleFilter);
 
   // Transcript row click → play audio (guarded against long-press)
   $(document).on('click', '.transcript-row', function (event) {
