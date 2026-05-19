@@ -194,7 +194,7 @@ function createTranscriptionRow(transcription) {
 
   const searchInput = document.getElementById('searchInput');
   const searchQuery = searchInput ? searchInput.value.trim() : '';
-  const contextLinkHtml = searchQuery
+  const contextLinkHtml = (searchQuery || filterActive)
     ? `<a href="/transcription_context/${transcription.id}" class="context-link" title="See in context">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
        </a>`
@@ -830,9 +830,13 @@ $(document).ready(function () {
     const touch = e.originalEvent.touches[0];
     const dx = touch.clientX - swipeTouchStartX;
     const dy = touch.clientY - swipeTouchStartY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+    // Any movement (including vertical scroll) cancels long-press
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
       clearTimeout(longPressTimer);
-      e.preventDefault(); // prevent scroll during horizontal swipe
+    }
+    // Only lock scroll axis during a clear horizontal swipe
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      e.preventDefault();
     }
   });
 
@@ -843,13 +847,13 @@ $(document).ready(function () {
     const dx = touch.clientX - swipeTouchStartX;
     const dy = touch.clientY - swipeTouchStartY;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
+      e.preventDefault(); // suppress the generated click event after a swipe
       swipeActivated = true;
-      longPressActivated = true; // suppress click
       if (dx > 0) {
         // Swipe right → validate
         validateTranscription(this.getAttribute('data-id'), this);
       } else {
-        // Swipe left → open edit dialog (auto-plays audio inside openEditDialog)
+        // Swipe left → edit (admin only)
         if (userHasAdminRole) openEditDialog(this);
       }
     }

@@ -85,7 +85,7 @@
             <span class="row-time">{{ t.formatted_timestamp }}</span>
             {% if t.alert_match %}<span class="row-tag tag-alert">ALERT</span>{% endif %}
             {% if t.initialdispatch and not t.alert_match %}<span class="row-tag tag-initial">DISPATCH</span>{% endif %}
-            {% if search_query %}
+            {% if search_query or feed_filter == 'dispatches' %}
               <a href="{{ url_for('dispatch.transcription_context', transcription_id=t.id) }}" class="context-link" title="See in context">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
               </a>
