@@ -851,7 +851,7 @@ a.page-btn:hover { background: rgba(15,23,42,0.05); }
   }
   .transcript-row.alert-match .row-actions        { background: linear-gradient(to right, transparent, var(--alert-bg)); }
   .transcript-row.initial-dispatch .row-actions   { background: linear-gradient(to right, transparent, var(--initial-bg)); }
-  .transcript-row.is-playing .row-actions         { background: linear-gradient(to right, transparent, var(--accent-soft)); }
+  .transcript-row.is-playing .row-actions         { opacity: 0 !important; pointer-events: none !important; }
   .transcript-row.ctx-highlight .row-actions      { background: linear-gradient(to right, transparent, var(--accent-soft)); }
   .transcript-row:hover .row-actions {
     opacity: 1;
