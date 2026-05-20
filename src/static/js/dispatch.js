@@ -384,6 +384,7 @@ function playAudio(url, rowToHighlight = null, onComplete = null) {
   if (row) startScrubber(audio, row, cleanup);
 }
 
+// Queue items: {audioUrl, time, row?} — row is a DOM element only for on-page rows
 function stopQueue() {
   isPlayingQueue = false;
   playQueue = [];
@@ -393,24 +394,24 @@ function stopQueue() {
   if (bar) bar.hidden = true;
 }
 
-function updateQueueUI() {
+function updateQueueUI(item) {
   const bar = document.getElementById('queueBar');
   const label = document.getElementById('queueBarLabel');
   if (!bar || !label) return;
   if (!isPlayingQueue || playQueue.length === 0) { bar.hidden = true; return; }
   bar.hidden = false;
-  label.textContent = `Playing ${playQueueIndex + 1} of ${playQueue.length}`;
+  const timeStr = item && item.time ? item.time : '';
+  label.textContent = timeStr ? `${timeStr} · ${playQueueIndex + 1} of ${playQueue.length}` : `${playQueueIndex + 1} of ${playQueue.length}`;
 }
 
 function playNextInQueue() {
   if (!isPlayingQueue) return;
   playQueueIndex++;
   if (playQueueIndex >= playQueue.length) { stopQueue(); return; }
-  updateQueueUI();
-  const row = playQueue[playQueueIndex];
-  const audioUrl = row.getAttribute('data-audio-url');
-  if (!audioUrl) { playNextInQueue(); return; }
-  playAudio(audioUrl, row, () => {
+  const item = playQueue[playQueueIndex];
+  updateQueueUI(item);
+  if (!item.audioUrl) { playNextInQueue(); return; }
+  playAudio(item.audioUrl, item.row || null, () => {
     if (!isPlayingQueue) return;
     playQueueTimeoutId = window.setTimeout(playNextInQueue, 1000);
   });
@@ -418,14 +419,56 @@ function playNextInQueue() {
 
 function startPlayQueue(startRow) {
   stopQueue();
-  // DOM order is newest-first; reverse slice gives [startRow → newest] = chronological forward
+  const startId = parseInt(startRow.getAttribute('data-id'), 10);
+  if (!startId) return;
+
+  // Build initial queue from on-page rows newer than startRow (DOM index < startIndex)
   const allRows = Array.from(document.querySelectorAll('#feedList .transcript-row'));
   const startIndex = allRows.indexOf(startRow);
-  if (startIndex < 0) return;
-  playQueue = allRows.slice(0, startIndex + 1).reverse();
+  const startRowTime = startRow.getAttribute('data-timestamp') || '';
+
+  // startRow itself as first item
+  const firstItem = {
+    audioUrl: startRow.getAttribute('data-audio-url') || '',
+    time: fmtTimestamp(startRowTime),
+    row: startRow,
+  };
+
+  // Rows newer than startRow in the current DOM (indices 0..startIndex-1, reversed to oldest-first among them)
+  const domItems = allRows.slice(0, startIndex).reverse().map(r => ({
+    audioUrl: r.getAttribute('data-audio-url') || '',
+    time: fmtTimestamp(r.getAttribute('data-timestamp') || ''),
+    row: r,
+  }));
+
+  playQueue = [firstItem, ...domItems];
   playQueueIndex = -1;
   isPlayingQueue = true;
   playNextInQueue();
+
+  // Fetch all audio-bearing transcripts newer than startRow from the server
+  const url = (typeof queueAfterUrl !== 'undefined' ? queueAfterUrl : '/queue_after/0').replace('/0', `/${startId}`);
+  fetch(url)
+    .then(r => r.json())
+    .then(items => {
+      if (!isPlayingQueue) return;
+      // Replace dom-sourced server items (past the startRow) with the full server list
+      // Keep items already played or currently playing; append the rest
+      const fetched = items.map(it => ({ audioUrl: it.audio_url, time: it.time, row: null }));
+      // Find any DOM items in fetched by matching (they may already be in domItems)
+      // Simple approach: keep playQueue[0..playQueueIndex] intact, replace the tail
+      const played = playQueue.slice(0, playQueueIndex + 1);
+      playQueue = [...played, ...fetched];
+      updateQueueUI(playQueue[playQueueIndex] || null);
+    })
+    .catch(() => {}); // silently keep dom-only queue on failure
+}
+
+function fmtTimestamp(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  if (isNaN(d)) return '';
+  return d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 
 function updateToneLabel() {
