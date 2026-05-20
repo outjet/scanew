@@ -26,7 +26,7 @@ from .openai_utils import (
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-import json, time
+import json, time, hashlib
 import requests
 from .extensions import db
 from redis import Redis
@@ -556,6 +556,9 @@ def daily_blotter(date=None):
         abort(500, description="An internal error occurred.")
 
 
+_INCIDENTS_CACHE_TTL_SEC = 300  # cached Vertex result lives 5 min
+_INCIDENTS_HTTP_CACHE_SEC = 60  # browser/CDN cache for the HTTP response
+
 @dispatch_bp.route('/recent_incidents')
 def recent_incidents():
     try:
@@ -575,15 +578,38 @@ def recent_incidents():
         ).order_by(Transcription.timestamp.asc()).all()
 
         if not transcripts:
-            return jsonify({
+            resp = jsonify({
                 "title": "Recent incidents",
                 "generated_at": datetime.utcnow().isoformat(),
                 "incidents": [],
             })
+            resp.cache_control.max_age = _INCIDENTS_HTTP_CACHE_SEC
+            resp.cache_control.public = True
+            return resp
 
         combined_text = "\n".join(
             f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
         )
+
+        # Tier 2: Redis cache keyed by a hash of the transcript data.
+        # When the underlying dispatches change the hash changes and we get
+        # a fresh summary automatically.
+        text_hash = hashlib.sha256(combined_text.encode()).hexdigest()[:16]
+        cache_key = f"recent_incidents:{text_hash}"
+
+        try:
+            r = Redis.from_url(current_app.config['REDIS_URL'])
+            cached = r.get(cache_key)
+            if cached:
+                summary_data = json.loads(cached)
+                resp = jsonify(summary_data)
+                resp.cache_control.max_age = _INCIDENTS_HTTP_CACHE_SEC
+                resp.cache_control.public = True
+                return resp
+        except Exception as redis_err:
+            current_app.logger.warning("Redis cache read failed for recent_incidents: %s", redis_err)
+            r = None
+
         summary = _summarize_recent_incidents_with_vertex(combined_text)
         try:
             summary_data = _parse_recent_incidents_summary(summary)
@@ -599,7 +625,20 @@ def recent_incidents():
                 "incidents": [],
                 "error": "Incident summary was unavailable due to malformed model output.",
             }), 502
-        return jsonify(summary_data)
+
+        # Store in Redis; ignore errors so a Redis hiccup never blocks the response
+        try:
+            if r is not None:
+                r.setex(cache_key, _INCIDENTS_CACHE_TTL_SEC, json.dumps(summary_data))
+        except Exception as redis_err:
+            current_app.logger.warning("Redis cache write failed for recent_incidents: %s", redis_err)
+
+        # Tier 1: HTTP cache headers so the browser/CDN doesn't even hit Flask
+        resp = jsonify(summary_data)
+        resp.cache_control.max_age = _INCIDENTS_HTTP_CACHE_SEC
+        resp.cache_control.public = True
+        return resp
+
     except requests.RequestException as e:
         current_app.logger.error("Error calling Vertex for recent_incidents: %s", e, exc_info=True)
         return jsonify({
