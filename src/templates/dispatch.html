@@ -100,6 +100,9 @@
             <span class="scrub-elapsed">0:00</span>
             <div class="scrub-track"><div class="scrub-fill"></div></div>
             <span class="scrub-total">0:00</span>
+            <button class="scrub-queue-btn" type="button" title="Play all from here">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+            </button>
           </div>
           <div class="row-actions">
             {% if current_user.is_authenticated and current_user.has_role('admin') %}
@@ -309,6 +312,13 @@
     <button class="accent-btn" id="editSaveBtn" type="button">Save</button>
   </div>
 </dialog>
+
+<!-- ── Play queue floating bar ─────────────────────────────── -->
+<div class="queue-bar" id="queueBar" hidden>
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+  <span class="queue-bar-label" id="queueBarLabel">Playing…</span>
+  <button class="queue-bar-stop" id="queueBarStop" type="button">Stop</button>
+</div>
 
 <script>
   var streamUrl = {{ stream_url|tojson }};

@@ -1,6 +1,10 @@
 let currentAudio = null;
 let currentPlayingRow = null;
 let isSearchActive = false;
+let playQueue = [];
+let playQueueIndex = -1;
+let playQueueTimeoutId = null;
+let isPlayingQueue = false;
 let lastProcessedId = 0;
 let eventSource = null;
 let lastServerSignalAt = 0;
@@ -222,6 +226,9 @@ function createTranscriptionRow(transcription) {
       <span class="scrub-elapsed">0:00</span>
       <div class="scrub-track"><div class="scrub-fill"></div></div>
       <span class="scrub-total">0:00</span>
+      <button class="scrub-queue-btn" type="button" title="Play all from here">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      </button>
     </div>
     <div class="row-actions">
       ${editActionHtml}
@@ -337,7 +344,7 @@ function startScrubber(audio, row, onDone) {
   }, 150);
 }
 
-function playAudio(url, rowToHighlight = null) {
+function playAudio(url, rowToHighlight = null, onComplete = null) {
   if (!url) return;
 
   stopScrubber();
@@ -347,6 +354,7 @@ function playAudio(url, rowToHighlight = null) {
   if (rowToHighlight) {
     rowToHighlight.classList.add('is-playing');
     currentPlayingRow = rowToHighlight;
+    rowToHighlight.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   const audio = new Audio(url);
@@ -359,6 +367,7 @@ function playAudio(url, rowToHighlight = null) {
     if (row) row.classList.remove('is-playing');
     if (currentPlayingRow === row) { currentPlayingRow = null; }
     currentAudio = null;
+    if (onComplete) onComplete();
   }
 
   audio.onended = cleanup;
@@ -373,6 +382,50 @@ function playAudio(url, rowToHighlight = null) {
   }
 
   if (row) startScrubber(audio, row, cleanup);
+}
+
+function stopQueue() {
+  isPlayingQueue = false;
+  playQueue = [];
+  playQueueIndex = -1;
+  if (playQueueTimeoutId) { window.clearTimeout(playQueueTimeoutId); playQueueTimeoutId = null; }
+  const bar = document.getElementById('queueBar');
+  if (bar) bar.hidden = true;
+}
+
+function updateQueueUI() {
+  const bar = document.getElementById('queueBar');
+  const label = document.getElementById('queueBarLabel');
+  if (!bar || !label) return;
+  if (!isPlayingQueue || playQueue.length === 0) { bar.hidden = true; return; }
+  bar.hidden = false;
+  label.textContent = `Playing ${playQueueIndex + 1} of ${playQueue.length}`;
+}
+
+function playNextInQueue() {
+  if (!isPlayingQueue) return;
+  playQueueIndex++;
+  if (playQueueIndex >= playQueue.length) { stopQueue(); return; }
+  updateQueueUI();
+  const row = playQueue[playQueueIndex];
+  const audioUrl = row.getAttribute('data-audio-url');
+  if (!audioUrl) { playNextInQueue(); return; }
+  playAudio(audioUrl, row, () => {
+    if (!isPlayingQueue) return;
+    playQueueTimeoutId = window.setTimeout(playNextInQueue, 1000);
+  });
+}
+
+function startPlayQueue(startRow) {
+  stopQueue();
+  // DOM order is newest-first; reverse slice gives [startRow → newest] = chronological forward
+  const allRows = Array.from(document.querySelectorAll('#feedList .transcript-row'));
+  const startIndex = allRows.indexOf(startRow);
+  if (startIndex < 0) return;
+  playQueue = allRows.slice(0, startIndex + 1).reverse();
+  playQueueIndex = -1;
+  isPlayingQueue = true;
+  playNextInQueue();
 }
 
 function updateToneLabel() {
@@ -799,16 +852,34 @@ $(document).ready(function () {
   $(document).on('click', '.transcript-row', function (event) {
     if (longPressActivated) { longPressActivated = false; return; }
     if ($(event.target).closest('a').length) return;
+    if ($(event.target).closest('.scrub-queue-btn').length) return;
     if (this.classList.contains('is-playing')) {
       if (currentAudio) { currentAudio.pause(); currentAudio = null; }
       stopScrubber();
+      stopQueue();
       this.classList.remove('is-playing');
       if (currentPlayingRow === this) currentPlayingRow = null;
       return;
     }
     const audioUrl = this.getAttribute('data-audio-url');
     if (!audioUrl) return;
+    stopQueue();
     playAudio(audioUrl, this);
+  });
+
+  // Play-forward queue button
+  $(document).on('click', '.scrub-queue-btn', function (e) {
+    e.stopPropagation();
+    const row = $(this).closest('.transcript-row')[0];
+    if (row) startPlayQueue(row);
+  });
+
+  // Queue bar stop
+  $('#queueBarStop').on('click', function () {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    stopScrubber();
+    if (currentPlayingRow) { currentPlayingRow.classList.remove('is-playing'); currentPlayingRow = null; }
+    stopQueue();
   });
 
   // Swipe + long-press detection (mobile)
