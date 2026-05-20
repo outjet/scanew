@@ -194,14 +194,10 @@ function createTranscriptionRow(transcription) {
 
   const searchInput = document.getElementById('searchInput');
   const searchQuery = searchInput ? searchInput.value.trim() : '';
-  const contextLinkHtml = searchQuery
+  const contextLinkHtml = (searchQuery || filterActive)
     ? `<a href="/transcription_context/${transcription.id}" class="context-link" title="See in context">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
        </a>`
-    : '';
-
-  const tenFourHtml = (userHasAdminRole && text.length < 10)
-    ? `<button class="ten-four-btn" title="Save as 10-4">10-4</button>`
     : '';
 
   const editActionHtml = userHasAdminRole
@@ -220,7 +216,6 @@ function createTranscriptionRow(transcription) {
         <span></span><span></span><span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span><span></span><span></span>
       </span>
-      ${tenFourHtml}
     </div>
     <div class="row-text"></div>
     <div class="row-scrubber">
@@ -600,6 +595,7 @@ function validateTranscription(id, row) {
 
 // ── Context menu (long-press / right-click) ──────────────────
 function showContextMenu(row) {
+  if (ctxActiveRow === row) return; // guard against double-open (timer + contextmenu event)
   longPressActivated = true;
   ctxActiveRow = row;
   const preview = (row.querySelector('.row-text') || {}).textContent || '';
@@ -609,6 +605,11 @@ function showContextMenu(row) {
   if (editBtn) editBtn.hidden = !userHasAdminRole;
   const validateLabel = document.getElementById('ctxValidateLabel');
   if (validateLabel) validateLabel.textContent = row.classList.contains('is-validated') ? 'Unvalidate' : 'Validate';
+  const tenFourBtn = document.getElementById('ctxTenFourBtn');
+  if (tenFourBtn) {
+    const transcript = (row.querySelector('.row-text') || {}).textContent || '';
+    tenFourBtn.hidden = !(userHasAdminRole && transcript.trim().length < 10);
+  }
   const overlay = document.getElementById('ctxOverlay');
   const sheet = document.getElementById('ctxSheet');
   row.classList.add('ctx-highlight');
@@ -617,6 +618,7 @@ function showContextMenu(row) {
 }
 
 function closeContextMenu() {
+  longPressActivated = false;
   const overlay = document.getElementById('ctxOverlay');
   const sheet = document.getElementById('ctxSheet');
   if (sheet) {
@@ -642,6 +644,7 @@ function openEditDialog(row) {
   const replayBtn = document.getElementById('editReplayBtn');
   if (replayBtn) replayBtn.hidden = !audioUrl;
   dialog.showModal();
+  if (audioUrl) playAudio(audioUrl); // auto-play so the audio can guide the edit
 }
 
 function saveEdit() {
@@ -827,9 +830,13 @@ $(document).ready(function () {
     const touch = e.originalEvent.touches[0];
     const dx = touch.clientX - swipeTouchStartX;
     const dy = touch.clientY - swipeTouchStartY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+    // Any movement (including vertical scroll) cancels long-press
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
       clearTimeout(longPressTimer);
-      e.preventDefault(); // prevent scroll during horizontal swipe
+    }
+    // Only lock scroll axis during a clear horizontal swipe
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      e.preventDefault();
     }
   });
 
@@ -840,18 +847,14 @@ $(document).ready(function () {
     const dx = touch.clientX - swipeTouchStartX;
     const dy = touch.clientY - swipeTouchStartY;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
+      e.preventDefault(); // suppress the generated click event after a swipe
       swipeActivated = true;
-      longPressActivated = true; // suppress click
       if (dx > 0) {
         // Swipe right → validate
         validateTranscription(this.getAttribute('data-id'), this);
       } else {
-        // Swipe left → play audio + open edit dialog
-        if (userHasAdminRole) {
-          const audioUrl = this.getAttribute('data-audio-url');
-          if (audioUrl) playAudio(audioUrl, this);
-          openEditDialog(this);
-        }
+        // Swipe left → edit (admin only)
+        if (userHasAdminRole) openEditDialog(this);
       }
     }
   });
@@ -861,8 +864,11 @@ $(document).ready(function () {
   });
 
   // Right-click → context menu (desktop)
+  // Guard: on mobile, the long-press timer already called showContextMenu; the
+  // subsequent contextmenu event must not open it a second time.
   $(document).on('contextmenu', '.transcript-row', function (e) {
     e.preventDefault();
+    if (ctxActiveRow === this) return;
     showContextMenu(this);
   });
 
@@ -903,16 +909,20 @@ $(document).ready(function () {
     const audioUrl = dialog && dialog.dataset.audioUrl;
     if (audioUrl) playAudio(audioUrl);
   });
+  // 10-4 quick-save from within the edit dialog
+  $('#editTenFourBtn').on('click', function () {
+    const textarea = document.getElementById('editTextarea');
+    if (textarea) textarea.value = '10-4';
+    saveEdit();
+  });
 
-  // 10-4 quick-save button
-  $(document).on('click', '.ten-four-btn', function (e) {
-    e.stopPropagation();
-    if (typeof editTranscriptionUrl === 'undefined' || !editTranscriptionUrl) return;
-    const row = $(this).closest('.transcript-row')[0];
-    if (!row) return;
-    const id = row.getAttribute('data-id');
+  // 10-4 quick-save from context menu (long-press on short transcripts)
+  $('#ctxTenFourBtn').on('click', function () {
+    if (!ctxActiveRow) return;
+    const id = ctxActiveRow.getAttribute('data-id');
+    const row = ctxActiveRow;
+    closeContextMenu();
     if (!id) return;
-    const btn = this;
     fetch(editTranscriptionUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -925,7 +935,6 @@ $(document).ready(function () {
           if (el) el.textContent = '10-4';
           row.classList.add('is-edited');
           row.setAttribute('data-edited', 'true');
-          btn.hidden = true;
         }
       })
       .catch(err => console.error('10-4 save error:', err));
