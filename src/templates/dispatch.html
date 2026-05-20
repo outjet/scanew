@@ -330,6 +330,7 @@
   var feedUrl = {{ url_for('dispatch.view_transcriptions')|tojson }};
   var currentPerPage = {{ per_page }};
   var currentFeedFilter = {{ feed_filter|tojson }};
+  var queueAfterUrl = {{ url_for('dispatch.queue_after', transcription_id=0)|tojson }};
 </script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{{ static_url('js/dispatch.js') }}"></script>

@@ -850,6 +850,27 @@ def transcription_context(transcription_id):
         current_app.logger.error(f"Error in transcription_context: {e}", exc_info=True)
         abort(500, description="An internal error occurred.")
 
+@dispatch_bp.route('/queue_after/<int:transcription_id>')
+@login_required
+def queue_after(transcription_id):
+    _require_dispatch_access()
+    rows = (
+        Transcription.query
+        .filter(Transcription.id > transcription_id, Transcription.wav_filename.isnot(None))
+        .order_by(Transcription.id.asc())
+        .with_entities(Transcription.id, Transcription.wav_filename, Transcription.timestamp)
+        .all()
+    )
+    result = []
+    for row in rows:
+        ts = convert_to_eastern(row.timestamp)
+        result.append({
+            'audio_url': f'/recordings/{row.wav_filename}',
+            'time': ts.strftime('%H:%M:%S') if ts else '',
+        })
+    return jsonify(result)
+
+
 @dispatch_bp.route('/edit_transcription', methods=['POST'])
 @login_required
 # @role_required('admin') # TODO: Commented out due to missing `utils.py`
