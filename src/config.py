@@ -50,16 +50,18 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "").strip()
 TRANSCRIPTION_PROVIDER = os.getenv("TRANSCRIPTION_PROVIDER", "openai").strip().lower()
 if TRANSCRIPTION_PROVIDER == "whisper":
     TRANSCRIPTION_PROVIDER = "openai"
-if TRANSCRIPTION_PROVIDER not in {"openai", "deepgram"}:
+if TRANSCRIPTION_PROVIDER not in {"openai", "deepgram", "alibaba"}:
     raise RuntimeError(
-        "Invalid TRANSCRIPTION_PROVIDER. Expected one of: openai, whisper, deepgram"
+        "Invalid TRANSCRIPTION_PROVIDER. Expected one of: openai, whisper, deepgram, alibaba"
     )
 
 OPENAI_TRANSCRIPTION_MODEL = os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1").strip()
 DEEPGRAM_MODEL = os.getenv("DEEPGRAM_MODEL", "nova-3").strip()
-TRANSCRIPTION_MODEL = os.getenv("TRANSCRIPTION_MODEL", "").strip() or (
-    DEEPGRAM_MODEL if TRANSCRIPTION_PROVIDER == "deepgram" else OPENAI_TRANSCRIPTION_MODEL
-)
+ALIBABA_ASR_MODEL = os.getenv("ALIBABA_ASR_MODEL", "fun-asr-realtime").strip()
+TRANSCRIPTION_MODEL = os.getenv("TRANSCRIPTION_MODEL", "").strip() or {
+    "alibaba": ALIBABA_ASR_MODEL,
+    "deepgram": DEEPGRAM_MODEL,
+}.get(TRANSCRIPTION_PROVIDER, OPENAI_TRANSCRIPTION_MODEL)
 DEEPGRAM_LANGUAGE = os.getenv("DEEPGRAM_LANGUAGE", "en").strip()
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -110,6 +112,26 @@ DEEPGRAM_SMART_FORMAT = _env_bool("DEEPGRAM_SMART_FORMAT", True)
 DEEPGRAM_KEYTERMS_FILE = BASE_DIR / os.getenv("DEEPGRAM_KEYTERMS_FILE", "deepgram_keyterms.txt")
 DEEPGRAM_KEYTERMS_EXTRA = os.getenv("DEEPGRAM_KEYTERMS_EXTRA", "").strip()
 
+_ALIBABA_ASR_ENV_API_KEY = (
+    os.getenv("ALIBABA_ASR_API_KEY", "").strip()
+    or os.getenv("DASHSCOPE_API_KEY", "").strip()
+)
+ALIBABA_ASR_API_KEY = _ALIBABA_ASR_ENV_API_KEY
+if TRANSCRIPTION_PROVIDER == "alibaba" and not ALIBABA_ASR_API_KEY:
+    ALIBABA_ASR_API_KEY = _load_secret("alibaba-asr-fun-realtime-key")
+ALIBABA_ASR_ENDPOINT = os.getenv(
+    "ALIBABA_ASR_ENDPOINT",
+    "wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference/",
+).strip()
+ALIBABA_ASR_FORMAT = os.getenv("ALIBABA_ASR_FORMAT", "wav").strip()
+ALIBABA_ASR_SAMPLE_RATE = int(os.getenv("ALIBABA_ASR_SAMPLE_RATE", "16000"))
+ALIBABA_ASR_LANGUAGE_HINT = os.getenv("ALIBABA_ASR_LANGUAGE_HINT", "en").strip()
+ALIBABA_ASR_SEMANTIC_PUNCTUATION = _env_bool("ALIBABA_ASR_SEMANTIC_PUNCTUATION", True)
+ALIBABA_ASR_MAX_SENTENCE_SILENCE = int(os.getenv("ALIBABA_ASR_MAX_SENTENCE_SILENCE", "1300"))
+ALIBABA_ASR_MULTI_THRESHOLD_MODE = _env_bool("ALIBABA_ASR_MULTI_THRESHOLD_MODE", True)
+ALIBABA_ASR_TIMEOUT_SEC = float(os.getenv("ALIBABA_ASR_TIMEOUT_SEC", "90"))
+ALIBABA_ASR_SEND_INTERVAL_SEC = float(os.getenv("ALIBABA_ASR_SEND_INTERVAL_SEC", "0.1"))
+
 def _load_deepgram_keyterms() -> list[str]:
     terms: list[str] = []
     if DEEPGRAM_KEYTERMS_FILE.exists():
@@ -138,6 +160,11 @@ if TRANSCRIPTION_PROVIDER == "openai" and not OPENAI_API_KEY:
     raise RuntimeError("Missing required environment variable for provider=openai: OPENAI_API_KEY")
 if TRANSCRIPTION_PROVIDER == "deepgram" and not DEEPGRAM_API_KEY:
     raise RuntimeError("Missing required environment variable for provider=deepgram: DEEPGRAM_API_KEY")
+if TRANSCRIPTION_PROVIDER == "alibaba" and not ALIBABA_ASR_API_KEY:
+    raise RuntimeError(
+        "Missing Alibaba ASR API key. Set ALIBABA_ASR_API_KEY, DASHSCOPE_API_KEY, "
+        "or Secret Manager secret alibaba-asr-fun-realtime-key."
+    )
 
 PUSHOVER_TOKEN = str = os.getenv("PUSHOVER_TOKEN", "").strip()
 PUSHOVER_USER = str = os.getenv("PUSHOVER_USER", "").strip()

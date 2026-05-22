@@ -1,5 +1,8 @@
 import logging
 import shutil
+import json
+import time
+import uuid
 from pathlib import Path
 from typing import Optional
 import wave
@@ -9,6 +12,15 @@ from collections import Counter
 
 import openai
 from openai._exceptions import OpenAIError
+
+try:
+    import websocket
+    from websocket import WebSocketException
+except ImportError:  # pragma: no cover - optional unless provider=alibaba
+    websocket = None
+
+    class WebSocketException(Exception):
+        pass
 
 try:
     from .utils import log_transcription_to_console, retry_on_exception
@@ -22,6 +34,16 @@ try:
         DEEPGRAM_NUMERALS,
         DEEPGRAM_SMART_FORMAT,
         DEEPGRAM_KEYTERMS,
+        ALIBABA_ASR_API_KEY,
+        ALIBABA_ASR_ENDPOINT,
+        ALIBABA_ASR_FORMAT,
+        ALIBABA_ASR_SAMPLE_RATE,
+        ALIBABA_ASR_LANGUAGE_HINT,
+        ALIBABA_ASR_SEMANTIC_PUNCTUATION,
+        ALIBABA_ASR_MAX_SENTENCE_SILENCE,
+        ALIBABA_ASR_MULTI_THRESHOLD_MODE,
+        ALIBABA_ASR_TIMEOUT_SEC,
+        ALIBABA_ASR_SEND_INTERVAL_SEC,
     )
     from .splitter import split_on_silence
 except ImportError:  # pragma: no cover - allows running as a top-level script module
@@ -36,6 +58,16 @@ except ImportError:  # pragma: no cover - allows running as a top-level script m
         DEEPGRAM_NUMERALS,
         DEEPGRAM_SMART_FORMAT,
         DEEPGRAM_KEYTERMS,
+        ALIBABA_ASR_API_KEY,
+        ALIBABA_ASR_ENDPOINT,
+        ALIBABA_ASR_FORMAT,
+        ALIBABA_ASR_SAMPLE_RATE,
+        ALIBABA_ASR_LANGUAGE_HINT,
+        ALIBABA_ASR_SEMANTIC_PUNCTUATION,
+        ALIBABA_ASR_MAX_SENTENCE_SILENCE,
+        ALIBABA_ASR_MULTI_THRESHOLD_MODE,
+        ALIBABA_ASR_TIMEOUT_SEC,
+        ALIBABA_ASR_SEND_INTERVAL_SEC,
     )
     from splitter import split_on_silence
 
@@ -200,6 +232,156 @@ def transcribe_chunk_deepgram(
     return text
 
 
+def _build_alibaba_run_task_message(task_id: str, model: str) -> dict:
+    parameters = {
+        "format": ALIBABA_ASR_FORMAT,
+        "sample_rate": ALIBABA_ASR_SAMPLE_RATE,
+        "semantic_punctuation_enabled": ALIBABA_ASR_SEMANTIC_PUNCTUATION,
+        "multi_threshold_mode_enabled": ALIBABA_ASR_MULTI_THRESHOLD_MODE,
+    }
+    if ALIBABA_ASR_LANGUAGE_HINT:
+        parameters["language_hints"] = [ALIBABA_ASR_LANGUAGE_HINT]
+    if not ALIBABA_ASR_SEMANTIC_PUNCTUATION:
+        parameters["max_sentence_silence"] = ALIBABA_ASR_MAX_SENTENCE_SILENCE
+
+    return {
+        "header": {
+            "action": "run-task",
+            "task_id": task_id,
+            "streaming": "duplex",
+        },
+        "payload": {
+            "task_group": "audio",
+            "task": "asr",
+            "function": "recognition",
+            "model": model,
+            "parameters": parameters,
+            "input": {},
+        },
+    }
+
+
+def _build_alibaba_finish_task_message(task_id: str) -> dict:
+    return {
+        "header": {
+            "action": "finish-task",
+            "task_id": task_id,
+            "streaming": "duplex",
+        },
+        "payload": {"input": {}},
+    }
+
+
+def _recv_alibaba_json(ws) -> dict:
+    raw_message = ws.recv()
+    if isinstance(raw_message, bytes):
+        raw_message = raw_message.decode("utf-8")
+    return json.loads(raw_message)
+
+
+@retry_on_exception(
+    exceptions=(WebSocketException, TimeoutError, json.JSONDecodeError),
+    max_attempts=3,
+    initial_delay=1,
+    backoff_factor=2,
+)
+def transcribe_chunk_alibaba(
+    chunk_path: Path,
+    model: str,
+) -> str:
+    if websocket is None:
+        raise RuntimeError("websocket-client is not installed. Install requirements.txt.")
+    if not ALIBABA_ASR_API_KEY:
+        raise RuntimeError(
+            "Alibaba ASR is not configured. Set ALIBABA_ASR_API_KEY, DASHSCOPE_API_KEY, "
+            "or Secret Manager secret alibaba-asr-fun-realtime-key."
+        )
+
+    task_id = uuid.uuid4().hex
+    final_sentences: list[str] = []
+    latest_partial = ""
+    billable_duration = None
+
+    ws = websocket.create_connection(
+        ALIBABA_ASR_ENDPOINT,
+        header=[
+            f"Authorization: Bearer {ALIBABA_ASR_API_KEY}",
+            "user-agent: scanew-dispatch-transcriber",
+        ],
+        timeout=ALIBABA_ASR_TIMEOUT_SEC,
+    )
+
+    try:
+        ws.send(json.dumps(_build_alibaba_run_task_message(task_id, model)))
+        while True:
+            message = _recv_alibaba_json(ws)
+            header = message.get("header", {})
+            event = header.get("event")
+            if event == "task-started":
+                break
+            if event == "task-failed":
+                raise RuntimeError(
+                    f"Alibaba ASR task failed before audio: {header.get('error_code')} "
+                    f"{header.get('error_message')}"
+                )
+
+        bytes_per_second = ALIBABA_ASR_SAMPLE_RATE * 2
+        send_chunk_size = max(1024, int(bytes_per_second * ALIBABA_ASR_SEND_INTERVAL_SEC))
+        with open(chunk_path, "rb") as audio_file:
+            while True:
+                audio_chunk = audio_file.read(send_chunk_size)
+                if not audio_chunk:
+                    break
+                ws.send_binary(audio_chunk)
+                if ALIBABA_ASR_SEND_INTERVAL_SEC > 0:
+                    time.sleep(ALIBABA_ASR_SEND_INTERVAL_SEC)
+
+        ws.send(json.dumps(_build_alibaba_finish_task_message(task_id)))
+
+        while True:
+            message = _recv_alibaba_json(ws)
+            header = message.get("header", {})
+            event = header.get("event")
+            if event == "task-failed":
+                raise RuntimeError(
+                    f"Alibaba ASR task failed: {header.get('error_code')} {header.get('error_message')}"
+                )
+            if event == "task-finished":
+                break
+            if event != "result-generated":
+                continue
+
+            payload = message.get("payload", {})
+            sentence = payload.get("output", {}).get("sentence", {})
+            if sentence.get("heartbeat"):
+                continue
+
+            text = (sentence.get("text") or "").strip()
+            if not text:
+                continue
+
+            latest_partial = text
+            if sentence.get("sentence_end"):
+                final_sentences.append(text)
+                usage = payload.get("usage") or {}
+                billable_duration = usage.get("duration", billable_duration)
+    finally:
+        try:
+            ws.close()
+        except Exception:
+            pass
+
+    text = " ".join(final_sentences).strip() or latest_partial.strip()
+    logger.debug(
+        "alibaba/%s returned: %r for %s%s",
+        model,
+        text,
+        chunk_path.name,
+        f" (billable_duration={billable_duration}s)" if billable_duration is not None else "",
+    )
+    return text
+
+
 def transcribe_chunk(
     chunk_path: Path,
     model: Optional[str] = None,
@@ -214,6 +396,8 @@ def transcribe_chunk(
 
     if resolved_provider == "deepgram":
         return transcribe_chunk_deepgram(chunk_path, model=resolved_model)
+    if resolved_provider == "alibaba":
+        return transcribe_chunk_alibaba(chunk_path, model=resolved_model)
     if resolved_provider == "openai":
         return transcribe_chunk_openai(chunk_path, model=resolved_model, use_prompt=use_prompt)
 

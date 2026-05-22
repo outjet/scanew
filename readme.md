@@ -110,6 +110,14 @@ DEEPGRAM_KEYTERMS_FILE=deepgram_keyterms.txt
 # Optional comma-separated extras
 DEEPGRAM_KEYTERMS_EXTRA=Ennis Court,Lakewood
 
+# Alibaba Cloud Model Studio Fun-ASR (required when TRANSCRIPTION_PROVIDER=alibaba)
+# If ALIBABA_ASR_API_KEY/DASHSCOPE_API_KEY is unset, the app tries Secret Manager
+# secret "alibaba-asr-fun-realtime-key" using ADC and the current GCP project.
+ALIBABA_ASR_MODEL=fun-asr-realtime
+ALIBABA_ASR_ENDPOINT=wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference/
+ALIBABA_ASR_LANGUAGE_HINT=en
+ALIBABA_ASR_SEMANTIC_PUNCTUATION=true
+
 # Broadcastify feed URL
 BROADCASTIFY_URL=https://www.broadcastify.com/listen/feed/12345/thumbnail
 
