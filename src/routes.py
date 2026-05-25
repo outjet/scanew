@@ -836,6 +836,11 @@ def transcription_context(transcription_id):
                 'formatted_timestamp': timestamp.strftime('%a %d-%b %H:%M:%S') if timestamp else timestamp_str,
                 'transcript': transcription.transcript,
                 'wav_filename': transcription.wav_filename,
+                'alert_match': _matches_alert_pattern(transcription.transcript),
+                'class_code': transcription.class_code,
+                'initialdispatch': bool(transcription.initialdispatch),
+                'validated': bool(transcription.validated),
+                'edited': bool(transcription.edited),
                 'is_target': transcription.id == transcription_id
             })
 

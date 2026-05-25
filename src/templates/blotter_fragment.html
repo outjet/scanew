@@ -1,13 +1,19 @@
 {% for event in events %}
   <article class="blotter-event">
     <header class="blotter-event-header">
-      <span class="blotter-time">{{ event.time }}{% if event.time and event.time != 'N/A' and 'ET' not in event.time %} ET{% endif %}</span>
       <span class="blotter-nature">{{ event.nature }}</span>
     </header>
     <p class="mb-1">{{ event.summary }}</p>
-    {% if event.unitsDispatched %}
-      <small class="text-muted">Units: {{ event.unitsDispatched | join(', ') }}</small>
-    {% endif %}
+    <div class="blotter-event-footer">
+      <span class="blotter-time">{{ event.time }}{% if event.time and event.time != 'N/A' and 'ET' not in event.time %} ET{% endif %}</span>
+      {% if event.unitsDispatched %}
+      <div class="blotter-unit-tags">
+        {% for unit in event.unitsDispatched %}
+        <span class="blotter-unit-tag">{{ unit }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
   </article>
 {% endfor %}
 
