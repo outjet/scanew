@@ -48,7 +48,7 @@ def main():
             class_code, _ = classify_transcript_intent_with_metadata(transcript)
             update_transcription_classification(row_id, class_code)
             label = {0: "other", 1: "DISPATCH", 2: "alert"}.get(class_code, str(class_code))
-            print(f"  [{i}/{total}] #{row_id} → {label}  "{transcript[:60]}"")
+            print(f"  [{i}/{total}] #{row_id} → {label}  \"{transcript[:60]}\"")
             ok += 1
         except Exception as e:
             print(f"  [{i}/{total}] #{row_id} ERROR: {e}")
