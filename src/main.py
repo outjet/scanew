@@ -40,8 +40,9 @@ try:
         insert_transcription,
         update_transcription_classification,
         update_transcription_classification_usage,
+        update_transcription_details,
     )
-    from .notifier import send_pushover, matches_alert_pattern
+    from .notifier import send_pushover, matches_alert_pattern, send_dashboard_webhook
     from .utils import (
         classify_transcript_intent_with_metadata,
         post_transcription_with_retry,
@@ -75,8 +76,9 @@ except ImportError:  # pragma: no cover - allows running as a top-level script m
         insert_transcription,
         update_transcription_classification,
         update_transcription_classification_usage,
+        update_transcription_details,
     )
-    from notifier import send_pushover, matches_alert_pattern
+    from notifier import send_pushover, matches_alert_pattern, send_dashboard_webhook
     from utils import (
         classify_transcript_intent_with_metadata,
         post_transcription_with_retry,
@@ -127,7 +129,7 @@ def main():
         while True:
             row_id, timestamp_iso, wav_filename, transcript = classification_queue.get()
             try:
-                class_code, usage_metadata = classify_transcript_intent_with_metadata(transcript)
+                class_code, details, usage_metadata = classify_transcript_intent_with_metadata(transcript)
                 update_transcription_classification(row_id, class_code)
                 update_transcription_classification_usage(
                     row_id,
@@ -136,6 +138,16 @@ def main():
                     candidate_tokens=usage_metadata.get("candidate_tokens"),
                     total_tokens=usage_metadata.get("total_tokens"),
                 )
+                
+                # Store extracted details
+                update_transcription_details(
+                    row_id,
+                    nature=details.get("nature"),
+                    location=details.get("location"),
+                    summary=details.get("summary"),
+                    units=json.dumps(details.get("units") or []),
+                )
+
                 payload = {
                     "type": "classification_update",
                     "id": row_id,
@@ -143,8 +155,26 @@ def main():
                     "wav_filename": wav_filename,
                     "class_code": class_code,
                     "initialdispatch": class_code == 1,
+                    "nature": details.get("nature"),
+                    "location": details.get("location"),
+                    "summary": details.get("summary"),
+                    "units": details.get("units") or [],
                 }
                 publish_transcription_update(payload)
+
+                # Push to dashboard if initial dispatch
+                if class_code == 1:
+                    webhook_payload = {
+                        "nature": details.get("nature"),
+                        "location": details.get("location"),
+                        "summary": details.get("summary"),
+                        "timestamp": timestamp_iso,
+                        "units": details.get("units") or [],
+                        "id": row_id,
+                        "url": f"https://lkwd.agency/recordings/{wav_filename}" if wav_filename else None
+                    }
+                    send_dashboard_webhook(webhook_payload)
+
             except Exception:
                 logger.exception("Failed to classify transcription row %s", row_id)
             finally:

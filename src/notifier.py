@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 import re
 
 try:
-    from .config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS
+    from .config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS, DASHBOARD_WEBHOOK_URL, DASHBOARD_WEBHOOK_SECRET
 except ImportError:  # pragma: no cover - allows running as a top-level script module
-    from config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS
+    from config import PUSHOVER_TOKEN, PUSHOVER_USER, USE_PUSHOVER, ALERT_PATTERNS, DASHBOARD_WEBHOOK_URL, DASHBOARD_WEBHOOK_SECRET
 
 logger = logging.getLogger(__name__)
 _last_notification_time: datetime = None
@@ -68,4 +68,35 @@ def send_pushover(title: str, message: str, force: bool = False) -> int:
         return r.status_code
     except Exception as e:
         logger.error(f"Error sending Pushover: {e}")
+        return 0
+
+
+def send_dashboard_webhook(incident_details: dict) -> int:
+    """
+    Sends the incident details to the dashboard webhook endpoint.
+    Returns the HTTP status code.
+    """
+    if not DASHBOARD_WEBHOOK_URL:
+        logger.debug("DASHBOARD_WEBHOOK_URL not configured; skipping webhook.")
+        return 0
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Webhook-Secret": DASHBOARD_WEBHOOK_SECRET
+    }
+
+    # Wrap incident_details in the format expected by the dashboard
+    payload = {
+        "incident": incident_details
+    }
+
+    try:
+        r = requests.post(DASHBOARD_WEBHOOK_URL, json=payload, headers=headers, timeout=10)
+        if r.status_code in (200, 201, 202):
+            logger.info(f"Dashboard webhook sent successfully: {r.status_code}")
+        else:
+            logger.error(f"Dashboard webhook returned status {r.status_code}: {r.text}")
+        return r.status_code
+    except Exception as e:
+        logger.error(f"Error sending dashboard webhook: {e}")
         return 0

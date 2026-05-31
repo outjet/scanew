@@ -171,6 +171,9 @@ CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver"
 # not POSTed to the remote /transcription endpoint.
 POST_TRANSCRIPTIONS = os.getenv("POST_TRANSCRIPTIONS", "1").lower() not in {"0", "false", "no"}
 
+DASHBOARD_WEBHOOK_URL = os.getenv("DASHBOARD_WEBHOOK_URL", "").strip()
+DASHBOARD_WEBHOOK_SECRET = os.getenv("DASHBOARD_WEBHOOK_SECRET", "").strip()
+
 # -------------------------------------------
 # Derived / Default values
 # -------------------------------------------

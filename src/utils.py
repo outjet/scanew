@@ -36,14 +36,23 @@ except ImportError:  # pragma: no cover - allows running as a top-level script m
 
 logger = logging.getLogger(__name__)
 
-CLASSIFICATION_PROMPT = """Classify this Lakewood, Ohio police/fire dispatch transcript.
+CLASSIFICATION_PROMPT = """Classify this Lakewood, Ohio police/fire dispatch transcript and extract incident details if it is an initial dispatch.
 
-Return JSON with exactly one field:
-{"class_code":"0"|"1"|"2"}
+Return JSON with these fields:
+{
+  "class_code": "0"|"1"|"2",
+  "nature": "concise nature of call (e.g. 'Suspicious Person', 'Vehicle Accident', 'Medical Emergency')",
+  "location": "extracted address or location name",
+  "summary": "a one-sentence summary of the incident",
+  "units": ["Unit 1", "Unit 2"]
+}
 
-"1" = initial dispatch for a new incident, usually includes a location and a request for police or fire service or a reported problem
-"2" = supplemental traffic for an existing incident, including status updates, transport, 10-codes, unit chatter, follow-up details, or descriptions after the dispatch
-"0" = other radio noise, radio checks, administrative traffic, accidental audio, or non-dispatch content
+"1" = initial dispatch for a new incident, usually includes a location and a request for police or fire service or a reported problem.
+"2" = supplemental traffic for an existing incident, including status updates, transport, 10-codes, unit chatter, follow-up details, or descriptions after the dispatch.
+"0" = other radio noise, radio checks, administrative traffic, accidental audio, or non-dispatch content.
+
+For class_code "0" and "2", nature, location, summary, and units should be null or empty.
+For class_code "1", always attempt to extract nature, location, summary, and units.
 
 Transcript:
 """
@@ -146,7 +155,7 @@ def post_transcription_with_retry(timestamp: str, url: str, text: str, row_id: i
 
 
 def classify_transcript_intent(text: str) -> int:
-    class_code, _ = classify_transcript_intent_with_metadata(text)
+    class_code, _, _ = classify_transcript_intent_with_metadata(text)
     return class_code
 
 
@@ -156,14 +165,14 @@ def classify_transcript_intent(text: str) -> int:
     initial_delay=0.5,
     backoff_factor=2,
 )
-def classify_transcript_intent_with_metadata(text: str) -> tuple[int, dict]:
+def classify_transcript_intent_with_metadata(text: str) -> tuple[int, dict, dict]:
     if len(text or "") <= CLASSIFICATION_MIN_TEXT_LENGTH:
-        return 0, _empty_classification_metadata()
+        return 0, {}, _empty_classification_metadata()
     if not VERTEX_CLASSIFICATION_ENABLED:
-        return 0, _empty_classification_metadata()
+        return 0, {}, _empty_classification_metadata()
     if not VERTEX_API_KEY:
         logger.warning("VERTEX_API_KEY is not configured; defaulting classification to OTHER.")
-        return 0, _empty_classification_metadata()
+        return 0, {}, _empty_classification_metadata()
 
     payload = {
         "contents": [
@@ -180,7 +189,7 @@ def classify_transcript_intent_with_metadata(text: str) -> tuple[int, dict]:
             "temperature": 0,
             "topP": 0.1,
             "topK": 1,
-            "maxOutputTokens": 32,
+            "maxOutputTokens": 256,
             "responseMimeType": "application/json",
                 "responseSchema": {
                     "type": "OBJECT",
@@ -188,6 +197,13 @@ def classify_transcript_intent_with_metadata(text: str) -> tuple[int, dict]:
                         "class_code": {
                             "type": "STRING",
                             "enum": ["0", "1", "2"],
+                        },
+                        "nature": {"type": "STRING"},
+                        "location": {"type": "STRING"},
+                        "summary": {"type": "STRING"},
+                        "units": {
+                            "type": "ARRAY",
+                            "items": {"type": "STRING"}
                         }
                     },
                     "required": ["class_code"],
@@ -212,21 +228,28 @@ def classify_transcript_intent_with_metadata(text: str) -> tuple[int, dict]:
     raw_text = _extract_vertex_text(data)
     if not raw_text:
         logger.warning("Empty classification payload; defaulting to OTHER. raw_response=%s", json.dumps(data)[:1000])
-        return 0, usage_metadata
+        return 0, {}, usage_metadata
 
     try:
         parsed = json.loads(raw_text)
     except json.JSONDecodeError:
         logger.warning("Malformed classification payload %r; defaulting to OTHER. raw_response=%s", raw_text, json.dumps(data)[:1000])
-        return 0, usage_metadata
+        return 0, {}, usage_metadata
 
     class_code = parsed.get("class_code")
     if isinstance(class_code, str) and class_code in {"0", "1", "2"}:
         class_code = int(class_code)
     if class_code not in {0, 1, 2}:
         logger.warning("Unexpected class_code %r; defaulting to OTHER. raw_payload=%s", class_code, raw_text)
-        return 0, usage_metadata
-    return class_code, usage_metadata
+        return 0, {}, usage_metadata
+    
+    details = {
+        "nature": parsed.get("nature"),
+        "location": parsed.get("location"),
+        "summary": parsed.get("summary"),
+        "units": parsed.get("units") or [],
+    }
+    return class_code, details, usage_metadata
 
 
 def _extract_vertex_text(data: dict) -> str:

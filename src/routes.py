@@ -562,20 +562,12 @@ _INCIDENTS_HTTP_CACHE_SEC = 60  # browser/CDN cache for the HTTP response
 @dispatch_bp.route('/recent_incidents')
 def recent_incidents():
     try:
-        if not VERTEX_API_KEY:
-            return jsonify({
-                "title": "Recent incidents",
-                "generated_at": "",
-                "incidents": [],
-                "error": "Vertex summarization is not configured.",
-            }), 503
-
         cutoff = datetime.utcnow() - timedelta(minutes=90)
         cutoff_iso = cutoff.isoformat()
         transcripts = Transcription.query.filter(
             Transcription.timestamp >= cutoff_iso,
-            Transcription.class_code == 1,
-        ).order_by(Transcription.timestamp.asc()).all()
+            Transcription.initialdispatch == True,
+        ).order_by(Transcription.timestamp.desc()).all()
 
         if not transcripts:
             resp = jsonify({
@@ -587,8 +579,45 @@ def recent_incidents():
             resp.cache_control.public = True
             return resp
 
+        # If we have pre-extracted data for the most recent record, use the fast path
+        if transcripts[0].nature and transcripts[0].location:
+            incidents = []
+            for t in transcripts:
+                try:
+                    units_list = json.loads(t.units) if t.units else []
+                except (json.JSONDecodeError, TypeError):
+                    units_list = []
+                
+                incidents.append({
+                    "timestamp": t.timestamp,
+                    "nature": t.nature or "Unknown Nature",
+                    "location": t.location or "Unknown Location",
+                    "summary": t.summary or t.transcript,
+                    "units": units_list
+                })
+            
+            resp = jsonify({
+                "title": "Recent incidents",
+                "generated_at": datetime.utcnow().isoformat(),
+                "incidents": incidents,
+            })
+            resp.cache_control.max_age = _INCIDENTS_HTTP_CACHE_SEC
+            resp.cache_control.public = True
+            return resp
+
+        # Fallback to old batch-summarization for transition period or missing data
+        if not VERTEX_API_KEY:
+            return jsonify({
+                "title": "Recent incidents",
+                "generated_at": "",
+                "incidents": [],
+                "error": "Vertex summarization is not configured.",
+            }), 503
+
+        # Transcripts for LLM need to be in chronological order
+        chronological_transcripts = sorted(transcripts, key=lambda x: x.timestamp)
         combined_text = "\n".join(
-            f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in transcripts
+            f"[{_format_timestamp_for_model(t.timestamp)}] {t.transcript}" for t in chronological_transcripts
         )
 
         # Tier 2: Redis cache keyed by a hash of the transcript data.

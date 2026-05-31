@@ -22,6 +22,10 @@ class Transcription(db.Model):
     classification_prompt_tokens = db.Column(db.Integer)
     classification_candidate_tokens = db.Column(db.Integer)
     classification_total_tokens = db.Column(db.Integer)
+    nature = db.Column(db.String)
+    location = db.Column(db.String)
+    summary = db.Column(db.String)
+    units = db.Column(db.String)
     edited = db.Column(db.Boolean, default=False)
     validated = db.Column(db.Boolean, default=False)
 

@@ -25,7 +25,11 @@ CREATE TABLE IF NOT EXISTS transcriptions (
     classification_model TEXT,
     classification_prompt_tokens INTEGER,
     classification_candidate_tokens INTEGER,
-    classification_total_tokens INTEGER
+    classification_total_tokens INTEGER,
+    nature        TEXT,
+    location      TEXT,
+    summary       TEXT,
+    units         TEXT
 );
 """
 
@@ -44,6 +48,10 @@ EXPECTED_COLUMNS = {
     "classification_prompt_tokens": "INTEGER",
     "classification_candidate_tokens": "INTEGER",
     "classification_total_tokens": "INTEGER",
+    "nature": "TEXT",
+    "location": "TEXT",
+    "summary": "TEXT",
+    "units": "TEXT",
 }
 
 
@@ -159,6 +167,35 @@ def update_transcription_classification_usage(
         conn.commit()
     except Exception as e:
         logger.error("Error updating classification usage for row %s: %s", row_id, e)
+        raise
+    finally:
+        conn.close()
+
+
+def update_transcription_details(
+    row_id: int,
+    *,
+    nature: str | None,
+    location: str | None,
+    summary: str | None,
+    units: str | None,
+):
+    conn = _get_connection()
+    try:
+        conn.execute(
+            """
+            UPDATE transcriptions
+            SET nature = ?,
+                location = ?,
+                summary = ?,
+                units = ?
+            WHERE id = ?
+            """,
+            (nature, location, summary, units, row_id),
+        )
+        conn.commit()
+    except Exception as e:
+        logger.error("Error updating details for row %s: %s", row_id, e)
         raise
     finally:
         conn.close()
