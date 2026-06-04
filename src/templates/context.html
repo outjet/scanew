@@ -3,37 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Context · Dispatch</title>
+  <title>Dispatch Context</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600;650;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="{{ static_url('favicon.ico') }}">
   <link rel="stylesheet" href="{{ static_url('style.css') }}">
+  <style>
+    .transcript-row.is-target {
+      box-shadow: inset 3px 0 0 #f59e0b;
+      background: #fff8eb;
+    }
+    [data-theme="dark"] .transcript-row.is-target {
+      background: rgba(245,158,11,0.09);
+    }
+  </style>
 </head>
 <body>
 
 <div class="app-shell" id="appShell">
-<div class="main-content">
 
+<div class="main-content">
   <!-- ── App bar ─────────────────────────────────────────────── -->
   <header class="app-bar">
     <div class="app-bar-main">
       <div class="app-bar-title-row">
         <a href="javascript:history.back()" class="icon-btn" title="Back" style="margin-right:4px">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
         </a>
         <span class="app-name">Context</span>
       </div>
-      <div class="app-bar-sub">{{ transcriptions|length }} entries around #{{ target_id }}</div>
+      <div class="app-bar-sub" title="{{ target_text }}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ target_text }}</div>
     </div>
   </header>
 
-  <!-- ── Feed ───────────────────────────────────────────────── -->
+  <!-- ── Feed list ──────────────────────────────────────────── -->
   <div class="tab-panels">
     <div class="tab-panel" id="panel-feed">
       <div class="feed-list" id="feedList">
         {% for t in transcriptions %}
-        <div class="transcript-row{% if t.is_target %} is-target{% endif %}{% if t.alert_match %} alert-match{% endif %}{% if t.initialdispatch %} initial-dispatch{% endif %}{% if t.validated %} is-validated{% endif %}{% if t.edited %} is-edited{% endif %}"
+        <div class="transcript-row{% if t.alert_match %} alert-match{% endif %}{% if t.initialdispatch %} initial-dispatch{% endif %}{% if t.validated %} is-validated{% endif %}{% if t.edited %} is-edited{% endif %}{% if t.is_target %} is-target{% endif %}"
              data-id="{{ t.id }}"
              data-timestamp="{{ t.timestamp }}"
              data-alert-match="{{ 'true' if t.alert_match else 'false' }}"
@@ -47,7 +56,7 @@
             <span class="row-time">{{ t.formatted_timestamp }}</span>
             {% if t.alert_match %}<span class="row-tag tag-alert">ALERT</span>{% endif %}
             {% if t.initialdispatch and not t.alert_match %}<span class="row-tag tag-initial">DISPATCH</span>{% endif %}
-            {% if t.is_target %}<span class="row-tag tag-target">TARGET</span>{% endif %}
+            {% if t.is_target %}<span class="row-tag" style="background:rgba(245,158,11,0.15);color:#b45309;">TARGET</span>{% endif %}
             <span class="row-waveform" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -77,8 +86,37 @@
       </div>
     </div>
   </div>
-
 </div>
+
+<!-- No tab bar on context page; keep queue bar near bottom -->
+<style>.queue-bar { bottom: 20px; }</style>
+
+</div><!-- /.app-shell -->
+
+<!-- ── Context menu bottom sheet ──────────────────────────── -->
+<div class="ctx-overlay" id="ctxOverlay" hidden></div>
+<div class="ctx-sheet" id="ctxSheet" hidden>
+  <div class="ctx-handle"></div>
+  <p class="ctx-preview" id="ctxPreview"></p>
+  <div class="ctx-actions">
+    <button class="ctx-btn" id="ctxEditBtn" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit transcript
+    </button>
+    <button class="ctx-btn" id="ctxTenFourBtn" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Save as 10-4
+    </button>
+    <button class="ctx-btn" id="ctxValidateBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="ctxValidateLabel">Validate</span>
+    </button>
+    <button class="ctx-btn" id="ctxCopyBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy text
+    </button>
+    <button class="ctx-btn ctx-btn-cancel" id="ctxCancelBtn">Cancel</button>
+  </div>
 </div>
 
 <!-- ── Edit transcript dialog ─────────────────────────────── -->
@@ -108,18 +146,26 @@
 </div>
 
 <script>
+  var streamUrl = null;
   var editTranscriptionUrl = "{{ url_for('dispatch.edit_transcription') }}";
   var validateTranscriptionUrl = "{{ url_for('dispatch.validate_transcription') }}";
   var queueAfterUrl = {{ url_for('dispatch.queue_after', transcription_id=0)|tojson }};
+  var alertPatterns = {{ alert_patterns|tojson }};
   var userHasAdminRole = {{ 'true' if current_user.is_authenticated and current_user.has_role('admin') else 'false' }};
-  var alertPatterns = [];
+  var feedUrl = null;
+  var currentPerPage = 100;
+  var currentFeedFilter = '';
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{{ static_url('js/dispatch.js') }}"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const target = document.querySelector('.transcript-row.is-target');
+  // Scroll the target row into view on load
+  $(document).ready(function () {
+    var target = document.querySelector('.transcript-row.is-target');
     if (target) {
-      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+      setTimeout(function () {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
     }
   });
 </script>
