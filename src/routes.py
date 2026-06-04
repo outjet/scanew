@@ -878,7 +878,8 @@ def transcription_context(transcription_id):
         return render_template('context.html',
                                transcriptions=formatted_transcriptions,
                                target_id=transcription_id,
-                               target_text=target_transcription.transcript)
+                               target_text=target_transcription.transcript,
+                               alert_patterns=[pat.pattern for pat in ALERT_PATTERNS])
 
     except Exception as e:
         current_app.logger.error(f"Error in transcription_context: {e}", exc_info=True)
