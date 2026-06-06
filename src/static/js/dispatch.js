@@ -413,7 +413,7 @@ function playNextInQueue() {
   if (!item.audioUrl) { playNextInQueue(); return; }
   playAudio(item.audioUrl, item.row || null, () => {
     if (!isPlayingQueue) return;
-    playQueueTimeoutId = window.setTimeout(playNextInQueue, 1000);
+    playNextInQueue();
   });
 }
 
