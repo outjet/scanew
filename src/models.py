@@ -70,8 +70,9 @@ class User(UserMixin, db.Model):
     def get_id(self):
         return str(self.id)
 
+    @property
     def is_active(self):
-        return self.approved
+        return bool(self.approved)
 
     def get_roles_string(self):
         return ','.join(self.roles)

@@ -60,6 +60,10 @@ def create_app():
                 "WHERE lastlogindate IS NULL AND created_at IS NOT NULL"
             )
         )
+        if "approved" not in user_columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN approved BOOLEAN DEFAULT 0"))
+            db.session.commit()
+            app.logger.info("Added users.approved column")
         db.session.commit()
 
     def record_logon_audit(user: User, success: bool):
@@ -153,6 +157,15 @@ def create_app():
                 db_user.profile_pic = user_info.get("picture")
                 db_user.lastlogindate = login_timestamp
                 db.session.commit()
+
+            seed_admin = app.config.get("SEED_ADMIN_EMAIL", "")
+            if seed_admin and db_user.email == seed_admin and not db_user.approved:
+                db_user.approved = True
+                for role in ("user", "dispatch", "admin"):
+                    if not db_user.has_role(role):
+                        db_user.add_role(role)
+                db.session.commit()
+                app.logger.info("Seed admin auto-approved: %s", db_user.email)
 
             if not db_user.approved:
                 record_logon_audit(db_user, success=False)

@@ -5,7 +5,8 @@ basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 from datetime import timedelta
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or os.urandom(24)
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
+    SEED_ADMIN_EMAIL = (os.environ.get("SEED_ADMIN_EMAIL") or "").strip().lower()
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
     SESSION_COOKIE_SECURE = False
