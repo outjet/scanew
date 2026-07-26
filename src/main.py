@@ -219,8 +219,37 @@ def main():
     state_lock = threading.Lock()
     state = {"ffmpeg": ffmpeg_process, "recorder": audio_recorder}
 
+    # Backs off restarts when the pipeline keeps failing immediately (e.g. a
+    # dead/rotated upstream URL) instead of hammering it every ~5-20s forever.
+    # Observed: a 2-day outage produced 15,438 restart attempts with no
+    # backoff at all, which itself risks getting the source rate-limited.
+    # Consecutive-failure count resets once a pipeline survives long enough
+    # to be considered healthy again.
+    RESTART_BACKOFF_BASE_SEC = 5
+    RESTART_BACKOFF_MAX_SEC = 300
+    RESTART_BACKOFF_RESET_AFTER_SEC = 120
+    restart_state = {"consecutive_failures": 0, "last_restart_started_at": None}
+
     def restart_pipeline(reason):
-        logger.warning("Restarting FFmpeg pipeline: %s", reason)
+        now = time.monotonic()
+        last_started = restart_state["last_restart_started_at"]
+        if last_started is not None and (now - last_started) >= RESTART_BACKOFF_RESET_AFTER_SEC:
+            restart_state["consecutive_failures"] = 0
+
+        failures = restart_state["consecutive_failures"]
+        backoff = min(RESTART_BACKOFF_MAX_SEC, RESTART_BACKOFF_BASE_SEC * (2 ** failures))
+        if failures > 0:
+            logger.warning(
+                "Restarting FFmpeg pipeline: %s (backing off %ss after %d consecutive failures)",
+                reason, backoff, failures,
+            )
+            time.sleep(backoff)
+        else:
+            logger.warning("Restarting FFmpeg pipeline: %s", reason)
+
+        restart_state["consecutive_failures"] = failures + 1
+        restart_state["last_restart_started_at"] = time.monotonic()
+
         with state_lock:
             old_ffmpeg = state["ffmpeg"]
             old_recorder = state["recorder"]
